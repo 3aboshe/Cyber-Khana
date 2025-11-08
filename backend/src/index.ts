@@ -36,20 +36,12 @@ const generalLimiter = rateLimit({
 
 app.use(helmet());
 
-// Security: Strict CORS configuration
+// Security: CORS configuration - Allow all origins for CTF platform
 const corsOptions = {
   origin: function (origin: any, callback: any) {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      process.env.FRONTEND_URL
-    ].filter(Boolean);
-
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Allow requests with no origin (like mobile apps, Postman, etc.)
+    // and allow all origins for the CTF platform
+    callback(null, true);
   },
   credentials: true,
   optionsSuccessStatus: 200
