@@ -1,6 +1,14 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-require('dotenv').config({ path: __dirname + '/backend/.env' });
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import dotenv from 'dotenv';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: join(__dirname, 'backend', '.env') });
 
 // Define SuperAdmin schema inline (since we don't want to import TypeScript)
 const SuperAdminSchema = new mongoose.Schema({
