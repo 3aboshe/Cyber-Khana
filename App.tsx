@@ -5,8 +5,12 @@ import NewDashboardPage from './pages/NewDashboardPage';
 import NewChallengeDetailPage from './pages/NewChallengeDetailPage';
 import ChallengesPage from './pages/ChallengesPage';
 import CompetitionPage from './pages/CompetitionPage';
+import CompetitionDashboardPage from './pages/CompetitionDashboardPage';
+import CompetitionChallengeDetailPage from './pages/CompetitionChallengeDetailPage';
+import CompetitionLeaderboardPage from './pages/CompetitionLeaderboardPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
 import AppLayout from './components/AppLayout';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -100,6 +104,10 @@ const App: React.FC = () => {
             <Route path="challenges" element={<ChallengesPage />} />
             <Route path="challenges/:id" element={<NewChallengeDetailPage />} />
             <Route path="competition" element={<CompetitionPage />} />
+            <Route path="competition/:id" element={<CompetitionDashboardPage />} />
+            <Route path="competition/:id/challenge/:challengeId" element={<CompetitionChallengeDetailPage />} />
+            <Route path="competition/:id/leaderboard" element={<CompetitionLeaderboardPage />} />
+            <Route path="announcements" element={<AnnouncementsPage />} />
             <Route path="leaderboard" element={<LeaderboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/dashboard" />} />

@@ -9,7 +9,23 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode }).select('-password');
-    res.json(users);
+
+    const usersWithStats = users.map(user => {
+      const rank = 1;
+      return {
+        _id: user._id,
+        username: user.username,
+        points: user.points,
+        role: user.role,
+        universityCode: user.universityCode,
+        isBanned: user.isBanned,
+        profileIcon: user.profileIcon,
+        solvedChallengesCount: user.solvedChallenges.length,
+        createdAt: user.createdAt
+      };
+    });
+
+    res.json(usersWithStats);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching users' });
   }
@@ -21,7 +37,19 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
-    res.json(user);
+
+    const allUsers = await User.find({ universityCode: user.universityCode, isBanned: { $ne: true } })
+      .select('points')
+      .sort({ points: -1 });
+
+    const rank = allUsers.findIndex(u => (u as any)._id.toString() === (user as any)._id.toString()) + 1;
+
+    res.json({
+      ...user.toJSON(),
+      rank,
+      totalUsers: allUsers.length,
+      solvedChallengesCount: user.solvedChallenges.length
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching user profile' });
   }

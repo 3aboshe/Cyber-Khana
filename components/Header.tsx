@@ -2,7 +2,7 @@
 import React from 'react';
 import { User } from '../types';
 import Button from './ui/button';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { LogOut, User as UserIcon, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 interface HeaderProps {
@@ -19,6 +19,11 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             <p className="font-semibold text-sm text-zinc-100">{user.name}</p>
             <p className="text-xs text-zinc-400">{user.points} pts</p>
           </div>
+          <Link to="/announcements">
+            <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-zinc-400 hover:bg-zinc-600 transition-colors">
+              <Bell size={20} />
+            </div>
+          </Link>
           <Link to="/profile">
             <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-zinc-400 hover:bg-zinc-600 transition-colors">
                  <UserIcon size={20} />

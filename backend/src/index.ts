@@ -9,6 +9,7 @@ import challengeRoutes from './routes/challenges';
 import competitionRoutes from './routes/competitions';
 import userRoutes from './routes/users';
 import universityRoutes from './routes/universities';
+import announcementRoutes from './routes/announcements';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use('/api/challenges', challengeRoutes);
 app.use('/api/competitions', competitionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/universities', universityRoutes);
+app.use('/api/announcements', announcementRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Cyberخانه API is running' });

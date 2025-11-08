@@ -27,6 +27,7 @@ export interface IChallenge extends Document {
     images?: string[];
     isUnlocked: boolean;
   };
+  isPublished: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -85,6 +86,10 @@ const ChallengeSchema: Schema = new Schema({
       type: Boolean,
       default: false
     }
+  },
+  isPublished: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

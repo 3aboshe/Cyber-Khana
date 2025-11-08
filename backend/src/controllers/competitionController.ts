@@ -64,6 +64,52 @@ export const getCompetition = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getCompetitionDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Check if user has access to this competition
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json(competition);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching competition details' });
+  }
+};
+
+export const getSolvedChallenges = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.query;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Check if user has access to this competition
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // In a real implementation, you'd track which challenges each user has solved
+    // For now, return empty array
+    // TODO: Implement solved challenges tracking
+    res.json([]);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching solved challenges' });
+  }
+};
+
 export const updateCompetitionStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -85,6 +131,32 @@ export const updateCompetitionStatus = async (req: AuthRequest, res: Response) =
     res.json(competition);
   } catch (error) {
     res.status(500).json({ error: 'Error updating competition status' });
+  }
+};
+
+export const updateCompetitionStartTime = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { startTime, endTime, status } = req.body;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    competition.startTime = new Date(startTime);
+    competition.endTime = new Date(endTime);
+    competition.status = status;
+    await competition.save();
+
+    res.json(competition);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating competition start time' });
   }
 };
 

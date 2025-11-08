@@ -9,10 +9,35 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       ? req.query.universityCode as string
       : req.user?.universityCode;
 
-    const challenges = await Challenge.find({ universityCode });
+    const { includeUnpublished } = req.query;
+
+    // If includeUnpublished is true, fetch all challenges (for admin)
+    // Otherwise, only fetch published challenges (for users)
+    const query = includeUnpublished === 'true'
+      ? { universityCode }
+      : { universityCode, isPublished: true };
+
+    const challenges = await Challenge.find(query);
     res.json(challenges);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching challenges' });
+  }
+};
+
+export const getAllChallenges = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can access all challenges' });
+    }
+
+    const universityCode = req.user?.role === 'super-admin'
+      ? req.query.universityCode as string
+      : req.user?.universityCode;
+
+    const challenges = await Challenge.find({ universityCode });
+    res.json(challenges);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching all challenges' });
   }
 };
 
@@ -241,5 +266,57 @@ export const updateWriteup = async (req: AuthRequest, res: Response) => {
     res.json(challenge);
   } catch (error) {
     res.status(500).json({ error: 'Error updating writeup' });
+  }
+};
+
+export const publishChallenge = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can publish challenges' });
+    }
+
+    const { id } = req.params;
+    const challenge = await Challenge.findById(id);
+
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    challenge.isPublished = true;
+    await challenge.save();
+
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ error: 'Error publishing challenge' });
+  }
+};
+
+export const unpublishChallenge = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can unpublish challenges' });
+    }
+
+    const { id } = req.params;
+    const challenge = await Challenge.findById(id);
+
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    challenge.isPublished = false;
+    await challenge.save();
+
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ error: 'Error unpublishing challenge' });
   }
 };

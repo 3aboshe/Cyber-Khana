@@ -83,6 +83,61 @@
          animation: loader-strobe-color2 0.8s infinite;
       }
 
+      /* Success Modal Animations */
+      @keyframes slideDown {
+        0% {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        0% {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes fadeIn {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes modalEnter {
+        0% {
+          opacity: 0;
+          transform: scale(0.9) translateY(-10px);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1) translateY(0);
+        }
+      }
+
+      .animate-modal-enter {
+        animation: modalEnter 0.3s ease-out;
+      }
+
+      .animation-delay-300 {
+        animation-delay: 0.3s;
+      }
+
+      .animation-delay-700 {
+        animation-delay: 0.7s;
+      }
+
     </style>
   <script type="importmap">
 {

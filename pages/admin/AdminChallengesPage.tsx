@@ -1,10 +1,369 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { challengeService } from '../../services/challengeService';
+import Card from '../../components/ui/card';
+import Button from '../../components/ui/button';
+import Input from '../../components/ui/input';
+import Textarea from '../../components/ui/textarea';
+import Modal from '../../components/ui/Modal';
+
+interface Challenge {
+  _id: string;
+  title: string;
+  category: string;
+  points: number;
+  description: string;
+  author: string;
+  universityCode: string;
+  solves: number;
+  isPublished: boolean;
+  createdAt: string;
+}
 
 const AdminChallengesPage: React.FC = () => {
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
+  const [isWriteupModalOpen, setIsWriteupModalOpen] = useState(false);
+  const [selectedChallengeForWriteup, setSelectedChallengeForWriteup] = useState<Challenge | null>(null);
+  const [writeupData, setWriteupData] = useState({
+    content: '',
+    images: [] as string[],
+    isUnlocked: false,
+  });
+  const [formData, setFormData] = useState({
+    title: '',
+    category: 'Web Exploitation',
+    points: 100,
+    description: '',
+    author: '',
+    flag: '',
+  });
+  const [filter, setFilter] = useState<'all' | 'published' | 'unpublished'>('all');
+
+  useEffect(() => {
+    fetchChallenges();
+  }, []);
+
+  const fetchChallenges = async () => {
+    try {
+      setLoading(true);
+      const data = await challengeService.getAllChallenges();
+      setChallenges(data);
+      setError('');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingChallenge) {
+        await challengeService.updateChallenge(editingChallenge._id, formData);
+      } else {
+        await challengeService.createChallenge(formData);
+      }
+      await fetchChallenges();
+      closeModal();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this challenge?')) return;
+    try {
+      await challengeService.deleteChallenge(id);
+      await fetchChallenges();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handlePublish = async (id: string) => {
+    try {
+      await challengeService.publishChallenge(id);
+      await fetchChallenges();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handleUnpublish = async (id: string) => {
+    if (!confirm('Are you sure you want to unpublish this challenge? It will no longer be visible to users.')) return;
+    try {
+      await challengeService.unpublishChallenge(id);
+      await fetchChallenges();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const openWriteupModal = (challenge: Challenge) => {
+    setSelectedChallengeForWriteup(challenge);
+    setWriteupData({
+      content: challenge.writeup?.content || '',
+      images: challenge.writeup?.images || [],
+      isUnlocked: challenge.writeup?.isUnlocked || false,
+    });
+    setIsWriteupModalOpen(true);
+  };
+
+  const handleWriteupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedChallengeForWriteup) return;
+
+    try {
+      await challengeService.updateWriteup(selectedChallengeForWriteup._id, writeupData);
+      await fetchChallenges();
+      setIsWriteupModalOpen(false);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const openModal = (challenge?: Challenge) => {
+    if (challenge) {
+      setEditingChallenge(challenge);
+      setFormData({
+        title: challenge.title,
+        category: challenge.category,
+        points: challenge.points,
+        description: challenge.description,
+        author: challenge.author,
+        flag: '',
+      });
+    } else {
+      setEditingChallenge(null);
+      setFormData({
+        title: '',
+        category: 'Web Exploitation',
+        points: 100,
+        description: '',
+        author: '',
+        flag: '',
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingChallenge(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-zinc-400">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredChallenges = challenges.filter(challenge => {
+    if (filter === 'published') return challenge.isPublished;
+    if (filter === 'unpublished') return !challenge.isPublished;
+    return true;
+  });
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-4xl font-bold text-zinc-100 mb-4">Manage Challenges</h1>
-      <p className="text-zinc-400">Challenge management coming soon...</p>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-4xl font-bold text-zinc-100">Manage Challenges</h1>
+        <Button onClick={() => openModal()}>Create Challenge</Button>
+      </div>
+
+      {/* Filter Tabs */}
+      <div className="flex gap-2 mb-6">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+            filter === 'all' ? 'bg-emerald-500 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+          }`}
+        >
+          All
+        </button>
+        <button
+          onClick={() => setFilter('published')}
+          className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+            filter === 'published' ? 'bg-emerald-500 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+          }`}
+        >
+          Published
+        </button>
+        <button
+          onClick={() => setFilter('unpublished')}
+          className={`px-4 py-2 text-sm font-semibold rounded-full transition-colors ${
+            filter === 'unpublished' ? 'bg-emerald-500 text-white' : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600'
+          }`}
+        >
+          Unpublished
+        </button>
+      </div>
+
+      {error && (
+        <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
+
+      <div className="grid gap-4">
+        {filteredChallenges.map((challenge) => (
+          <Card key={challenge._id} className="p-6">
+            <div className="flex justify-between items-start">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="text-xl font-bold text-zinc-100">{challenge.title}</h3>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    challenge.isPublished
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-zinc-500/20 text-zinc-400'
+                  }`}>
+                    {challenge.isPublished ? 'Published' : 'Unpublished'}
+                  </span>
+                </div>
+                <p className="text-zinc-400 mb-2">{challenge.description.substring(0, 100)}...</p>
+                <div className="flex gap-4 text-sm text-zinc-500">
+                  <span>Category: {challenge.category}</span>
+                  <span>Points: {challenge.points}</span>
+                  <span>Solves: {challenge.solves}</span>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button variant="secondary" onClick={() => openModal(challenge)}>Edit</Button>
+                <Button variant="secondary" onClick={() => openWriteupModal(challenge)}>Writeup</Button>
+                {challenge.isPublished ? (
+                  <Button variant="secondary" onClick={() => handleUnpublish(challenge._id)}>Unpublish</Button>
+                ) : (
+                  <Button variant="secondary" onClick={() => handlePublish(challenge._id)}>Publish</Button>
+                )}
+                <Button variant="ghost" onClick={() => handleDelete(challenge._id)}>Delete</Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={closeModal}>
+        <div className="bg-zinc-900 p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <h2 className="text-2xl font-bold text-zinc-100 mb-4">
+            {editingChallenge ? 'Edit Challenge' : 'Create Challenge'}
+          </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-zinc-200 mb-2">Title</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-zinc-200 mb-2">Category</label>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200"
+                required
+              >
+                <option value="Web Exploitation">Web Exploitation</option>
+                <option value="Reverse Engineering">Reverse Engineering</option>
+                <option value="Cryptography">Cryptography</option>
+                <option value="Pwn">Pwn</option>
+                <option value="Miscellaneous">Miscellaneous</option>
+                <option value="Forensics">Forensics</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-zinc-200 mb-2">Points</label>
+              <Input
+                type="number"
+                value={formData.points}
+                onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-zinc-200 mb-2">Description</label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={4}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-zinc-200 mb-2">Author</label>
+              <Input
+                value={formData.author}
+                onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-zinc-200 mb-2">Flag {editingChallenge && '(Leave empty to keep current)'}</label>
+              <Input
+                value={formData.flag}
+                onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
+                placeholder={editingChallenge ? 'Enter new flag to change' : ''}
+                required={!editingChallenge}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">
+                {editingChallenge ? 'Update' : 'Create'} Challenge
+              </Button>
+              <Button type="button" variant="secondary" onClick={closeModal}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      <Modal isOpen={isWriteupModalOpen} onClose={() => setIsWriteupModalOpen(false)}>
+        <div className="bg-zinc-900 p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <h2 className="text-2xl font-bold text-zinc-100 mb-4">Edit Writeup</h2>
+          <form onSubmit={handleWriteupSubmit} className="space-y-4">
+            <div>
+              <label className="block text-zinc-200 mb-2">Writeup Content (Markdown)</label>
+              <Textarea
+                value={writeupData.content}
+                onChange={(e) => setWriteupData({ ...writeupData, content: e.target.value })}
+                rows={8}
+                placeholder="# Challenge Writeup
+## Step 1
+..."
+              />
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-zinc-200">
+                <input
+                  type="checkbox"
+                  checked={writeupData.isUnlocked}
+                  onChange={(e) => setWriteupData({ ...writeupData, isUnlocked: e.target.checked })}
+                  className="rounded"
+                />
+                Unlock writeup for university students
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">
+                Save Writeup
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setIsWriteupModalOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -33,6 +33,7 @@ export interface ICompetition extends Document {
   endTime: Date;
   status: 'pending' | 'active' | 'ended';
   challenges: ICompetitionChallenge[];
+  duration?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -110,7 +111,10 @@ const CompetitionSchema: Schema = new Schema({
     enum: ['pending', 'active', 'ended'],
     default: 'pending'
   },
-  challenges: [CompetitionChallengeSchema]
+  challenges: [CompetitionChallengeSchema],
+  duration: {
+    type: Number
+  }
 }, {
   timestamps: true
 });
