@@ -330,7 +330,7 @@ export const uploadWriteupPdfController = async (req: AuthRequest, res: Response
       return res.status(403).json({ error: 'Only admins can upload writeup PDFs' });
     }
 
-    uploadWriteupPdf.single('pdf')(req, res, async (err) => {
+    uploadWriteupPdf.single('pdf')(req as any, res as any, async (err: any) => {
       if (err) {
         return res.status(400).json({ error: err.message });
       }

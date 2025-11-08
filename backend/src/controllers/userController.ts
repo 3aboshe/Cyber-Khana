@@ -63,7 +63,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
-      .select('username points solvedChallenges solvedChallengesDetails profileIcon')
+      .select('username points solvedChallenges solvedChallengesDetails profileIcon universityCode')
       .sort({ points: -1 });
 
     const topUsers = users.slice(0, 10).map((user, index) => {
@@ -93,7 +93,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         lastSolveTime: lastSolve,
         totalTimeHours: totalTime,
         averageSolveTimeHours: averageSolveTime,
-        profileIcon: user.profileIcon || 'default'
+        profileIcon: user.profileIcon || 'default',
+        universityCode: user.universityCode
       };
     });
 

@@ -178,12 +178,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </Link>
             </p>
           </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-zinc-500 text-sm">
-              © 2024 CyberKhana. Premium CTF Platform.
-            </p>
-          </div>
         </div>
       </div>
     </div>

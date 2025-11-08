@@ -4,8 +4,9 @@ import { competitionService } from '../services/competitionService';
 import { refreshCompetitionDashboard } from '../services/competitionRefreshService';
 import Card from '../components/ui/card';
 import Button from '../components/ui/button';
+import Input from '../components/ui/input';
 import Announcements from '../components/Announcements';
-import { Trophy, Clock, Users, ArrowLeft, TrendingUp, Activity, CheckCircle, ArrowRight } from 'lucide-react';
+import { Trophy, Clock, Users, ArrowLeft, TrendingUp, Activity, CheckCircle, ArrowRight, Lock } from 'lucide-react';
 
 const getCategoryColor = (cat: string) => {
   const colors: { [key: string]: string } = {

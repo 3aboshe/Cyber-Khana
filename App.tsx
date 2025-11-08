@@ -10,6 +10,7 @@ import CompetitionDashboardPage from './pages/CompetitionDashboardPage';
 import CompetitionChallengeDetailPage from './pages/CompetitionChallengeDetailPage';
 import CompetitionLeaderboardPage from './pages/CompetitionLeaderboardPage';
 import EnhancedLeaderboardPage from './pages/EnhancedLeaderboardPage';
+import NewLeaderboardPage from './pages/NewLeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import AppLayout from './components/AppLayout';
@@ -110,7 +111,7 @@ const App: React.FC = () => {
             <Route path="competition/:id/challenge/:challengeId" element={<CompetitionChallengeDetailPage />} />
             <Route path="competition/:id/leaderboard" element={<CompetitionLeaderboardPage />} />
             <Route path="announcements" element={<AnnouncementsPage />} />
-            <Route path="leaderboard" element={<EnhancedLeaderboardPage />} />
+            <Route path="leaderboard" element={<NewLeaderboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Route>

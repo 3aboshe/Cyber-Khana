@@ -240,12 +240,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
               </Link>
             </p>
           </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-zinc-500 text-sm">
-              © 2024 CyberKhana. Premium CTF Platform.
-            </p>
-          </div>
         </div>
       </div>
     </div>

@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Search, Trophy, Award, Medal, ChevronRight, Users, ArrowLeft } from 'lucide-react';
+import { Search, Trophy, Award, Medal, ChevronRight, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { competitionService } from '../services/competitionService';
-import Button from '../components/ui/button';
+import { userService } from '../services/userService';
 
-interface LeaderboardEntry {
+interface LeaderboardUser {
   _id: string;
   username: string;
   points: number;
@@ -13,24 +11,22 @@ interface LeaderboardEntry {
   universityCode: string;
   totalTimeHours?: number;
   averageSolveTimeHours?: number;
+  teamAvatarColor?: string;
 }
 
-const CompetitionLeaderboardPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [competition, setCompetition] = useState<any>(null);
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
+const NewLeaderboardPage: React.FC = () => {
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState<LeaderboardEntry | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<LeaderboardUser | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUniversity, setSelectedUniversity] = useState<string | undefined>(undefined);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    fetchCompetition();
-  }, [id]);
+    fetchLeaderboard();
+  }, []);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -39,20 +35,15 @@ const CompetitionLeaderboardPage: React.FC = () => {
     }
   }, []);
 
-  const fetchCompetition = async () => {
+  const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const data = await competitionService.getCompetitionById(id!);
-      setCompetition(data);
-
-      if (data.leaderboard) {
-        setLeaderboardData(data.leaderboard);
-      } else {
-        setLeaderboardData([]);
-      }
+      const data = await userService.getLeaderboard();
+      const leaderboard = data.leaderboard || data || [];
+      setLeaderboardData(leaderboard);
       setError('');
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch competition');
+      setError(err.message || 'Failed to fetch leaderboard');
     } finally {
       setLoading(false);
     }
@@ -150,7 +141,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-6 py-4 rounded-lg">
           {error}
           <button
-            onClick={fetchCompetition}
+            onClick={fetchLeaderboard}
             className="ml-4 text-red-300 hover:text-red-100 underline"
           >
             Retry
@@ -160,32 +151,13 @@ const CompetitionLeaderboardPage: React.FC = () => {
     );
   }
 
-  if (!competition) {
-    return (
-      <div className="min-h-screen bg-zinc-900 flex items-center justify-center">
-        <div className="text-zinc-400 text-lg">Competition not found</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(`/competition/${id}`)}
-            className="mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Competition
-          </Button>
-        </div>
-
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-zinc-100 tracking-tight mb-2">
-            {competition.name} - Leaderboard
+            Leaderboard
           </h1>
           <p className="text-zinc-400">Track your progress and compete with the best</p>
         </div>
@@ -395,6 +367,20 @@ const CompetitionLeaderboardPage: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* University Count Display */}
+        {selectedUniversity && filteredUsers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 text-center"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-zinc-300 text-sm">
+              <Users className="w-4 h-4" />
+              Showing {filteredUsers.length} teams from {selectedUniversity}
+            </span>
+          </motion.div>
+        )}
 
         {/* Leaderboard Table */}
         <div className="bg-zinc-900/30 rounded-2xl border border-zinc-800 overflow-hidden">
@@ -665,4 +651,4 @@ const CompetitionLeaderboardPage: React.FC = () => {
   );
 };
 
-export default CompetitionLeaderboardPage;
+export default NewLeaderboardPage;
