@@ -29,14 +29,13 @@ const setupDatabase = async () => {
     console.log(`✅ Created ${universities.length} universities`);
 
     console.log('\n🔐 Creating super admin...');
-    const hashedPassword = await bcrypt.hash('admin123', 10);
     const superAdmin = await SuperAdmin.create({
-      username: 'superadmin',
-      password: hashedPassword
+      username: 'admin',
+      password: '$2a$12$8iusqeYEszun07Cz9JPSDe68a1PTgyGnHZMsl.AH1cabg..6f8hou'
     });
     console.log('✅ Created super admin');
-    console.log('   Username: superadmin');
-    console.log('   Password: admin123');
+    console.log('   Username: admin');
+    console.log('   Password: OurSecurePlatform@d0mv6p');
 
     console.log('\n👨‍💼 Creating university admins...');
     const adminPassword = await bcrypt.hash('admin123', 10);
@@ -111,7 +110,7 @@ const setupDatabase = async () => {
     console.log('\n🔴 Super Admin:');
     console.log('   URL: http://localhost:5173');
     console.log('   Username: superadmin');
-    console.log('   Password: admin123');
+    console.log('   Password: OurSecurePlatform@d0mv6p');
     console.log('   Role: Super Admin');
     console.log('\n🔵 University Admin (MIT):');
     console.log('   URL: http://localhost:5173');

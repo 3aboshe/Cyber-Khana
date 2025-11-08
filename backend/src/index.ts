@@ -20,7 +20,7 @@ const app = express();
 // Security: Rate limiting
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts per window per IP
+  max: 20, // 20 attempts per window per IP
   message: { error: 'Too many authentication attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -71,6 +71,7 @@ app.use('/api/auth/login-admin', authLimiter);
 app.use('/api/auth/login-super-admin', authLimiter);
 
 // Other routes
+app.use('/api/auth', authRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/competitions', competitionRoutes);
 app.use('/api/users', userRoutes);
