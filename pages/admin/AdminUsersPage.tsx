@@ -55,7 +55,8 @@ const AdminUsersPage: React.FC = () => {
     try {
       setLoading(true);
       const userData = localStorage.getItem('user');
-      const universityCode = userData ? JSON.parse(userData).universityCode : undefined;
+      const parsedUser = userData ? JSON.parse(userData) : null;
+      const universityCode = parsedUser?.role === 'admin' ? parsedUser.universityCode : undefined;
 
       const data = await userService.getUsers(universityCode);
       setUsers(data);
