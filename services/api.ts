@@ -10,14 +10,13 @@ class ApiService {
   }
 
   async get(endpoint: string, params?: Record<string, string>) {
-    const url = new URL(`${API_BASE_URL}${endpoint}`);
+    let url = `${API_BASE_URL}${endpoint}`;
     if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        url.searchParams.append(key, value);
-      });
+      const searchParams = new URLSearchParams(params);
+      url += `?${searchParams.toString()}`;
     }
 
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       headers: this.getAuthHeaders(),
     });
 
