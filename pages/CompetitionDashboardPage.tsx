@@ -80,20 +80,8 @@ const CompetitionDashboardPage: React.FC = () => {
   const [enteringCode, setEnteringCode] = useState(false);
 
   // Mock data for leaderboard and activity (in real app, these would come from APIs)
-  const [leaderboard] = useState<LeaderboardEntry[]>([
-    { _id: '1', username: 'alice', points: 500, solvedChallenges: 5 },
-    { _id: '2', username: 'bob', points: 450, solvedChallenges: 4 },
-    { _id: '3', username: 'charlie', points: 350, solvedChallenges: 3 },
-    { _id: '4', username: 'diana', points: 300, solvedChallenges: 3 },
-    { _id: '5', username: 'eve', points: 200, solvedChallenges: 2 },
-  ]);
-
-  const [recentActivity] = useState<ActivityEntry[]>([
-    { username: 'alice', challengeTitle: 'SQL Injection 101', timestamp: '2 minutes ago', points: 100 },
-    { username: 'bob', challengeTitle: 'Buffer Overflow', timestamp: '5 minutes ago', points: 150 },
-    { username: 'charlie', challengeTitle: 'RSA Basics', timestamp: '8 minutes ago', points: 100 },
-    { username: 'diana', challengeTitle: 'Web Crawler', timestamp: '12 minutes ago', points: 200 },
-  ]);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
 
   useEffect(() => {
     // Get user data
@@ -103,11 +91,13 @@ const CompetitionDashboardPage: React.FC = () => {
     }
 
     fetchCompetition();
+    fetchLeaderboardAndActivity();
 
     // Listen for refresh events
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === `competition_${id}_refresh`) {
         fetchSolvedChallenges();
+        fetchLeaderboardAndActivity();
       }
     };
 
@@ -155,6 +145,24 @@ const CompetitionDashboardPage: React.FC = () => {
         // If API not implemented yet, use empty set
         setSolvedChallenges(new Set());
       }
+    }
+  };
+
+  const fetchLeaderboardAndActivity = async () => {
+    if (!id) return;
+    try {
+      // Fetch leaderboard for this competition
+      const leaderboardData = await competitionService.getCompetitionLeaderboard(id);
+      setLeaderboard(leaderboardData);
+
+      // Fetch recent activity for this competition
+      const activityData = await competitionService.getCompetitionActivity(id);
+      setRecentActivity(activityData);
+    } catch (err) {
+      console.error('Error fetching leaderboard and activity:', err);
+      // Set empty arrays on error
+      setLeaderboard([]);
+      setRecentActivity([]);
     }
   };
 

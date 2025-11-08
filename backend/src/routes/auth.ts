@@ -1,11 +1,18 @@
 import express from 'express';
-import { register, login, loginAdmin, loginSuperAdmin } from '../controllers/authController';
+import {
+  register,
+  login,
+  loginAdmin,
+  loginSuperAdmin,
+  registerValidation,
+  loginValidation
+} from '../controllers/authController';
 
 const router = express.Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.post('/login-admin', loginAdmin);
-router.post('/login-super-admin', loginSuperAdmin);
+router.post('/register', registerValidation, register);
+router.post('/login', loginValidation, login);
+router.post('/login-admin', loginValidation, loginAdmin);
+router.post('/login-super-admin', loginValidation, loginSuperAdmin);
 
 export default router;

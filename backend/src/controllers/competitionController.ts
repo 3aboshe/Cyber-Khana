@@ -230,3 +230,104 @@ export const addChallengeToCompetition = async (req: AuthRequest, res: Response)
     res.status(500).json({ error: 'Error adding challenge to competition' });
   }
 };
+
+export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Get all users in the competition's university
+    const users = await User.find({
+      universityCode: competition.universityCode,
+      isBanned: { $ne: true }
+    }).select('username points solvedChallenges solvedChallengesDetails');
+
+    // Filter users who have solved at least one competition challenge
+    const leaderboard = users
+      .filter(user => {
+        // Check if user has solved any competition challenge
+        return user.solvedChallengesDetails?.some((solve: any) =>
+          competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+        );
+      })
+      .map(user => {
+        // Calculate points from competition challenges
+        const competitionPoints = user.solvedChallengesDetails
+          ?.filter((solve: any) =>
+            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+          )
+          .reduce((total: number, solve: any) => total + (solve.points || 0), 0) || 0;
+
+        const competitionSolvedCount = user.solvedChallengesDetails
+          ?.filter((solve: any) =>
+            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+          ).length || 0;
+
+        return {
+          _id: user._id,
+          username: user.username,
+          points: competitionPoints,
+          solvedChallenges: competitionSolvedCount
+        };
+      })
+      .sort((a, b) => {
+        if (b.points !== a.points) {
+          return b.points - a.points;
+        }
+        return a.solvedChallenges - b.solvedChallenges;
+      });
+
+    res.json(leaderboard);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching competition leaderboard' });
+  }
+};
+
+export const getCompetitionActivity = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Get all users in the competition's university
+    const users = await User.find({
+      universityCode: competition.universityCode,
+      isBanned: { $ne: true }
+    }).select('username solvedChallengesDetails');
+
+    // Get recent activity (last 20 solves)
+    const allActivity: any[] = [];
+
+    users.forEach(user => {
+      user.solvedChallengesDetails
+        ?.filter((solve: any) =>
+          competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+        )
+        .forEach((solve: any) => {
+          allActivity.push({
+            username: user.username,
+            challengeTitle: solve.challengeTitle || 'Unknown Challenge',
+            timestamp: solve.solvedAt,
+            points: solve.points || 0
+          });
+        });
+    });
+
+    // Sort by timestamp descending and take last 20
+    allActivity.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const recentActivity = allActivity.slice(0, 20);
+
+    res.json(recentActivity);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching competition activity' });
+  }
+};

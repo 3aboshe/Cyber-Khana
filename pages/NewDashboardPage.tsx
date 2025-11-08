@@ -47,14 +47,15 @@ const NewDashboardPage: React.FC = () => {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
 
-        // Mock stats - in real app, fetch from API
+        // Fetch real stats from API
+        const profile = await userService.getUserProfile();
         setStats({
-          points: parsedUser.points || 0,
-          solvedCount: parsedUser.solvedChallenges?.length || 0,
-          rank: Math.floor(Math.random() * 50) + 1,
-          totalUsers: 250,
-          streak: Math.floor(Math.random() * 7),
-          favoriteCategory: 'Web Exploitation',
+          points: profile.points || 0,
+          solvedCount: profile.solvedChallenges?.length || 0,
+          rank: profile.rank,
+          totalUsers: profile.totalUsers,
+          streak: profile.streak || 0,
+          favoriteCategory: profile.favoriteCategory || 'Web Exploitation',
         });
       }
     } catch (err) {

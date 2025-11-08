@@ -13,6 +13,12 @@ export const competitionService = {
   getSolvedChallenges: (id: string, userId: string) =>
     apiService.get(`/competitions/${id}/solved-challenges`, { userId }),
 
+  getCompetitionLeaderboard: (id: string) =>
+    apiService.get(`/competitions/${id}/leaderboard`),
+
+  getCompetitionActivity: (id: string) =>
+    apiService.get(`/competitions/${id}/activity`),
+
   createCompetition: (competitionData: any) =>
     apiService.post('/competitions', competitionData),
 

@@ -50,17 +50,7 @@ const NewLeaderboardPage: React.FC = () => {
   };
 
   const filteredUsers = useMemo(() => {
-    let data = leaderboardData;
-    if (!data || data.length === 0) {
-      // Fallback to mock data if API returns empty
-      data = [
-        { _id: '1', username: 'alice', points: 500, solvedChallenges: 5, universityCode: 'MIT123' },
-        { _id: '2', username: 'bob', points: 450, solvedChallenges: 4, universityCode: 'MIT123' },
-        { _id: '3', username: 'charlie', points: 350, solvedChallenges: 3, universityCode: 'MIT123' },
-        { _id: '4', username: 'diana', points: 300, solvedChallenges: 3, universityCode: 'HARVARD' },
-        { _id: '5', username: 'eve', points: 200, solvedChallenges: 2, universityCode: 'STANFORD' },
-      ];
-    }
+    const data = leaderboardData || [];
     return data.filter(user => {
       const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesUniversity = !selectedUniversity || user.universityCode === selectedUniversity;

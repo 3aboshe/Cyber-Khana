@@ -1,12 +1,33 @@
 import { Request, Response } from 'express';
+import { body, validationResult } from 'express-validator';
 import User from '../models/User';
 import SuperAdmin from '../models/SuperAdmin';
 import University from '../models/University';
 import { generateToken, hashPassword, comparePassword } from '../utils/auth';
 import { IJWTPayload } from '../types';
 
+// Validation rules
+export const registerValidation = [
+  body('username').trim().isLength({ min: 3, max: 30 }).withMessage('Username must be 3-30 characters')
+    .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username can only contain letters, numbers, and underscores'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('universityCode').trim().isLength({ min: 2, max: 10 }).withMessage('University code must be 2-10 characters')
+    .matches(/^[A-Z0-9]+$/).withMessage('University code must be alphanumeric uppercase')
+];
+
+export const loginValidation = [
+  body('username').trim().notEmpty().withMessage('Username is required'),
+  body('password').notEmpty().withMessage('Password is required')
+];
+
 export const register = async (req: Request, res: Response) => {
   try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
     const { username, password, universityCode } = req.body;
 
     const existingUser = await User.findOne({ username });
@@ -56,6 +77,12 @@ export const register = async (req: Request, res: Response) => {
 
 export const login = async (req: Request, res: Response) => {
   try {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: errors.array()[0].msg });
+    }
+
     const { username, password } = req.body;
 
     const superAdmin = await SuperAdmin.findOne({ username });

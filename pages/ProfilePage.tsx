@@ -59,12 +59,23 @@ const ProfilePage: React.FC = () => {
           achievements: profile.achievements || [],
         });
 
-        // Mock category stats - in real app, fetch from API
-        setCategoryStats([
-          { category: 'Web Exploitation', count: 5, points: 500 },
-          { category: 'Cryptography', count: 3, points: 300 },
-          { category: 'Forensics', count: 2, points: 200 },
-        ]);
+        // Calculate category stats from solved challenges
+        if (profile.solvedChallengesDetails && profile.solvedChallengesDetails.length > 0) {
+          const categoryMap = new Map<string, { count: number; points: number }>();
+          profile.solvedChallengesDetails.forEach((solve: any) => {
+            const category = solve.category || 'Miscellaneous';
+            const current = categoryMap.get(category) || { count: 0, points: 0 };
+            categoryMap.set(category, {
+              count: current.count + 1,
+              points: current.points + (solve.points || 0),
+            });
+          });
+          setCategoryStats(Array.from(categoryMap.entries()).map(([category, stats]) => ({
+            category,
+            count: stats.count,
+            points: stats.points,
+          })));
+        }
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
