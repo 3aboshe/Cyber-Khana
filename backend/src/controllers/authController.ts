@@ -12,7 +12,7 @@ export const registerValidation = [
     .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username can only contain letters, numbers, and underscores'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('universityCode').trim().isLength({ min: 2, max: 10 }).withMessage('University code must be 2-10 characters')
-    .matches(/^[A-Z0-9]+$/).withMessage('University code must be alphanumeric uppercase')
+    .matches(/^[A-Z0-9@_-]+$/).withMessage('University code must be alphanumeric uppercase or special characters (@, _, -)')
 ];
 
 export const loginValidation = [
