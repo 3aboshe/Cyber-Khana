@@ -3,12 +3,12 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import NewDashboardPage from './pages/NewDashboardPage';
 import NewChallengeDetailPage from './pages/NewChallengeDetailPage';
-import ChallengesPage from './pages/ChallengesPage';
+import EnhancedChallengesPage from './pages/EnhancedChallengesPage';
 import CompetitionPage from './pages/CompetitionPage';
 import CompetitionDashboardPage from './pages/CompetitionDashboardPage';
 import CompetitionChallengeDetailPage from './pages/CompetitionChallengeDetailPage';
 import CompetitionLeaderboardPage from './pages/CompetitionLeaderboardPage';
-import LeaderboardPage from './pages/LeaderboardPage';
+import EnhancedLeaderboardPage from './pages/EnhancedLeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import AppLayout from './components/AppLayout';
@@ -101,14 +101,14 @@ const App: React.FC = () => {
           <Route path="/" element={<AppLayout onLogout={handleLogout} />}>
             <Route index element={<Navigate to="/dashboard" />} />
             <Route path="dashboard" element={<NewDashboardPage />} />
-            <Route path="challenges" element={<ChallengesPage />} />
+            <Route path="challenges" element={<EnhancedChallengesPage />} />
             <Route path="challenges/:id" element={<NewChallengeDetailPage />} />
             <Route path="competition" element={<CompetitionPage />} />
             <Route path="competition/:id" element={<CompetitionDashboardPage />} />
             <Route path="competition/:id/challenge/:challengeId" element={<CompetitionChallengeDetailPage />} />
             <Route path="competition/:id/leaderboard" element={<CompetitionLeaderboardPage />} />
             <Route path="announcements" element={<AnnouncementsPage />} />
-            <Route path="leaderboard" element={<LeaderboardPage />} />
+            <Route path="leaderboard" element={<EnhancedLeaderboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="*" element={<Navigate to="/dashboard" />} />
           </Route>

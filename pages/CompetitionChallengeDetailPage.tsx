@@ -5,6 +5,7 @@ import { refreshCompetitionDashboard } from '../services/competitionRefreshServi
 import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
+import Modal from '../components/ui/Modal';
 import { ArrowLeft, Trophy, Clock, Users, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
 
 interface CompetitionChallenge {

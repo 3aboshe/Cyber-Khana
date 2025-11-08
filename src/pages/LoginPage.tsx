@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import { ContainerScroll } from '../components/ui/container-scroll-animation';
 import Button from '../components/ui/EnhancedButton';
 import Input from '../components/ui/input';
-import CyberMatrixHero from '../components/ui/cyber-matrix-hero';
 import { Shield, KeyRound, LogIn, School, Eye, EyeOff, Lock } from 'lucide-react';
 import Loader from '../components/ui/Loader';
-//  // import { useToast } from '../hooks/useToast';
-// Temporary: Remove toast dependency
-const useToast = () => ({ toast: () => {} });
+import { useToast } from '../hooks/useToast';
 
 interface LoginPageProps {
   onLogin: (userData: any) => void;
@@ -27,15 +24,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
     // Client-side validation
     if (!username.trim()) {
-      alert('Please enter your username');
+      toast('error', 'Please enter your username');
       return;
     }
     if (!password) {
-      alert('Please enter your password');
+      toast('error', 'Please enter your password');
       return;
     }
     if (loginType === 'student' && !universityCode.trim()) {
-      alert('University code is required for students');
+      toast('error', 'University code is required for students');
       return;
     }
 
@@ -68,10 +65,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // toast('success', 'Login successful! Welcome to CyberKhana');
+      toast('success', 'Login successful! Welcome to CyberKhana');
       onLogin(data.user);
     } catch (err: any) {
-      // toast('error', err.message || 'Network error. Please try again.');
+      toast('error', err.message || 'Network error. Please try again.');
     } finally {
       setIsLoggingIn(false);
     }

@@ -5,9 +5,7 @@ import Card from '../components/ui/EnhancedCard';
 import { Trophy, Code, Target, TrendingUp, Award, Clock, CheckCircle, Zap } from 'lucide-react';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import EmptyState from '../components/ui/EmptyState';
-//  // import { useToast } from '../hooks/useToast';
-// Temporary: Remove toast dependency for now
-const useToast = () => ({ toast: () => {} });
+import { useToast } from '../hooks/useToast';
 
 interface UserStats {
   points: number;
@@ -33,7 +31,7 @@ const NewDashboardPage: React.FC = () => {
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
   const [recentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
-  // const { toast } = useToast();
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchUserData();
@@ -59,7 +57,7 @@ const NewDashboardPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error fetching user data:', err);
-      // toast('error', 'Failed to load dashboard data');
+      toast('error', 'Failed to load dashboard data');
     } finally {
       setLoading(false);
     }

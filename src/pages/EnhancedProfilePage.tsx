@@ -25,7 +25,7 @@ interface CategoryStats {
   points: number;
 }
 
-const ProfilePage: React.FC = () => {
+const EnhancedProfilePage: React.FC = () => {
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
@@ -266,4 +266,4 @@ const ProfilePage: React.FC = () => {
   );
 };
 
-export default ProfilePage;
+export default EnhancedProfilePage;

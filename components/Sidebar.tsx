@@ -17,7 +17,7 @@ const Sidebar: React.FC = () => {
     <aside className="w-64 flex-shrink-0 bg-zinc-800 border-r border-zinc-700 p-4 hidden md:flex md:flex-col">
       <div className="flex items-center gap-2 px-2 py-4">
         <ShieldCheck className="w-8 h-8 text-emerald-400" />
-        <h1 className="text-xl font-black text-zinc-100">Cyberخانه</h1>
+        <h1 className="text-xl font-black text-zinc-100">CyberKhana</h1>
       </div>
       <nav className="mt-8 flex flex-col gap-2">
         <NavLink to="/dashboard" className={navLinkClasses}>
