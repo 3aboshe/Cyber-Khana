@@ -27,6 +27,9 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.6",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
