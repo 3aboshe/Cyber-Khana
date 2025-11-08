@@ -166,7 +166,7 @@ const CyberMatrixHero = ({ onCTAClick }: { onCTAClick: () => void }) => {
                     animate="visible"
                     className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-gray-400"
                 >
-                    Cyber خانة
+                    CyberKhana
                 </motion.h1>
 
                 <motion.p

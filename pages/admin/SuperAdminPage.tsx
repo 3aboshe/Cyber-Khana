@@ -120,6 +120,11 @@ const SuperAdminPage: React.FC = () => {
       setShowSuccessModal(true);
       setSelectedChallenges(new Set());
       setTargetUniversityCode('');
+
+      // Refresh the challenges list to show newly copied challenges
+      if (selectedUniversity) {
+        await fetchChallenges(selectedUniversity);
+      }
     } catch (err: any) {
       setError(err.message || 'Error copying challenges');
     } finally {

@@ -131,7 +131,7 @@ export const leaderboard: LeaderboardEntry[] = allUsers.map(({ rank, name, point
 export const initialAnnouncements: Announcement[] = [
     {
         id: '1',
-        title: 'Welcome to Cyber خانة CTF!',
+        title: 'Welcome to CyberKhana CTF!',
         content: 'The competition is now live. Good luck to all participants! Remember to check the rules and have fun.',
         timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
         type: 'success',
