@@ -304,14 +304,51 @@ npx tsc --noEmit
 
 ## Deployment
 
-### Backend Deployment
+### Quick Deploy to Digital Ocean Droplet
+
+**One-command deployment on Ubuntu 20.04+ Droplet:**
+
+```bash
+curl -sSL https://raw.githubusercontent.com/3aboshe/Cyber-Khana/master/deploy-to-droplet.sh | bash
+```
+
+That's it! The script will:
+- Install Node.js 18, MongoDB, Nginx, and PM2
+- Clone the repository
+- Build the project
+- Configure Nginx on port 80
+- Set up the database
+- Start the backend with PM2
+- Configure firewall
+
+**Access your application at:** `http://YOUR_DROPLET_IP`
+
+**Login credentials:**
+- Username: `admin`
+- Password: `OurSecurePlatform@d0mv6p`
+
+### Update Your Deployment
+
+To update to the latest version:
+```bash
+cd /root/cyber-citadel-ctf && git pull origin master && pm2 restart cyber-citadel-backend
+```
+
+Or use the quick update script:
+```bash
+/root/cyber-citadel-ctf/update-droplet.sh
+```
+
+### Manual Deployment Steps
+
+**Backend Deployment:**
 1. Build: `cd backend && npm run build`
 2. Set production environment variables
-3. Deploy to your preferred platform (Heroku, DigitalOcean, AWS, etc.)
+3. Deploy with PM2: `pm2 start ecosystem.config.js`
 
-### Frontend Deployment
+**Frontend Deployment:**
 1. Build: `npm run build`
-2. Deploy `dist/` folder to static hosting (Vercel, Netlify, etc.)
+2. Deploy `dist/` folder to Nginx or static hosting
 
 ## Environment Variables
 
