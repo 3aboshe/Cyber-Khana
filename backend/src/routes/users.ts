@@ -3,15 +3,21 @@ import {
   getUsers,
   getUserProfile,
   getLeaderboard,
-  createAdmin
+  createAdmin,
+  updateProfileIcon,
+  banUser,
+  unbanUser
 } from '../controllers/userController';
-import { authenticate, authenticateSuperAdmin } from '../middleware/auth';
+import { authenticate, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
 router.get('/me', authenticate, getUserProfile);
 router.get('/leaderboard', authenticate, getLeaderboard);
 router.get('/', authenticate, getUsers);
-router.post('/create-admin', authenticate, authenticateSuperAdmin, createAdmin);
+router.patch('/profile-icon', authenticate, updateProfileIcon);
+router.post('/create-admin', authenticate, requireAdmin, createAdmin);
+router.post('/ban/:userId', authenticate, requireAdmin, banUser);
+router.post('/unban/:userId', authenticate, requireAdmin, unbanUser);
 
 export default router;

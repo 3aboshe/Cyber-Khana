@@ -117,6 +117,11 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
 
       if (flag === challenge.flag) {
         user.solvedChallenges.push(id);
+        user.solvedChallengesDetails.push({
+          challengeId: id,
+          solvedAt: new Date(),
+          points: challenge.points
+        });
         user.points += challenge.points;
         await user.save();
 
@@ -130,5 +135,111 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
     }
   } catch (error) {
     res.status(500).json({ error: 'Error submitting flag' });
+  }
+};
+
+export const copyChallengeToUniversity = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can copy challenges' });
+    }
+
+    const { id } = req.params;
+    const { targetUniversityCode } = req.body;
+
+    const challenge = await Challenge.findById(id);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    const newChallenge = new Challenge({
+      title: challenge.title,
+      category: challenge.category,
+      points: challenge.points,
+      description: challenge.description,
+      author: challenge.author,
+      flag: challenge.flag,
+      hints: challenge.hints || [],
+      files: challenge.files || [],
+      universityCode: targetUniversityCode.toUpperCase()
+    });
+
+    await newChallenge.save();
+    res.status(201).json(newChallenge);
+  } catch (error) {
+    res.status(500).json({ error: 'Error copying challenge' });
+  }
+};
+
+export const integrateCompetitionChallenge = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can integrate challenges' });
+    }
+
+    const { competitionId, challengeId } = req.params;
+    const Competition = require('../models/Competition').default;
+
+    const competition = await Competition.findById(competitionId);
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const competitionChallenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
+    if (!competitionChallenge) {
+      return res.status(404).json({ error: 'Challenge not found in competition' });
+    }
+
+    const newChallenge = new Challenge({
+      title: competitionChallenge.title,
+      category: competitionChallenge.category,
+      points: competitionChallenge.points,
+      description: competitionChallenge.description,
+      author: competitionChallenge.author,
+      flag: competitionChallenge.flag,
+      hints: competitionChallenge.hints || [],
+      files: competitionChallenge.files || [],
+      universityCode: competition.universityCode
+    });
+
+    await newChallenge.save();
+    res.status(201).json(newChallenge);
+  } catch (error) {
+    res.status(500).json({ error: 'Error integrating challenge' });
+  }
+};
+
+export const updateWriteup = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can update writeups' });
+    }
+
+    const { id } = req.params;
+    const { content, images, isUnlocked } = req.body;
+
+    const challenge = await Challenge.findById(id);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    challenge.writeup = {
+      content: content || '',
+      images: images || [],
+      isUnlocked: isUnlocked || false
+    };
+
+    await challenge.save();
+    res.json(challenge);
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating writeup' });
   }
 };

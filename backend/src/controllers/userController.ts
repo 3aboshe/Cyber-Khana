@@ -33,20 +33,125 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       ? req.query.universityCode as string
       : req.user?.universityCode;
 
-    const users = await User.find({ universityCode })
-      .select('username points solvedChallenges')
+    const users = await User.find({ universityCode, isBanned: { $ne: true } })
+      .select('username points solvedChallenges solvedChallengesDetails profileIcon')
       .sort({ points: -1 });
 
-    const leaderboard = users.map((user, index) => ({
-      rank: index + 1,
-      username: user.username,
-      points: user.points,
-      solvedChallenges: user.solvedChallenges.length
-    }));
+    const topUsers = users.slice(0, 10).map((user, index) => {
+      const firstSolve = user.solvedChallengesDetails.length > 0
+        ? new Date(Math.min(...user.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+        : null;
 
-    res.json(leaderboard);
+      const lastSolve = user.solvedChallengesDetails.length > 0
+        ? new Date(Math.max(...user.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+        : null;
+
+      const totalTime = firstSolve && lastSolve
+        ? Math.floor((lastSolve.getTime() - firstSolve.getTime()) / 1000 / 60 / 60)
+        : 0;
+
+      const averageSolveTime = user.solvedChallengesDetails.length > 0 && firstSolve && lastSolve
+        ? Math.floor(totalTime / user.solvedChallengesDetails.length)
+        : 0;
+
+      return {
+        rank: index + 1,
+        username: user.username,
+        points: user.points,
+        solvedChallenges: user.solvedChallenges.length,
+        solvedDetails: user.solvedChallengesDetails,
+        firstSolveTime: firstSolve,
+        lastSolveTime: lastSolve,
+        totalTimeHours: totalTime,
+        averageSolveTimeHours: averageSolveTime,
+        profileIcon: user.profileIcon || 'default'
+      };
+    });
+
+    const analysis = {
+      totalParticipants: users.length,
+      totalPoints: users.reduce((sum, u) => sum + u.points, 0),
+      averagePoints: users.length > 0 ? Math.floor(users.reduce((sum, u) => sum + u.points, 0) / users.length) : 0,
+      topSolver: topUsers[0] || null,
+      fastestAverageSolver: topUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null
+    };
+
+    res.json({
+      leaderboard: topUsers,
+      analysis
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching leaderboard' });
+  }
+};
+
+export const updateProfileIcon = async (req: AuthRequest, res: Response) => {
+  try {
+    const { icon } = req.body;
+
+    const user = await User.findById(req.user?.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    user.profileIcon = icon;
+    await user.save();
+
+    res.json({ message: 'Profile icon updated', profileIcon: icon });
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating profile icon' });
+  }
+};
+
+export const banUser = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (req.user?.role === 'admin' && targetUser.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    targetUser.isBanned = true;
+    await targetUser.save();
+
+    res.json({ message: 'User banned successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error banning user' });
+  }
+};
+
+export const unbanUser = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { userId } = req.params;
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (req.user?.role === 'admin' && targetUser.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    targetUser.isBanned = false;
+    await targetUser.save();
+
+    res.json({ message: 'User unbanned successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error unbanning user' });
   }
 };
 

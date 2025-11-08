@@ -5,9 +5,12 @@ import {
   createChallenge,
   updateChallenge,
   deleteChallenge,
-  submitFlag
+  submitFlag,
+  copyChallengeToUniversity,
+  integrateCompetitionChallenge,
+  updateWriteup
 } from '../controllers/challengeController';
-import { authenticate, requireAdmin, AuthRequest } from '../middleware/auth';
+import { authenticate, requireAdmin, authenticateSuperAdmin } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -17,5 +20,8 @@ router.post('/', authenticate, requireAdmin, createChallenge);
 router.put('/:id', authenticate, requireAdmin, updateChallenge);
 router.delete('/:id', authenticate, requireAdmin, deleteChallenge);
 router.post('/:id/submit', authenticate, submitFlag);
+router.post('/:id/copy', authenticate, authenticateSuperAdmin, copyChallengeToUniversity);
+router.post('/integrate/:competitionId/:challengeId', authenticate, requireAdmin, integrateCompetitionChallenge);
+router.put('/:id/writeup', authenticate, requireAdmin, updateWriteup);
 
 export default router;

@@ -7,7 +7,14 @@ export interface IUser extends Document {
   universityCode: string;
   points: number;
   solvedChallenges: string[];
+  solvedChallengesDetails: Array<{
+    challengeId: string;
+    solvedAt: Date;
+    points: number;
+  }>;
   unlockedHints: string[];
+  profileIcon?: string;
+  isBanned?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -40,6 +47,25 @@ const UserSchema: Schema = new Schema({
   solvedChallenges: [{
     type: String
   }],
+  solvedChallengesDetails: [{
+    challengeId: {
+      type: String
+    },
+    solvedAt: {
+      type: Date
+    },
+    points: {
+      type: Number
+    }
+  }],
+  profileIcon: {
+    type: String,
+    default: 'default'
+  },
+  isBanned: {
+    type: Boolean,
+    default: false
+  },
   unlockedHints: [{
     type: String
   }]

@@ -22,6 +22,11 @@ export interface IChallenge extends Document {
   files?: IChallengeFile[];
   universityCode: string;
   solves: number;
+  writeup?: {
+    content: string;
+    images?: string[];
+    isUnlocked: boolean;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -72,6 +77,14 @@ const ChallengeSchema: Schema = new Schema({
   solves: {
     type: Number,
     default: 0
+  },
+  writeup: {
+    content: String,
+    images: [String],
+    isUnlocked: {
+      type: Boolean,
+      default: false
+    }
   }
 }, {
   timestamps: true

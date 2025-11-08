@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Competition from '../models/Competition';
+import Challenge from '../models/Challenge';
 import { AuthRequest } from '../middleware/auth';
 
 export const createCompetition = async (req: AuthRequest, res: Response) => {
@@ -98,7 +99,7 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
       return res.status(404).json({ error: 'Competition not found' });
     }
 
-    const challenge = competition.challenges.id(challengeId);
+    const challenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
 
     if (!challenge) {
       return res.status(404).json({ error: 'Challenge not found' });

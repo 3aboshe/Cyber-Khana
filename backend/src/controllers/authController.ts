@@ -31,7 +31,7 @@ export const register = async (req: Request, res: Response) => {
     await user.save();
 
     const payload: IJWTPayload = {
-      userId: user._id.toString(),
+      userId: (user._id as any).toString(),
       username: user.username,
       role: user.role,
       universityCode: user.universityCode
@@ -69,7 +69,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     const payload: IJWTPayload = {
-      userId: user._id.toString(),
+      userId: (user._id as any).toString(),
       username: user.username,
       role: user.role,
       universityCode: user.universityCode
@@ -111,7 +111,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
     }
 
     const payload: IJWTPayload = {
-      userId: user._id.toString(),
+      userId: (user._id as any).toString(),
       username: user.username,
       role: user.role,
       universityCode: user.universityCode
@@ -149,7 +149,7 @@ export const loginSuperAdmin = async (req: Request, res: Response) => {
     }
 
     const payload: IJWTPayload = {
-      userId: superAdmin._id.toString(),
+      userId: (superAdmin._id as any).toString(),
       username: superAdmin.username,
       role: 'super-admin',
       universityCode: 'SUPER'
