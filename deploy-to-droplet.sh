@@ -40,10 +40,16 @@ echo ""
 
 # Step 4: Install and configure MongoDB
 echo -e "${YELLOW}Step 4/10: Installing MongoDB...${NC}"
-apt-get install -yqq mongodb > /dev/null 2>&1
-systemctl start mongodb > /dev/null 2>&1
-systemctl enable mongodb > /dev/null 2>&1
-echo -e "${GREEN}✓ MongoDB installed and running${NC}"
+if ! command -v mongod &> /dev/null; then
+    apt-get install -yqq mongodb > /dev/null 2>&1
+    systemctl start mongodb > /dev/null 2>&1
+    systemctl enable mongodb > /dev/null 2>&1
+    echo -e "${GREEN}✓ MongoDB installed and running${NC}"
+else
+    echo -e "${GREEN}✓ MongoDB already installed${NC}"
+    systemctl start mongodb > /dev/null 2>&1
+    systemctl enable mongodb > /dev/null 2>&1
+fi
 echo ""
 
 # Step 5: Install and configure Nginx
