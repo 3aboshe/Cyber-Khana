@@ -1,6 +1,18 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { ChallengeCategory } from '../types';
 
+export const calculateDynamicScore = (
+  initialPoints: number,
+  minimumPoints: number,
+  decay: number,
+  solveCount: number
+): number => {
+  const value = Math.ceil(
+    ((minimumPoints - initialPoints) / (decay * decay)) * (solveCount * solveCount) + initialPoints
+  );
+  return Math.max(value, minimumPoints);
+};
+
 export interface IHint {
   text: string;
   cost: number;
@@ -22,6 +34,7 @@ export interface IChallenge extends Document {
   files?: IChallengeFile[];
   universityCode: string;
   solves: number;
+  challengeLink?: string;
   writeup?: {
     content: string;
     images?: string[];
@@ -33,6 +46,10 @@ export interface IChallenge extends Document {
     };
   };
   isPublished: boolean;
+  initialPoints: number;
+  minimumPoints: number;
+  decay: number;
+  currentPoints: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +101,9 @@ const ChallengeSchema: Schema = new Schema({
     type: Number,
     default: 0
   },
+  challengeLink: {
+    type: String
+  },
   writeup: {
     content: String,
     images: [String],
@@ -103,6 +123,22 @@ const ChallengeSchema: Schema = new Schema({
   isPublished: {
     type: Boolean,
     default: false
+  },
+  initialPoints: {
+    type: Number,
+    default: 1000
+  },
+  minimumPoints: {
+    type: Number,
+    default: 100
+  },
+  decay: {
+    type: Number,
+    default: 200
+  },
+  currentPoints: {
+    type: Number,
+    default: 1000
   }
 }, {
   timestamps: true

@@ -63,8 +63,31 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
-      .select('username points solvedChallenges solvedChallengesDetails profileIcon universityCode')
-      .sort({ points: -1 });
+      .select('username points solvedChallenges solvedChallengesDetails profileIcon universityCode');
+
+    users.sort((a, b) => {
+      if (b.points !== a.points) {
+        return b.points - a.points;
+      }
+
+      const aFirstSolve = a.solvedChallengesDetails.length > 0
+        ? new Date(Math.min(...a.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+        : null;
+
+      const bFirstSolve = b.solvedChallengesDetails.length > 0
+        ? new Date(Math.min(...b.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+        : null;
+
+      if (aFirstSolve && bFirstSolve) {
+        return aFirstSolve.getTime() - bFirstSolve.getTime();
+      } else if (aFirstSolve) {
+        return -1;
+      } else if (bFirstSolve) {
+        return 1;
+      }
+
+      return 0;
+    });
 
     const topUsers = users.slice(0, 10).map((user, index) => {
       const firstSolve = user.solvedChallengesDetails.length > 0

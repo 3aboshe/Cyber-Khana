@@ -24,10 +24,10 @@ const categoryColors: { [key: string]: string } = {
 };
 
 const difficultyLevels = {
-  Easy: { color: 'text-green-400', bg: 'bg-green-500/20' },
-  Medium: { color: 'text-yellow-400', bg: 'bg-yellow-500/20' },
-  Hard: { color: 'text-red-400', bg: 'bg-red-500/20' },
-  Expert: { color: 'text-purple-400', bg: 'bg-purple-500/20' },
+  Easy: { color: 'text-green-400', bg: 'bg-green-500/20', hover: 'group-hover:border-green-500' },
+  Medium: { color: 'text-yellow-400', bg: 'bg-yellow-500/20', hover: 'group-hover:border-yellow-500' },
+  Hard: { color: 'text-red-400', bg: 'bg-red-500/20', hover: 'group-hover:border-red-500' },
+  Expert: { color: 'text-purple-400', bg: 'bg-purple-500/20', hover: 'group-hover:border-purple-500' },
 };
 
 const EnhancedChallengeCard: React.FC<EnhancedChallengeCardProps> = ({
@@ -41,13 +41,14 @@ const EnhancedChallengeCard: React.FC<EnhancedChallengeCardProps> = ({
   const colorClasses = categoryColors[challenge.category] || 'bg-zinc-700 text-zinc-300 border-zinc-600';
   const difficulty = challenge.difficulty || 'Medium';
   const difficultyStyle = difficultyLevels[difficulty as keyof typeof difficultyLevels] || difficultyLevels.Medium;
+  const displayPoints = challenge.currentPoints || challenge.points;
 
   return (
     <Card
       hoverable
       className={`group relative overflow-hidden transition-all duration-300 ${
         isSolved ? 'bg-emerald-500/5 border-emerald-500/30' : ''
-      }`}
+      } ${difficultyStyle.hover}`}
     >
       {/* Solved Badge */}
       {isSolved && (
@@ -59,34 +60,20 @@ const EnhancedChallengeCard: React.FC<EnhancedChallengeCardProps> = ({
         </div>
       )}
 
-      {/* Bookmark Button */}
-      {onBookmark && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            onBookmark(challenge._id);
-          }}
-          className="absolute top-4 left-4 z-10 p-2 rounded-full bg-zinc-800/80 hover:bg-zinc-700 transition-colors"
-        >
-          {isBookmarked ? (
-            <BookmarkCheck className="w-5 h-5 text-emerald-400" />
-          ) : (
-            <Bookmark className="w-5 h-5 text-zinc-400" />
-          )}
-        </button>
-      )}
-
       <Link to={`/challenges/${challenge._id || challenge.id}`} className="block">
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-4">
             <div className="flex-1">
-              <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full border ${colorClasses}`}>
-                {challenge.category}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full border ${colorClasses}`}>
+                  {challenge.category}
+                </span>
+                <div className={`w-2 h-2 rounded-full ${difficultyStyle.color.replace('text-', 'bg-')}`} title={`Difficulty: ${difficulty}`} />
+              </div>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-bold text-emerald-400">{challenge.points}</p>
+              <p className="text-2xl font-bold text-emerald-400">{displayPoints}</p>
               <p className="text-xs text-zinc-500">POINTS</p>
             </div>
           </div>
@@ -119,16 +106,9 @@ const EnhancedChallengeCard: React.FC<EnhancedChallengeCardProps> = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-4 border-t border-zinc-700">
+          <div className="flex items-center justify-center pt-4 border-t border-zinc-700">
             <div className="text-xs text-zinc-500">
               by {challenge.author}
-            </div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-emerald-400 group-hover:text-emerald-300 transition-colors">
-              <span>View Challenge</span>
-              <ArrowRight
-                size={16}
-                className="transition-transform duration-300 group-hover:translate-x-1"
-              />
             </div>
           </div>
         </div>

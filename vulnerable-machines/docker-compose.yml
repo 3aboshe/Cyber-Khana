@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # DVWA (Damn Vulnerable Web Application)
+  dvwa:
+    image: vulnerables/web-dvwa
+    container_name: ctf-dvwa
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=dvwa
+      - MYSQL_USER=dvwa
+      - MYSQL_PASSWORD=password
+
+  # OWASP WebGoat (Learn from mistakes)
+  webgoat:
+    image: webgoat/goatandwolf
+    container_name: ctf-webgoat
+    ports:
+      - "8080:8080"    # WebGoat
+      - "9090:9090"    # WebWolf
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+    environment:
+      - WEBGOAT_PORT=8080
+      - WEBWOLF_PORT=9090
+
+  # OWASP Juice Shop (Modern vulnerable app)
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: ctf-juice-shop
+    ports:
+      - "8082:3000"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+    environment:
+      - NODE_ENV=unsafe
+
+  # Metasploitable 2
+  metasploitable:
+    image: tleemcjr/metasploitable2
+    container_name: ctf-metasploitable
+    ports:
+      - "2121:21"      # FTP
+      - "8023:23"      # Telnet
+      - "8080:80"      # HTTP
+      - "8139:139"     # NetBIOS
+      - "8445:445"     # SMB
+      - "8138:143"     # IMAP
+      - "8112:11211"   # Memcached
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+
+  # VulnHub Basic Pentest (requires manual setup)
+  basic-pentest:
+    image: ismisepaul/securityshepherd
+    container_name: ctf-security-shepherd
+    ports:
+      - "8083:80"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+
+  # Damn Vulnerable Node.js
+  dvna:
+    image: appsecco/dvna
+    container_name: ctf-dvna
+    ports:
+      - "8084:3000"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+    environment:
+      - DATABASE_URL=mysql://dvna:password@dvna-db:3306/dvna
+
+  # NodeGoat (OWASP NodeGoat)
+  nodegoat:
+    image: owasp/nodegoat
+    container_name: ctf-nodegoat
+    ports:
+      - "8085:8080"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+
+  # SQLi LABS (SQL Injection Practice)
+  sqli-labs:
+    image: webgoat/goatandwolf
+    container_name: ctf-sqli-labs
+    ports:
+      - "8086:80"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+
+  # bWAPP (Buggy Web Application)
+  bwapp:
+    image: webgoat/goatandwolf
+    container_name: ctf-bwapp
+    ports:
+      - "8087:80"
+    restart: unless-stopped
+    networks:
+      - ctf-vuln-net
+
+networks:
+  ctf-vuln-net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16

@@ -30,6 +30,13 @@ export interface Challenge {
   hints?: Hint[];
   flag?: string;
   universityCode?: string;
+  initialPoints?: number;
+  minimumPoints?: number;
+  decay?: number;
+  currentPoints?: number;
+  difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  estimatedTime?: number;
+  challengeLink?: string;
 }
 
 export interface User {

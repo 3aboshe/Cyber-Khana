@@ -21,6 +21,12 @@ export interface ICompetitionChallenge extends Document {
   hints?: ICompetitionHint[];
   files?: ICompetitionFile[];
   solves: number;
+  initialPoints?: number;
+  minimumPoints?: number;
+  decay?: number;
+  currentPoints?: number;
+  difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  estimatedTime?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +85,31 @@ const CompetitionChallengeSchema: Schema = new Schema({
   solves: {
     type: Number,
     default: 0
+  },
+  initialPoints: {
+    type: Number,
+    default: 1000
+  },
+  minimumPoints: {
+    type: Number,
+    default: 100
+  },
+  decay: {
+    type: Number,
+    default: 200
+  },
+  currentPoints: {
+    type: Number,
+    default: 1000
+  },
+  difficulty: {
+    type: String,
+    enum: ['Easy', 'Medium', 'Hard', 'Expert'],
+    default: 'Medium'
+  },
+  estimatedTime: {
+    type: Number,
+    default: 30
   }
 }, {
   timestamps: true

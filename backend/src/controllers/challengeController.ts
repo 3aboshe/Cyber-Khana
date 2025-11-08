@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Challenge from '../models/Challenge';
+import { calculateDynamicScore } from '../models/Challenge';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { uploadWriteupPdf } from '../utils/fileUpload';
@@ -20,7 +21,19 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       : { universityCode, isPublished: true };
 
     const challenges = await Challenge.find(query);
-    res.json(challenges);
+
+    const challengesWithCurrentPoints = challenges.map(challenge => {
+      const challengeObj = challenge.toObject();
+      challengeObj.currentPoints = calculateDynamicScore(
+        challenge.initialPoints,
+        challenge.minimumPoints,
+        challenge.decay,
+        challenge.solves
+      );
+      return challengeObj;
+    });
+
+    res.json(challengesWithCurrentPoints);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching challenges' });
   }
@@ -37,7 +50,19 @@ export const getAllChallenges = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const challenges = await Challenge.find({ universityCode });
-    res.json(challenges);
+
+    const challengesWithCurrentPoints = challenges.map(challenge => {
+      const challengeObj = challenge.toObject();
+      challengeObj.currentPoints = calculateDynamicScore(
+        challenge.initialPoints,
+        challenge.minimumPoints,
+        challenge.decay,
+        challenge.solves
+      );
+      return challengeObj;
+    });
+
+    res.json(challengesWithCurrentPoints);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching all challenges' });
   }
@@ -56,7 +81,15 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.json(challenge);
+    const challengeObj = challenge.toObject();
+    challengeObj.currentPoints = calculateDynamicScore(
+      challenge.initialPoints,
+      challenge.minimumPoints,
+      challenge.decay,
+      challenge.solves
+    );
+
+    res.json(challengeObj);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching challenge' });
   }
@@ -143,19 +176,45 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       }
 
       if (flag === challenge.flag) {
+        const awardedPoints = calculateDynamicScore(
+          challenge.initialPoints,
+          challenge.minimumPoints,
+          challenge.decay,
+          challenge.solves
+        );
+
+        let totalAwardedPoints = awardedPoints;
+
+        if (challenge.solves === 0) {
+          totalAwardedPoints += 20;
+        }
+
         user.solvedChallenges.push(id);
         user.solvedChallengesDetails.push({
           challengeId: id,
           solvedAt: new Date(),
-          points: challenge.points
+          points: totalAwardedPoints
         });
-        user.points += challenge.points;
+        user.points += totalAwardedPoints;
         await user.save();
 
         challenge.solves += 1;
+        challenge.currentPoints = calculateDynamicScore(
+          challenge.initialPoints,
+          challenge.minimumPoints,
+          challenge.decay,
+          challenge.solves
+        );
+
         await challenge.save();
 
-        res.json({ success: true, points: challenge.points, message: 'Correct flag!' });
+        res.json({
+          success: true,
+          points: totalAwardedPoints,
+          basePoints: awardedPoints,
+          firstBlood: challenge.solves === 1,
+          message: 'Correct flag!'
+        });
       } else {
         res.status(400).json({ error: 'Incorrect flag' });
       }
@@ -188,7 +247,11 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       flag: challenge.flag,
       hints: challenge.hints || [],
       files: challenge.files || [],
-      universityCode: targetUniversityCode.toUpperCase()
+      universityCode: targetUniversityCode.toUpperCase(),
+      initialPoints: challenge.initialPoints,
+      minimumPoints: challenge.minimumPoints,
+      decay: challenge.decay,
+      currentPoints: challenge.currentPoints
     });
 
     await newChallenge.save();
@@ -230,7 +293,11 @@ export const integrateCompetitionChallenge = async (req: AuthRequest, res: Respo
       flag: competitionChallenge.flag,
       hints: competitionChallenge.hints || [],
       files: competitionChallenge.files || [],
-      universityCode: competition.universityCode
+      universityCode: competition.universityCode,
+      initialPoints: competitionChallenge.initialPoints || 1000,
+      minimumPoints: competitionChallenge.minimumPoints || 100,
+      decay: competitionChallenge.decay || 200,
+      currentPoints: competitionChallenge.currentPoints || 1000
     });
 
     await newChallenge.save();

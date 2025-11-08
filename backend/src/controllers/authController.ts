@@ -58,6 +58,32 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
+    const superAdmin = await SuperAdmin.findOne({ username });
+    if (superAdmin) {
+      const isMatch = await comparePassword(password, superAdmin.password);
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+
+      const payload: IJWTPayload = {
+        userId: (superAdmin._id as any).toString(),
+        username: superAdmin.username,
+        role: 'super-admin',
+        universityCode: 'SUPER'
+      };
+
+      const token = generateToken(payload);
+
+      return res.json({
+        token,
+        user: {
+          id: superAdmin._id,
+          username: superAdmin.username,
+          role: 'super-admin'
+        }
+      });
+    }
+
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });

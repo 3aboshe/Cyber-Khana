@@ -17,6 +17,12 @@ interface Challenge {
   solves: number;
   isPublished: boolean;
   createdAt: string;
+  initialPoints?: number;
+  minimumPoints?: number;
+  decay?: number;
+  difficulty?: string;
+  estimatedTime?: number;
+  challengeLink?: string;
   writeup?: {
     content: string;
     images?: string[];
@@ -50,7 +56,14 @@ const AdminChallengesPage: React.FC = () => {
     description: '',
     author: '',
     flag: '',
+    initialPoints: 1000,
+    minimumPoints: 100,
+    decay: 200,
+    difficulty: 'Medium',
+    estimatedTime: 30,
+    challengeLink: '',
   });
+  const [challengeFiles, setChallengeFiles] = useState<FileList | null>(null);
   const [filter, setFilter] = useState<'all' | 'published' | 'unpublished'>('all');
 
   useEffect(() => {
@@ -179,6 +192,12 @@ const AdminChallengesPage: React.FC = () => {
         description: challenge.description,
         author: challenge.author,
         flag: '',
+        initialPoints: (challenge as any).initialPoints || 1000,
+        minimumPoints: (challenge as any).minimumPoints || 100,
+        decay: (challenge as any).decay || 200,
+        difficulty: (challenge as any).difficulty || 'Medium',
+        estimatedTime: (challenge as any).estimatedTime || 30,
+        challengeLink: (challenge as any).challengeLink || '',
       });
     } else {
       setEditingChallenge(null);
@@ -189,8 +208,15 @@ const AdminChallengesPage: React.FC = () => {
         description: '',
         author: '',
         flag: '',
+        initialPoints: 1000,
+        minimumPoints: 100,
+        decay: 200,
+        difficulty: 'Medium',
+        estimatedTime: 30,
+        challengeLink: '',
       });
     }
+    setChallengeFiles(null);
     setIsModalOpen(true);
   };
 
@@ -282,9 +308,19 @@ const AdminChallengesPage: React.FC = () => {
                 <Button variant="secondary" onClick={() => openModal(challenge)}>Edit</Button>
                 <Button variant="secondary" onClick={() => openWriteupModal(challenge)}>Writeup</Button>
                 {challenge.isPublished ? (
-                  <Button variant="secondary" onClick={() => handleUnpublish(challenge._id)}>Unpublish</Button>
+                  <Button
+                    onClick={() => handleUnpublish(challenge._id)}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Unpublish
+                  </Button>
                 ) : (
-                  <Button variant="secondary" onClick={() => handlePublish(challenge._id)}>Publish</Button>
+                  <Button
+                    onClick={() => handlePublish(challenge._id)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    Publish
+                  </Button>
                 )}
                 <Button variant="ghost" onClick={() => handleDelete(challenge._id)}>Delete</Button>
               </div>
@@ -293,47 +329,97 @@ const AdminChallengesPage: React.FC = () => {
         ))}
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        <div className="bg-zinc-900 p-6 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <h2 className="text-2xl font-bold text-zinc-100 mb-4">
+      <Modal isOpen={isModalOpen} onClose={closeModal} className="max-w-4xl">
+        <div className="bg-zinc-900 p-8 rounded-lg max-h-[90vh] overflow-y-auto">
+          <h2 className="text-3xl font-bold text-zinc-100 mb-6">
             {editingChallenge ? 'Edit Challenge' : 'Create Challenge'}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-zinc-200 mb-2">Title</label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Title</label>
+                <Input
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Author</label>
+                <Input
+                  value={formData.author}
+                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-zinc-200 mb-2">Category</label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200"
-                required
-              >
-                <option value="Web Exploitation">Web Exploitation</option>
-                <option value="Reverse Engineering">Reverse Engineering</option>
-                <option value="Cryptography">Cryptography</option>
-                <option value="Pwn">Pwn</option>
-                <option value="Miscellaneous">Miscellaneous</option>
-                <option value="Forensics">Forensics</option>
-              </select>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Category</label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200"
+                  required
+                >
+                  <option value="Web Exploitation">Web Exploitation</option>
+                  <option value="Reverse Engineering">Reverse Engineering</option>
+                  <option value="Cryptography">Cryptography</option>
+                  <option value="Pwn">Pwn</option>
+                  <option value="Miscellaneous">Miscellaneous</option>
+                  <option value="Forensics">Forensics</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Difficulty</label>
+                <select
+                  value={formData.difficulty}
+                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200"
+                  required
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                  <option value="Expert">Expert</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Estimated Time (minutes)</label>
+                <Input
+                  type="number"
+                  value={formData.estimatedTime}
+                  onChange={(e) => setFormData({ ...formData, estimatedTime: parseInt(e.target.value) || 0 })}
+                  required
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-zinc-200 mb-2">Points</label>
-              <Input
-                type="number"
-                value={formData.points}
-                onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) })}
-                required
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Challenge Link (Optional)</label>
+                <Input
+                  type="url"
+                  value={formData.challengeLink}
+                  onChange={(e) => setFormData({ ...formData, challengeLink: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Upload Files (Optional)</label>
+                <input
+                  type="file"
+                  multiple
+                  onChange={(e) => setChallengeFiles(e.target.files)}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-zinc-700 file:text-zinc-200 hover:file:bg-zinc-600"
+                />
+                <p className="text-zinc-500 text-xs mt-1">You can select multiple files</p>
+              </div>
             </div>
+
             <div>
-              <label className="block text-zinc-200 mb-2">Description</label>
+              <label className="block text-zinc-200 mb-2 font-medium">Description</label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -341,16 +427,9 @@ const AdminChallengesPage: React.FC = () => {
                 required
               />
             </div>
+
             <div>
-              <label className="block text-zinc-200 mb-2">Author</label>
-              <Input
-                value={formData.author}
-                onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-zinc-200 mb-2">Flag {editingChallenge && '(Leave empty to keep current)'}</label>
+              <label className="block text-zinc-200 mb-2 font-medium">Flag {editingChallenge && '(Leave empty to keep current)'}</label>
               <Input
                 value={formData.flag}
                 onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
@@ -358,7 +437,44 @@ const AdminChallengesPage: React.FC = () => {
                 required={!editingChallenge}
               />
             </div>
-            <div className="flex gap-2">
+
+            <div className="border-t border-zinc-700 pt-4">
+              <h3 className="text-lg font-semibold text-zinc-100 mb-3">Dynamic Scoring Configuration</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-zinc-200 mb-2 font-medium">Initial Points</label>
+                  <Input
+                    type="number"
+                    value={formData.initialPoints}
+                    onChange={(e) => setFormData({ ...formData, initialPoints: parseInt(e.target.value) || 0 })}
+                    required
+                  />
+                  <p className="text-zinc-500 text-xs mt-1">Points when 0 solves</p>
+                </div>
+                <div>
+                  <label className="block text-zinc-200 mb-2 font-medium">Minimum Points</label>
+                  <Input
+                    type="number"
+                    value={formData.minimumPoints}
+                    onChange={(e) => setFormData({ ...formData, minimumPoints: parseInt(e.target.value) || 0 })}
+                    required
+                  />
+                  <p className="text-zinc-500 text-xs mt-1">Lowest possible points</p>
+                </div>
+                <div>
+                  <label className="block text-zinc-200 mb-2 font-medium">Decay</label>
+                  <Input
+                    type="number"
+                    value={formData.decay}
+                    onChange={(e) => setFormData({ ...formData, decay: parseInt(e.target.value) || 0 })}
+                    required
+                  />
+                  <p className="text-zinc-500 text-xs mt-1">Controls how fast points drop</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
               <Button type="submit" className="flex-1">
                 {editingChallenge ? 'Update' : 'Create'} Challenge
               </Button>

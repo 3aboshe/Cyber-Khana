@@ -20,6 +20,12 @@ const initialFormState: Omit<Challenge, 'id' | 'solves'> = {
   author: '',
   flag: '',
   hints: [],
+  initialPoints: 1000,
+  minimumPoints: 100,
+  decay: 200,
+  difficulty: 'Medium',
+  estimatedTime: 30,
+  challengeLink: '',
 };
 
 
@@ -35,8 +41,16 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
   }, [challenge]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'points' ? parseInt(value) || 0 : value }));
+    const { name, value, type } = e.target;
+    let processedValue: any = value;
+
+    if (type === 'checkbox') {
+      processedValue = (e.target as HTMLInputElement).checked;
+    } else if (name === 'points' || name === 'initialPoints' || name === 'minimumPoints' || name === 'decay' || name === 'estimatedTime') {
+      processedValue = parseInt(value) || 0;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: processedValue }));
   };
 
   const handleHintChange = (index: number, field: 'text' | 'cost', value: string) => {
@@ -87,10 +101,55 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
           </Select>
         </div>
         <div>
-          <label className="text-sm font-medium text-zinc-300 mb-1 block">Points</label>
-          <Input name="points" type="number" value={formData.points} onChange={handleChange} required />
+          <label className="text-sm font-medium text-zinc-300 mb-1 block">Difficulty</label>
+          <Select name="difficulty" value={formData.difficulty} onChange={handleChange}>
+            <option value="Easy">Easy</option>
+            <option value="Medium">Medium</option>
+            <option value="Hard">Hard</option>
+            <option value="Expert">Expert</option>
+          </Select>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm font-medium text-zinc-300 mb-1 block">Estimated Time (minutes)</label>
+          <Input name="estimatedTime" type="number" value={formData.estimatedTime} onChange={handleChange} />
+        </div>
+        <div>
+          <label className="text-sm font-medium text-zinc-300 mb-1 block">Challenge Link (Optional)</label>
+          <Input name="challengeLink" type="url" value={formData.challengeLink} onChange={handleChange} placeholder="https://..." />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-sm font-medium text-zinc-300 mb-1 block">Upload Files (Optional)</label>
+        <input
+          type="file"
+          multiple
+          className="w-full px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-zinc-700 file:text-zinc-200 hover:file:bg-zinc-600"
+        />
+        <p className="text-zinc-500 text-xs mt-1">You can select multiple files</p>
+      </div>
+
+      <div className="border-t border-zinc-700 pt-4">
+        <h3 className="text-lg font-semibold text-zinc-100 mb-3">Dynamic Scoring Configuration</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-zinc-700/50 p-4 rounded-md">
+          <div>
+            <label className="text-sm font-medium text-zinc-300 mb-1 block">Initial Points</label>
+            <Input name="initialPoints" type="number" value={formData.initialPoints} onChange={handleChange} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-zinc-300 mb-1 block">Minimum Points</label>
+            <Input name="minimumPoints" type="number" value={formData.minimumPoints} onChange={handleChange} />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-zinc-300 mb-1 block">Decay</label>
+            <Input name="decay" type="number" value={formData.decay} onChange={handleChange} />
+          </div>
+        </div>
+      </div>
+
        <div>
           <label className="text-sm font-medium text-zinc-300 mb-1 block">Flag</label>
           <Input name="flag" value={formData.flag} onChange={handleChange} placeholder="flag{...}" required />
