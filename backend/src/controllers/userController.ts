@@ -264,3 +264,29 @@ export const promoteToAdmin = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Error promoting user to admin' });
   }
 };
+
+export const demoteFromAdmin = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can demote users from admin' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(400).json({ error: 'User is not an admin' });
+    }
+
+    user.role = 'user';
+    await user.save();
+
+    res.json({ message: 'User demoted to user successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error demoting user from admin' });
+  }
+};
