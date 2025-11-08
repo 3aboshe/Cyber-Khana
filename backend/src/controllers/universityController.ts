@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import University from '../models/University';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 
 export const getUniversities = async (req: AuthRequest, res: Response) => {
@@ -53,5 +54,34 @@ export const createUniversity = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Error creating university' });
+  }
+};
+
+export const deleteUniversity = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can delete universities' });
+    }
+
+    const { id } = req.params;
+
+    const university = await University.findById(id);
+    if (!university) {
+      return res.status(404).json({ error: 'University not found' });
+    }
+
+    // Check if there are any users in this university
+    const userCount = await User.countDocuments({ universityCode: university.code });
+    if (userCount > 0) {
+      return res.status(400).json({
+        error: 'Cannot delete university with existing users. Please remove all users first.'
+      });
+    }
+
+    await university.deleteOne();
+
+    res.json({ message: 'University deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting university' });
   }
 };

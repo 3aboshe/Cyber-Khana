@@ -6,4 +6,7 @@ export const universityService = {
 
   createUniversity: (university: { name: string; code: string }) =>
     apiService.post('/universities', university),
+
+  deleteUniversity: (id: string) =>
+    apiService.delete(`/universities/${id}`),
 };

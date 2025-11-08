@@ -358,20 +358,6 @@ const NewLeaderboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* University Count Display */}
-        {selectedUniversity && filteredUsers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 text-center"
-          >
-            <span className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800/50 border border-zinc-700 rounded-lg text-zinc-300 text-sm">
-              <Users className="w-4 h-4" />
-              Showing {filteredUsers.length} teams from {selectedUniversity}
-            </span>
-          </motion.div>
-        )}
-
         {/* Leaderboard Table */}
         <div className="bg-zinc-900/30 rounded-2xl border border-zinc-800 overflow-hidden">
           <div className="overflow-x-auto">

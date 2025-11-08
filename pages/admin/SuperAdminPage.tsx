@@ -4,7 +4,7 @@ import { universityService } from '../../services/universityService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Plus, Building2 } from 'lucide-react';
+import { Plus, Building2, Trash2 } from 'lucide-react';
 
 interface University {
   _id: string;
@@ -120,6 +120,20 @@ const SuperAdminPage: React.FC = () => {
     }
   };
 
+  const handleDeleteUniversity = async (universityId: string, universityName: string) => {
+    if (!confirm(`Are you sure you want to delete "${universityName}"?\n\nThis action cannot be undone. You can only delete universities with no users.`)) {
+      return;
+    }
+
+    try {
+      await universityService.deleteUniversity(universityId);
+      await fetchUniversities();
+      alert('University deleted successfully!');
+    } catch (err: any) {
+      setError(err.message || 'Error deleting university');
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-4xl font-bold text-zinc-100 mb-2">Super Admin Panel</h1>
@@ -221,6 +235,13 @@ const SuperAdminPage: React.FC = () => {
                       <p className="text-zinc-200 font-medium truncate">{uni.name}</p>
                       <p className="text-zinc-400 text-xs">{uni.code}</p>
                     </div>
+                    <button
+                      onClick={() => handleDeleteUniversity(uni._id, uni.name)}
+                      className="p-2 text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                      title="Delete university"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 ))}
               </div>

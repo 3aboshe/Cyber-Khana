@@ -120,15 +120,20 @@ const AchievementsSystem: React.FC<AchievementsSystemProps> = ({ userStats, onCl
   const [unlockedAchievements, setUnlockedAchievements] = useState<Set<string>>(new Set());
   const [showUnlockedNotification, setShowUnlockedNotification] = useState(false);
   const [lastUnlocked, setLastUnlocked] = useState<Achievement | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('user-achievements');
     if (saved) {
       setUnlockedAchievements(new Set(JSON.parse(saved)));
     }
+    setHasLoaded(true);
   }, []);
 
   useEffect(() => {
+    // Only check for new achievements after initial load
+    if (!hasLoaded) return;
+
     // Check for new achievements
     const newlyUnlocked: Achievement[] = [];
 
@@ -154,7 +159,7 @@ const AchievementsSystem: React.FC<AchievementsSystemProps> = ({ userStats, onCl
         onClaimReward(achievement.id, achievement.reward);
       }
     }
-  }, [userStats, onClaimReward]);
+  }, [userStats, onClaimReward, hasLoaded, unlockedAchievements]);
 
   const totalEarned = Array.from(unlockedAchievements).reduce((total, id) => {
     const achievement = ACHIEVEMENTS.find((a) => a.id === id);
