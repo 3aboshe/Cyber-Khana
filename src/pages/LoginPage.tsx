@@ -39,7 +39,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setIsLoggingIn(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const API_URL = import.meta.env.VITE_API_URL || '/api';
       let endpoint = '';
       const body: any = { username, password };
 
@@ -47,7 +47,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         endpoint = `${API_URL}/auth/login`;
         body.universityCode = universityCode.toUpperCase();
       } else {
-        endpoint = `${API_URL}/auth/login-super-admin`;
+        endpoint = `${API_URL}/auth/login`;
       }
 
       const response = await fetch(endpoint, {
