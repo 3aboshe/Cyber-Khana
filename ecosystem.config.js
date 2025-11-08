@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   apps: [{
     name: 'cyber-khana-backend',
     script: './backend/dist/index.js',
