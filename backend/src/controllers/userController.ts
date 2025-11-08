@@ -9,7 +9,8 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       ? req.query.universityCode as string
       : req.user?.universityCode;
 
-    const users = await User.find({ universityCode }).select('-password');
+    const query = universityCode ? { universityCode } : {};
+    const users = await User.find(query).select('-password');
 
     const usersWithStats = users.map(user => {
       const rank = 1;
