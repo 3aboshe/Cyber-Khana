@@ -60,7 +60,7 @@ app.use('/api/universities', universityRoutes);
 app.use('/api/announcements', announcementRoutes);
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Cyberخانه API is running' });
+  res.json({ status: 'ok', message: 'CyberKhana API is running' });
 });
 
 const PORT = process.env.PORT || 5000;
