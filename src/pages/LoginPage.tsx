@@ -39,7 +39,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setIsLoggingIn(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || '/api';
+      const API_URL = '/api';
       let endpoint = '';
       const body: any = { username, password };
 
