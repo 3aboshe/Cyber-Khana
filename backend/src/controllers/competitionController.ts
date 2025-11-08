@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import Competition from '../models/Competition';
 import Challenge from '../models/Challenge';
+import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 
 export const createCompetition = async (req: AuthRequest, res: Response) => {
@@ -249,13 +250,13 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
 
     // Filter users who have solved at least one competition challenge
     const leaderboard = users
-      .filter(user => {
+      .filter((user: any) => {
         // Check if user has solved any competition challenge
         return user.solvedChallengesDetails?.some((solve: any) =>
           competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
         );
       })
-      .map(user => {
+      .map((user: any) => {
         // Calculate points from competition challenges
         const competitionPoints = user.solvedChallengesDetails
           ?.filter((solve: any) =>
@@ -275,7 +276,7 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
           solvedChallenges: competitionSolvedCount
         };
       })
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         if (b.points !== a.points) {
           return b.points - a.points;
         }
@@ -307,7 +308,7 @@ export const getCompetitionActivity = async (req: AuthRequest, res: Response) =>
     // Get recent activity (last 20 solves)
     const allActivity: any[] = [];
 
-    users.forEach(user => {
+    users.forEach((user: any) => {
       user.solvedChallengesDetails
         ?.filter((solve: any) =>
           competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
