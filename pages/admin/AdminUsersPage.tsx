@@ -38,6 +38,14 @@ const AdminUsersPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBanned, setFilterBanned] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setCurrentUser(JSON.parse(userData));
+    }
+  }, []);
 
   useEffect(() => {
     fetchUsers();
@@ -79,6 +87,33 @@ const AdminUsersPage: React.FC = () => {
     } catch (err) {
       console.error('Error unbanning user:', err);
       alert('Failed to unban user');
+    }
+  };
+
+  const handlePromoteToAdmin = async (userId: string) => {
+    if (!confirm('Promote this user to admin?')) return;
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/users/promote/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to promote user');
+      }
+
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: 'admin' } : u));
+      setActionMenuOpen(null);
+    } catch (err: any) {
+      console.error('Error promoting user:', err);
+      alert(err.message || 'Failed to promote user');
     }
   };
 
@@ -207,10 +242,19 @@ const AdminUsersPage: React.FC = () => {
 
                     {actionMenuOpen === user._id && (
                       <div className="absolute right-0 top-full mt-2 w-48 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 z-10">
+                        {currentUser?.role === 'super-admin' && user.role === 'user' && (
+                          <button
+                            onClick={() => handlePromoteToAdmin(user._id)}
+                            className="w-full px-4 py-2 text-left text-purple-400 hover:bg-zinc-700/50 flex items-center gap-2 rounded-t-lg"
+                          >
+                            <Shield className="w-4 h-4" />
+                            Promote to Admin
+                          </button>
+                        )}
                         {!user.isBanned ? (
                           <button
                             onClick={() => handleBan(user._id)}
-                            className="w-full px-4 py-2 text-left text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 rounded-t-lg"
+                            className={`w-full px-4 py-2 text-left text-red-400 hover:bg-zinc-700/50 flex items-center gap-2 ${currentUser?.role === 'super-admin' && user.role === 'user' ? '' : 'rounded-t-lg'}`}
                           >
                             <Ban className="w-4 h-4" />
                             Ban User
@@ -218,7 +262,7 @@ const AdminUsersPage: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => handleUnban(user._id)}
-                            className="w-full px-4 py-2 text-left text-emerald-400 hover:bg-zinc-700/50 flex items-center gap-2 rounded-t-lg"
+                            className={`w-full px-4 py-2 text-left text-emerald-400 hover:bg-zinc-700/50 flex items-center gap-2 ${currentUser?.role === 'super-admin' && user.role === 'user' ? '' : 'rounded-t-lg'}`}
                           >
                             <UserCheck className="w-4 h-4" />
                             Unban User

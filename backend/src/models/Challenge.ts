@@ -26,6 +26,11 @@ export interface IChallenge extends Document {
     content: string;
     images?: string[];
     isUnlocked: boolean;
+    pdfFile?: {
+      name: string;
+      url: string;
+      uploadedAt: Date;
+    };
   };
   isPublished: boolean;
   createdAt: Date;
@@ -85,6 +90,14 @@ const ChallengeSchema: Schema = new Schema({
     isUnlocked: {
       type: Boolean,
       default: false
+    },
+    pdfFile: {
+      name: String,
+      url: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now
+      }
     }
   },
   isPublished: {

@@ -10,6 +10,7 @@ import {
   copyChallengeToUniversity,
   integrateCompetitionChallenge,
   updateWriteup,
+  uploadWriteupPdfController,
   publishChallenge,
   unpublishChallenge
 } from '../controllers/challengeController';
@@ -27,6 +28,7 @@ router.post('/:id/submit', authenticate, submitFlag);
 router.post('/:id/copy', authenticate, authenticateSuperAdmin, copyChallengeToUniversity);
 router.post('/integrate/:competitionId/:challengeId', authenticate, requireAdmin, integrateCompetitionChallenge);
 router.put('/:id/writeup', authenticate, requireAdmin, updateWriteup);
+router.post('/upload-writeup-pdf', authenticate, requireAdmin, uploadWriteupPdfController);
 router.post('/:id/publish', authenticate, requireAdmin, publishChallenge);
 router.post('/:id/unpublish', authenticate, requireAdmin, unpublishChallenge);
 

@@ -73,6 +73,10 @@ const CompetitionDashboardPage: React.FC = () => {
   const [error, setError] = useState('');
   const [user, setUser] = useState<any>(null);
   const [solvedChallenges, setSolvedChallenges] = useState<Set<string>>(new Set());
+  const [showSecurityCodeModal, setShowSecurityCodeModal] = useState(false);
+  const [securityCode, setSecurityCode] = useState('');
+  const [securityCodeError, setSecurityCodeError] = useState('');
+  const [enteringCode, setEnteringCode] = useState(false);
 
   // Mock data for leaderboard and activity (in real app, these would come from APIs)
   const [leaderboard] = useState<LeaderboardEntry[]>([
@@ -116,6 +120,18 @@ const CompetitionDashboardPage: React.FC = () => {
       const data = await competitionService.getCompetitionById(id!);
       setCompetition(data);
 
+      // Check if user has already entered security code for this competition
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const hasEnteredKey = `competition_${id}_security_code_entered`;
+        const hasEntered = localStorage.getItem(hasEnteredKey);
+
+        if (!hasEntered) {
+          setShowSecurityCodeModal(true);
+        }
+      }
+
       // Fetch user's solved challenges for this competition
       await fetchSolvedChallenges();
 
@@ -138,6 +154,29 @@ const CompetitionDashboardPage: React.FC = () => {
         // If API not implemented yet, use empty set
         setSolvedChallenges(new Set());
       }
+    }
+  };
+
+  const handleSecurityCodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setSecurityCodeError('');
+    setEnteringCode(true);
+
+    if (!securityCode.trim()) {
+      setSecurityCodeError('Please enter a security code');
+      setEnteringCode(false);
+      return;
+    }
+
+    if (competition && securityCode === competition.securityCode) {
+      const hasEnteredKey = `competition_${id}_security_code_entered`;
+      localStorage.setItem(hasEnteredKey, 'true');
+      setShowSecurityCodeModal(false);
+      setSecurityCode('');
+      setEnteringCode(false);
+    } else {
+      setSecurityCodeError('Invalid security code. Please try again.');
+      setEnteringCode(false);
     }
   };
 
@@ -399,6 +438,52 @@ const CompetitionDashboardPage: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Security Code Modal */}
+      {showSecurityCodeModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-800 border border-zinc-700 rounded-lg max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <Lock className="w-8 h-8 text-amber-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-zinc-100 mb-2">Security Code Required</h2>
+              <p className="text-zinc-400">
+                Please enter the security code provided by your instructor to access this competition.
+              </p>
+            </div>
+
+            <form onSubmit={handleSecurityCodeSubmit} className="space-y-4">
+              <div>
+                <label className="block text-zinc-200 mb-2">Security Code</label>
+                <Input
+                  type="text"
+                  placeholder="Enter security code"
+                  value={securityCode}
+                  onChange={(e) => setSecurityCode(e.target.value)}
+                  className="w-full font-mono text-center tracking-widest"
+                  autoFocus
+                />
+                {securityCodeError && (
+                  <p className="text-red-400 text-sm mt-2">{securityCodeError}</p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={enteringCode}
+              >
+                {enteringCode ? 'Verifying...' : 'Enter Competition'}
+              </Button>
+            </form>
+
+            <p className="text-zinc-500 text-xs text-center mt-4">
+              Contact your instructor if you don't have the security code
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

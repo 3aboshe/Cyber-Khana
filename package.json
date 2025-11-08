@@ -9,13 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-router-dom": "^7.9.5",
-    "react-dom": "^19.2.0",
+    "framer-motion": "^12.23.24",
     "lucide-react": "^0.553.0",
+    "multer": "^2.0.2",
     "react": "^19.2.0",
-    "framer-motion": "^12.23.24"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5"
   },
   "devDependencies": {
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",

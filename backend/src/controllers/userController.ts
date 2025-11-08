@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { hashPassword } from '../utils/auth';
 
 export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
@@ -196,9 +197,11 @@ export const createAdmin = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Username already exists' });
     }
 
+    const hashedPassword = await hashPassword(password);
+
     const user = new User({
       username,
-      password,
+      password: hashedPassword,
       role: 'admin',
       universityCode: universityCode.toUpperCase()
     });
@@ -208,5 +211,31 @@ export const createAdmin = async (req: AuthRequest, res: Response) => {
     res.status(201).json({ message: 'Admin created successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error creating admin' });
+  }
+};
+
+export const promoteToAdmin = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can promote users to admin' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({ error: 'User is already an admin' });
+    }
+
+    user.role = 'admin';
+    await user.save();
+
+    res.json({ message: 'User promoted to admin successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error promoting user to admin' });
   }
 };

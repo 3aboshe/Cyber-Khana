@@ -2,6 +2,8 @@ import { Response } from 'express';
 import Challenge from '../models/Challenge';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { uploadWriteupPdf } from '../utils/fileUpload';
+import path from 'path';
 
 export const getChallenges = async (req: AuthRequest, res: Response) => {
   try {
@@ -245,7 +247,7 @@ export const updateWriteup = async (req: AuthRequest, res: Response) => {
     }
 
     const { id } = req.params;
-    const { content, images, isUnlocked } = req.body;
+    const { content, images, isUnlocked, pdfFile } = req.body;
 
     const challenge = await Challenge.findById(id);
     if (!challenge) {
@@ -259,7 +261,8 @@ export const updateWriteup = async (req: AuthRequest, res: Response) => {
     challenge.writeup = {
       content: content || '',
       images: images || [],
-      isUnlocked: isUnlocked || false
+      isUnlocked: isUnlocked || false,
+      pdfFile: pdfFile || undefined
     };
 
     await challenge.save();
@@ -318,5 +321,33 @@ export const unpublishChallenge = async (req: AuthRequest, res: Response) => {
     res.json(challenge);
   } catch (error) {
     res.status(500).json({ error: 'Error unpublishing challenge' });
+  }
+};
+
+export const uploadWriteupPdfController = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can upload writeup PDFs' });
+    }
+
+    uploadWriteupPdf.single('pdf')(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+
+      res.json({
+        name: req.file.originalname,
+        url: fileUrl,
+        uploadedAt: new Date()
+      });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error uploading PDF' });
   }
 };

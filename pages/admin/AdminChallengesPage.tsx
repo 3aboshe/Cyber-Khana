@@ -17,6 +17,16 @@ interface Challenge {
   solves: number;
   isPublished: boolean;
   createdAt: string;
+  writeup?: {
+    content: string;
+    images?: string[];
+    isUnlocked: boolean;
+    pdfFile?: {
+      name: string;
+      url: string;
+      uploadedAt: string;
+    };
+  };
 }
 
 const AdminChallengesPage: React.FC = () => {
@@ -31,6 +41,7 @@ const AdminChallengesPage: React.FC = () => {
     content: '',
     images: [] as string[],
     isUnlocked: false,
+    pdfFile: null as File | null,
   });
   const [formData, setFormData] = useState({
     title: '',
@@ -109,6 +120,7 @@ const AdminChallengesPage: React.FC = () => {
       content: challenge.writeup?.content || '',
       images: challenge.writeup?.images || [],
       isUnlocked: challenge.writeup?.isUnlocked || false,
+      pdfFile: null,
     });
     setIsWriteupModalOpen(true);
   };
@@ -118,7 +130,38 @@ const AdminChallengesPage: React.FC = () => {
     if (!selectedChallengeForWriteup) return;
 
     try {
-      await challengeService.updateWriteup(selectedChallengeForWriteup._id, writeupData);
+      let pdfFileData = undefined;
+
+      if (writeupData.pdfFile) {
+        const formData = new FormData();
+        formData.append('pdf', writeupData.pdfFile);
+
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        const token = localStorage.getItem('token');
+
+        const uploadResponse = await fetch(`${API_URL}/challenges/upload-writeup-pdf`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload PDF');
+        }
+
+        const uploadResult = await uploadResponse.json();
+        pdfFileData = uploadResult;
+      }
+
+      await challengeService.updateWriteup(selectedChallengeForWriteup._id, {
+        content: writeupData.content,
+        images: writeupData.images,
+        isUnlocked: writeupData.isUnlocked,
+        pdfFile: pdfFileData
+      });
+
       await fetchChallenges();
       setIsWriteupModalOpen(false);
     } catch (err: any) {
@@ -342,6 +385,39 @@ const AdminChallengesPage: React.FC = () => {
 ..."
               />
             </div>
+
+            <div>
+              <label className="block text-zinc-200 mb-2">Upload PDF Writeup (Optional)</label>
+              {selectedChallengeForWriteup?.writeup?.pdfFile && (
+                <div className="mb-2 p-3 bg-zinc-800 rounded-lg border border-zinc-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-zinc-300">Current PDF:</span>
+                      <span className="text-zinc-400 text-sm">{selectedChallengeForWriteup.writeup.pdfFile.name}</span>
+                    </div>
+                    <a
+                      href={selectedChallengeForWriteup.writeup.pdfFile.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-400 hover:text-emerald-300 text-sm"
+                    >
+                      View
+                    </a>
+                  </div>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setWriteupData({ ...writeupData, pdfFile: file });
+                }}
+                className="w-full px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 file:mr-4 file:py-1 file:px-4 file:rounded file:border-0 file:text-sm file:bg-emerald-600 file:text-white hover:file:bg-emerald-700"
+              />
+              <p className="text-zinc-500 text-xs mt-1">Max file size: 10MB. Only PDF files are allowed.</p>
+            </div>
+
             <div>
               <label className="flex items-center gap-2 text-zinc-200">
                 <input
@@ -352,7 +428,11 @@ const AdminChallengesPage: React.FC = () => {
                 />
                 Unlock writeup for university students
               </label>
+              {writeupData.isUnlocked && (
+                <p className="text-emerald-400 text-xs mt-1 ml-6">Students will be able to view the writeup</p>
+              )}
             </div>
+
             <div className="flex gap-2">
               <Button type="submit" className="flex-1">
                 Save Writeup

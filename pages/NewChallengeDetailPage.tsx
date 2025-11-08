@@ -6,7 +6,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
-import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock } from 'lucide-react';
 
 interface Challenge {
   _id: string;
@@ -23,6 +23,11 @@ interface Challenge {
     content: string;
     images?: string[];
     isUnlocked: boolean;
+    pdfFile?: {
+      name: string;
+      url: string;
+      uploadedAt: string;
+    };
   };
   universityCode: string;
 }
@@ -201,11 +206,47 @@ const NewChallengeDetailPage: React.FC = () => {
           )}
 
           {/* Writeup */}
-          {challenge.writeup?.isUnlocked && challenge.writeup.content && (
+          {challenge.writeup?.isUnlocked && (challenge.writeup.content || challenge.writeup.pdfFile) && (
             <Card className="p-6">
               <h2 className="text-xl font-bold text-zinc-100 mb-4">Writeup</h2>
-              <div className="text-zinc-300 whitespace-pre-wrap">
-                {challenge.writeup.content}
+
+              {challenge.writeup.pdfFile && (
+                <div className="mb-4 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-zinc-300 font-medium">PDF Writeup</p>
+                      <p className="text-zinc-400 text-sm">{challenge.writeup.pdfFile.name}</p>
+                    </div>
+                    <a
+                      href={challenge.writeup.pdfFile.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                    >
+                      Download PDF
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {challenge.writeup.content && (
+                <div className="text-zinc-300 whitespace-pre-wrap">
+                  {challenge.writeup.content}
+                </div>
+              )}
+            </Card>
+          )}
+
+          {!challenge.writeup?.isUnlocked && (challenge.writeup?.content || challenge.writeup?.pdfFile) && (
+            <Card className="p-6">
+              <div className="text-center py-8">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-700/50 flex items-center justify-center">
+                  <Lock className="w-8 h-8 text-zinc-500" />
+                </div>
+                <h3 className="text-xl font-bold text-zinc-300 mb-2">Writeup Locked</h3>
+                <p className="text-zinc-500">
+                  The writeup is currently locked. It will be unlocked by the admin when ready.
+                </p>
               </div>
             </Card>
           )}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import NewDashboardPage from './pages/NewDashboardPage';
 import NewChallengeDetailPage from './pages/NewChallengeDetailPage';
 import EnhancedChallengesPage from './pages/EnhancedChallengesPage';
@@ -59,6 +60,7 @@ const App: React.FC = () => {
     return (
       <HashRouter>
         <Routes>
+          <Route path="/register" element={<RegisterPage onRegister={handleLogin} />} />
           <Route path="*" element={<LoginPage onLogin={handleLogin} />} />
         </Routes>
       </HashRouter>

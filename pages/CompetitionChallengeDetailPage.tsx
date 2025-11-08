@@ -32,6 +32,8 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [showHints, setShowHints] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
+  const [solvedChallenges, setSolvedChallenges] = useState<string[]>([]);
 
   useEffect(() => {
     fetchChallenge();
@@ -47,6 +49,20 @@ const CompetitionChallengeDetailPage: React.FC = () => {
       const foundChallenge = data.challenges.find((c: CompetitionChallenge) => c._id === challengeId);
       if (foundChallenge) {
         setChallenge(foundChallenge);
+      }
+
+      // Check if this challenge is already solved
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        try {
+          const solved = await competitionService.getSolvedChallenges(id!, user.id);
+          setSolvedChallenges(solved);
+          setIsSolved(solved.includes(challengeId!));
+        } catch (err) {
+          setSolvedChallenges([]);
+          setIsSolved(false);
+        }
       }
 
       setError('');
@@ -69,33 +85,24 @@ const CompetitionChallengeDetailPage: React.FC = () => {
       setMessage({ type: '', text: '' });
 
       // Try to submit the flag
-      try {
-        const result = await competitionService.submitCompetitionFlag(id!, challengeId!, flag);
+      const result = await competitionService.submitCompetitionFlag(id!, challengeId!, flag);
 
-        if (result.success) {
-          setMessage({
-            type: 'success',
-            text: `Correct flag! You earned ${result.points} points.`
-          });
-          setFlag('');
-          setShowHints(false);
-
-          // Refresh the competition dashboard to show solved challenge
-          refreshCompetitionDashboard(id!);
-        } else {
-          setMessage({
-            type: 'error',
-            text: result.message || 'Incorrect flag. Try again!'
-          });
-        }
-      } catch (apiError: any) {
-        // If API not implemented yet, use mock success for demo
-        setShowSuccessModal(true);
+      if (result.success) {
+        setMessage({
+          type: 'success',
+          text: `Correct flag! You earned ${result.points} points.`
+        });
         setFlag('');
         setShowHints(false);
+        setShowSuccessModal(true);
 
         // Refresh the competition dashboard to show solved challenge
         refreshCompetitionDashboard(id!);
+      } else {
+        setMessage({
+          type: 'error',
+          text: result.message || 'Incorrect flag. Try again!'
+        });
       }
     } catch (err: any) {
       setMessage({
@@ -207,42 +214,53 @@ const CompetitionChallengeDetailPage: React.FC = () => {
           {/* Flag Submission */}
           <Card className="p-6">
             <h2 className="text-2xl font-bold text-zinc-100 mb-4">Submit Flag</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-zinc-200 mb-2">Flag</label>
-                <Input
-                  type="text"
-                  placeholder="Enter flag (e.g., flag{...})"
-                  value={flag}
-                  onChange={(e) => setFlag(e.target.value)}
-                  disabled={submitting}
-                  className="font-mono"
-                />
-              </div>
 
-              {message.text && (
-                <div className={`p-4 rounded-lg flex items-center gap-2 ${
-                  message.type === 'success'
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                    : 'bg-red-500/20 text-red-400 border border-red-500/50'
-                }`}>
-                  {message.type === 'success' ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <AlertCircle className="w-5 h-5" />
-                  )}
-                  <span>{message.text}</span>
+            {isSolved ? (
+              <div className="flex items-center gap-3 p-4 bg-emerald-500/20 rounded-lg">
+                <CheckCircle className="w-6 h-6 text-emerald-400" />
+                <div>
+                  <p className="text-emerald-400 font-semibold">Already Solved!</p>
+                  <p className="text-emerald-400/80 text-sm">You have successfully solved this challenge</p>
                 </div>
-              )}
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-zinc-200 mb-2">Flag</label>
+                  <Input
+                    type="text"
+                    placeholder="Enter flag (e.g., flag{...})"
+                    value={flag}
+                    onChange={(e) => setFlag(e.target.value)}
+                    disabled={submitting}
+                    className="font-mono"
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="w-full"
-              >
-                {submitting ? 'Submitting...' : 'Submit Flag'}
-              </Button>
-            </form>
+                {message.text && (
+                  <div className={`p-4 rounded-lg flex items-center gap-2 ${
+                    message.type === 'success'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
+                      : 'bg-red-500/20 text-red-400 border border-red-500/50'
+                  }`}>
+                    {message.type === 'success' ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5" />
+                    )}
+                    <span>{message.text}</span>
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Flag'}
+                </Button>
+              </form>
+            )}
           </Card>
         </div>
 
