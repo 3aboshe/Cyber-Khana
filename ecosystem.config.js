@@ -1,8 +1,7 @@
-export default {
+module.exports = {
   apps: [{
     name: 'cyber-khana-backend',
-    script: './backend/dist/index.js',
-    cwd: './backend',
+    script: './backend/start.js',
     instances: 1,
     autorestart: true,
     watch: false,
