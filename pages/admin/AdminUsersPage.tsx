@@ -3,7 +3,7 @@ import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Search, Trophy, Ban, UserCheck, Shield, Users, MoreVertical } from 'lucide-react';
+import { Search, Trophy, Ban, UserCheck, Shield, Users, MoreVertical, School } from 'lucide-react';
 
 interface User {
   _id: string;
@@ -118,6 +118,33 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleDemoteFromAdmin = async (userId: string) => {
+    if (!confirm('Demote this admin back to user?')) return;
+    try {
+      const API_URL = '/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/users/demote/${userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to demote admin');
+      }
+
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: 'user' } : u));
+      setActionMenuOpen(null);
+    } catch (err: any) {
+      console.error('Error demoting admin:', err);
+      alert(err.message || 'Failed to demote admin');
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesBanned = !filterBanned || user.isBanned;
@@ -222,6 +249,12 @@ const AdminUsersPage: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-4 text-zinc-400 text-sm">
+                      {currentUser?.role === 'super-admin' && (
+                        <div className="flex items-center gap-1">
+                          <School className="w-4 h-4 text-blue-400" />
+                          <span>{user.universityCode}</span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
                         <Trophy className="w-4 h-4 text-yellow-400" />
                         <span>{user.points} points</span>
@@ -250,6 +283,15 @@ const AdminUsersPage: React.FC = () => {
                           >
                             <Shield className="w-4 h-4" />
                             Promote to Admin
+                          </button>
+                        )}
+                        {currentUser?.role === 'super-admin' && user.role === 'admin' && (
+                          <button
+                            onClick={() => handleDemoteFromAdmin(user._id)}
+                            className="w-full px-4 py-2 text-left text-orange-400 hover:bg-zinc-700/50 flex items-center gap-2 rounded-t-lg"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                            Demote to User
                           </button>
                         )}
                         {!user.isBanned ? (

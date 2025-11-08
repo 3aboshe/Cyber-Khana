@@ -5,6 +5,7 @@ import {
   getLeaderboard,
   createAdmin,
   promoteToAdmin,
+  demoteFromAdmin,
   updateProfileIcon,
   banUser,
   unbanUser
@@ -19,6 +20,7 @@ router.get('/', authenticate, getUsers);
 router.patch('/profile-icon', authenticate, updateProfileIcon);
 router.post('/create-admin', authenticate, requireAdmin, createAdmin);
 router.post('/promote/:userId', authenticate, authenticateSuperAdmin, promoteToAdmin);
+router.post('/demote/:userId', authenticate, authenticateSuperAdmin, demoteFromAdmin);
 router.post('/ban/:userId', authenticate, requireAdmin, banUser);
 router.post('/unban/:userId', authenticate, requireAdmin, unbanUser);
 
