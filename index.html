@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyberخانه CTF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #18181B; /* zinc-900 */
+        color: #E4E4E7; /* zinc-200 */
+      }
+      /* Custom scrollbar for the new dark theme */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #27272A; /* zinc-800 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #52525B; /* zinc-600 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #71717A; /* zinc-500 */
+      }
+
+      /* Keyframes for New Loader component */
+      @keyframes loader-bounce {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+      @keyframes loader-opacity {
+        0% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.5;
+          transform: scale(0.9);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes loader-strobe {
+        0% { opacity: 1; }
+        50% { opacity: 0; }
+        51% { opacity: 1; }
+        100% { opacity: 1; }
+      }
+      @keyframes loader-strobe-color1 {
+        0%, 50%, 100% { fill: #34D399; } /* emerald-400 */
+        25%, 75% { fill: #047857; } /* emerald-700 */
+      }
+      @keyframes loader-strobe-color2 {
+        0%, 50%, 100% { fill: #F87171; } /* red-400 */
+        25%, 75% { fill: #B91C1C; } /* red-700 */
+      }
+      .loader-bounce {
+        animation: loader-bounce 4s infinite ease-in-out;
+      }
+      .loader-opacity {
+        animation: loader-opacity 4s infinite ease-in-out;
+      }
+      .strobe-led {
+        animation: loader-strobe 0.5s infinite;
+      }
+      .strobe-color1 {
+        animation: loader-strobe-color1 0.8s infinite;
+      }
+      .strobe-color2 {
+         animation: loader-strobe-color2 0.8s infinite;
+      }
+
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.5",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.553.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "Cyber خانة CTF",
+  "description": "A minimalist and premium Capture The Flag (CTF) platform for cybersecurity enthusiasts. It features a dashboard with challenges, detailed challenge pages, a leaderboard, and user profiles, all wrapped in a sleek, modern interface.",
+  "requestFramePermissions": []
+}
