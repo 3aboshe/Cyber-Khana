@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Cyber Citadel CTF Platform - MongoDB Deployment Script
+# Cyber Khana CTF Platform - MongoDB Deployment Script
 # Run this script on your MongoDB DigitalOcean Droplet
 
 set -e  # Exit on error

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Cyber Citadel CTF Platform - Main Platform Deployment Script
+# Cyber Khana CTF Platform - Main Platform Deployment Script
 # Run this script on your Main Platform DigitalOcean Droplet
 
 set -e  # Exit on error

@@ -54,7 +54,7 @@ A comprehensive Capture The Flag (CTF) competition platform with university-base
 ## Project Structure
 
 ```
-/cyber-citadel-ctf
+/cyber-khana
 ├── backend/              # Node.js/Express backend
 │   ├── src/
 │   │   ├── config/       # Database configuration
@@ -129,7 +129,7 @@ The backend will run on http://localhost:5000
 
 1. In a new terminal, navigate to project root:
 ```bash
-cd /Users/abdalrahmanmajed/Desktop/cyber-citadel-ctf
+cd /Users/abdalrahmanmajed/Desktop/cyber-khana
 ```
 
 2. Install dependencies:
@@ -331,12 +331,12 @@ That's it! The script will:
 
 To update to the latest version:
 ```bash
-cd /root/cyber-citadel-ctf && git pull origin master && pm2 restart cyber-citadel-backend
+cd /root/cyber-khana && git pull origin master && pm2 restart cyber-khana-backend
 ```
 
 Or use the quick update script:
 ```bash
-/root/cyber-citadel-ctf/update-droplet.sh
+/root/cyber-khana/update-droplet.sh
 ```
 
 ### Manual Deployment Steps

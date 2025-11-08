@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Cyber Citadel CTF Platform - Complete One-Command Deployment Script
+# Cyber Khana CTF Platform - Complete One-Command Deployment Script
 # For Digital Ocean Droplet
 # Run this on your droplet: curl -sSL https://raw.githubusercontent.com/3aboshe/Cyber-Khana/master/deploy-to-droplet.sh | bash
 
 set -e
 
 echo "========================================="
-echo "Cyber Citadel CTF Platform Deployment"
+echo "Cyber Khana CTF Platform Deployment"
 echo "========================================="
 echo ""
 
@@ -56,14 +56,14 @@ echo ""
 
 # Step 6: Clone or update repository
 echo -e "${YELLOW}Step 6/10: Cloning/updating repository...${NC}"
-if [ -d "/root/cyber-citadel-ctf" ]; then
-    cd /root/cyber-citadel-ctf
+if [ -d "/root/cyber-khana" ]; then
+    cd /root/cyber-khana
     git pull origin master > /dev/null 2>&1
     echo -e "${GREEN}✓ Repository updated${NC}"
 else
     cd /root
-    git clone https://github.com/3aboshe/Cyber-Khana.git cyber-citadel-ctf > /dev/null 2>&1
-    cd cyber-citadel-ctf
+    git clone https://github.com/3aboshe/Cyber-Khana.git cyber-khana > /dev/null 2>&1
+    cd cyber-khana
     echo -e "${GREEN}✓ Repository cloned${NC}"
 fi
 echo ""
@@ -88,7 +88,7 @@ echo -e "${YELLOW}Step 9/10: Configuring environment and services...${NC}"
 # Create .env file
 cat > backend/.env << EOF
 MONGODB_URI=mongodb://localhost:27017/cyber-khana
-JWT_SECRET=cybercitadeljwtsecret2024productiondeploy
+JWT_SECRET=cyberkhana2024productiondeploy
 PORT=5001
 NODE_ENV=production
 EOF
@@ -103,17 +103,17 @@ if [ -z "$DROPLET_IP" ]; then
     DROPLET_IP=$(hostname -I | awk '{print $1}')
 fi
 
-cat > /etc/nginx/sites-available/cyber-citadel << EOF
+cat > /etc/nginx/sites-available/cyber-khana << EOF
 server {
     listen 80;
     server_name $DROPLET_IP;
-    
+
     # Serve static frontend files
     location / {
-        root /root/cyber-citadel-ctf/dist;
+        root /root/cyber-khana/dist;
         try_files \$uri \$uri/ /index.html;
     }
-    
+
     # Proxy API requests to backend
     location /api {
         proxy_pass http://localhost:5001;
@@ -129,13 +129,13 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/cyber-citadel /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/cyber-khana /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 nginx -t > /dev/null 2>&1
 systemctl reload nginx
 
 # Start backend with PM2
-pm2 start /root/cyber-citadel-ctf/ecosystem.config.js > /dev/null 2>&1
+pm2 start /root/cyber-khana/ecosystem.config.js > /dev/null 2>&1
 pm2 save > /dev/null 2>&1
 pm2 startup | tail -1 | bash > /dev/null 2>&1
 
@@ -171,9 +171,9 @@ echo ""
 echo -e "${BLUE}Useful commands:${NC}"
 echo "  View status:    ${YELLOW}pm2 status${NC}"
 echo "  View logs:      ${YELLOW}pm2 logs${NC}"
-echo "  Restart:        ${YELLOW}pm2 restart cyber-citadel-backend${NC}"
-echo "  Stop:           ${YELLOW}pm2 stop cyber-citadel-backend${NC}"
+echo "  Restart:        ${YELLOW}pm2 restart cyber-khana-backend${NC}"
+echo "  Stop:           ${YELLOW}pm2 stop cyber-khana-backend${NC}"
 echo ""
 echo -e "${BLUE}To update in the future, simply run:${NC}"
-echo -e "${YELLOW}cd /root/cyber-citadel-ctf && git pull origin master && pm2 restart cyber-citadel-backend${NC}"
+echo -e "${YELLOW}cd /root/cyber-khana && git pull origin master && pm2 restart cyber-khana-backend${NC}"
 echo ""

@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: 'cyber-citadel-backend',
+    name: 'cyber-khana-backend',
     script: './backend/dist/index.js',
     cwd: './backend',
     instances: 1,

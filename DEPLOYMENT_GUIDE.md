@@ -1,4 +1,4 @@
-# Cyber Citadel CTF Platform - DigitalOcean Deployment Guide
+# Cyber Khana CTF Platform - DigitalOcean Deployment Guide
 
 ## Overview
 This guide will help you deploy the entire CTF platform on DigitalOcean including:
