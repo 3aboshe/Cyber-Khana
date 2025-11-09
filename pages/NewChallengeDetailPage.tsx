@@ -217,15 +217,13 @@ const NewChallengeDetailPage: React.FC = () => {
                       <p className="text-zinc-300 font-medium">PDF Writeup</p>
                       <p className="text-zinc-400 text-sm">{challenge.writeup.pdfFile.name}</p>
                     </div>
-                    <a
-                      href={challenge.writeup.pdfFile.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => window.open(challenge.writeup.pdfFile.url, '_blank', 'noopener,noreferrer')}
                       className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2"
                     >
                       <Download className="w-4 h-4" />
                       View PDF
-                    </a>
+                    </button>
                   </div>
                 </div>
               )}

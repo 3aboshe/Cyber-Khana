@@ -511,14 +511,12 @@ const AdminChallengesPage: React.FC = () => {
                       <span className="text-zinc-300">Current PDF:</span>
                       <span className="text-zinc-400 text-sm">{selectedChallengeForWriteup.writeup.pdfFile.name}</span>
                     </div>
-                    <a
-                      href={selectedChallengeForWriteup.writeup.pdfFile.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-emerald-400 hover:text-emerald-300 text-sm"
+                    <button
+                      onClick={() => window.open(selectedChallengeForWriteup.writeup.pdfFile.url, '_blank', 'noopener,noreferrer')}
+                      className="text-emerald-400 hover:text-emerald-300 text-sm underline"
                     >
                       View
-                    </a>
+                    </button>
                   </div>
                 </div>
               )}
