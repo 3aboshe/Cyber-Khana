@@ -112,7 +112,7 @@ const NewDashboardPage: React.FC = () => {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-zinc-100 mb-2">
-          Welcome back, {user?.username}
+          Welcome back, {user?.fullName || user?.displayName || user?.username}
         </h1>
         <p className="text-zinc-400 flex items-center gap-2">
           <span>{user?.universityCode}</span>

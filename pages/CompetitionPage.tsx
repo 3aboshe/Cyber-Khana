@@ -244,10 +244,10 @@ const CompetitionPage: React.FC = () => {
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             {pastCompetitions.map((competition) => (
-              <Card key={competition._id} className="p-6 border-zinc-700 opacity-60">
+              <Card key={competition._id} className="p-6 border-red-500/50 opacity-90">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-zinc-700/50 rounded-lg">
-                    <Lock className="w-8 h-8 text-zinc-400" />
+                  <div className="p-3 bg-red-500/20 rounded-lg">
+                    <Lock className="w-8 h-8 text-red-400" />
                   </div>
                   <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(competition.status)}`}>
                     ENDED

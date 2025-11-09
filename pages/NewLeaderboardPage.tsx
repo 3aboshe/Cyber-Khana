@@ -401,9 +401,6 @@ const NewLeaderboardPage: React.FC = () => {
                                 {globalRank === 1 ? 'Champion' : globalRank === 2 ? 'Runner-up' : 'Third'}
                               </span>
                             )}
-                            {!isTopThree && (
-                              <span className="text-zinc-400 font-semibold">#{globalRank}</span>
-                            )}
                           </div>
                         </td>
 
@@ -567,7 +564,7 @@ const NewLeaderboardPage: React.FC = () => {
                     </div>
 
                     <h3 className="text-2xl font-bold text-white mb-2">
-                      {selectedTeam.username}
+                      {selectedTeam.displayName || selectedTeam.fullName || selectedTeam.username}
                     </h3>
 
                     <div className="text-4xl font-black text-white mb-1">

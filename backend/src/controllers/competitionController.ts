@@ -381,6 +381,12 @@ export const getCompetitionActivity = async (req: AuthRequest, res: Response) =>
       return res.status(404).json({ error: 'Competition not found' });
     }
 
+    // Create a map of challenge IDs to challenge titles
+    const challengeMap = new Map();
+    competition.challenges.forEach((challenge: any) => {
+      challengeMap.set(challenge._id.toString(), challenge.title);
+    });
+
     // Get all users in the competition's university
     const users = await User.find({
       universityCode: competition.universityCode,
@@ -396,9 +402,10 @@ export const getCompetitionActivity = async (req: AuthRequest, res: Response) =>
           competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
         )
         .forEach((solve: any) => {
+          const challengeTitle = challengeMap.get(solve.challengeId?.toString()) || 'Unknown Challenge';
           allActivity.push({
             username: user.username,
-            challengeTitle: solve.challengeTitle || 'Unknown Challenge',
+            challengeTitle: challengeTitle,
             timestamp: solve.solvedAt,
             points: solve.points || 0
           });

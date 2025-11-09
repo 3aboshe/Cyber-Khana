@@ -219,13 +219,12 @@ const NewChallengeDetailPage: React.FC = () => {
                     </div>
                     <a
                       href={challenge.writeup.pdfFile.url}
-                      download={challenge.writeup.pdfFile.name}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2"
                     >
                       <Download className="w-4 h-4" />
-                      Download PDF
+                      View PDF
                     </a>
                   </div>
                 </div>
