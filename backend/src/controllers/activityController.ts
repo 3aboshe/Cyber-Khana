@@ -21,6 +21,10 @@ export const getRecentActivity = async (req: AuthRequest, res: Response) => {
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
       .select('username solvedChallengesDetails');
 
+    // Get all challenges for the university
+    const challenges = await Challenge.find({ universityCode })
+      .select('title category points');
+
     // Create a map of challenge IDs to challenge details
     const challengeMap = new Map();
     challenges.forEach((challenge: any) => {
