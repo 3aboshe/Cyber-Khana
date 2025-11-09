@@ -453,7 +453,7 @@ export const uploadWriteupPdfController = async (req: AuthRequest, res: Response
       // Construct absolute URL for better compatibility with HashRouter
       const protocol = req.protocol;
       const host = req.get('host');
-      const fileUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      const fileUrl = `${protocol}://${host}/api/uploads/${req.file.filename}`;
 
       res.json({
         name: req.file.originalname,
