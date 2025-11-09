@@ -13,6 +13,7 @@ interface RegisterPageProps {
 
 const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
   const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [universityCode, setUniversityCode] = useState('');
@@ -27,6 +28,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
 
     if (!username.trim()) {
       setError('Please enter a username');
+      return;
+    }
+    if (!fullName.trim()) {
+      setError('Please enter your full name');
       return;
     }
     if (!password) {
@@ -56,6 +61,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
+          fullName,
           password,
           universityCode: universityCode.toUpperCase()
         })
@@ -145,6 +151,24 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
                       onChange={(e) => setUsername(e.target.value)}
                       className="pl-10 h-12"
                       autoComplete="username"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Full Name</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <UserPlus className="h-5 w-5 text-zinc-500" />
+                    </div>
+                    <Input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10 h-12"
+                      autoComplete="name"
                       required
                     />
                   </div>

@@ -171,7 +171,13 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         return res.status(404).json({ error: 'User not found' });
       }
 
-      if (user.solvedChallenges.includes(id)) {
+      // Convert IDs to strings for comparison
+      const challengeIdStr = id.toString();
+      const alreadySolved = user.solvedChallenges.some(
+        (solvedId: any) => solvedId.toString() === challengeIdStr
+      );
+
+      if (alreadySolved) {
         return res.status(400).json({ error: 'Challenge already solved' });
       }
 
@@ -189,15 +195,17 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
           totalAwardedPoints += 20;
         }
 
-        user.solvedChallenges.push(id);
+        // Update user
+        user.solvedChallenges.push(challengeIdStr);
         user.solvedChallengesDetails.push({
-          challengeId: id,
+          challengeId: challengeIdStr,
           solvedAt: new Date(),
           points: totalAwardedPoints
         });
         user.points += totalAwardedPoints;
         await user.save();
 
+        // Update challenge
         challenge.solves += 1;
         challenge.currentPoints = calculateDynamicScore(
           challenge.initialPoints,
@@ -205,7 +213,6 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
           challenge.decay,
           challenge.solves
         );
-
         await challenge.save();
 
         res.json({
@@ -220,6 +227,7 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       }
     }
   } catch (error) {
+    console.error('Submit flag error:', error);
     res.status(500).json({ error: 'Error submitting flag' });
   }
 };
@@ -251,7 +259,8 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       initialPoints: challenge.initialPoints,
       minimumPoints: challenge.minimumPoints,
       decay: challenge.decay,
-      currentPoints: challenge.currentPoints
+      currentPoints: challenge.currentPoints,
+      isPublished: true
     });
 
     await newChallenge.save();
@@ -406,7 +415,11 @@ export const uploadWriteupPdfController = async (req: AuthRequest, res: Response
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+      // Construct URL more reliably, handling different environments
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const host = req.get('host');
+      const baseUrl = process.env.PUBLIC_URL || `${protocol}://${host}`;
+      const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
 
       res.json({
         name: req.file.originalname,

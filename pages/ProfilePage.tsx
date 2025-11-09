@@ -32,6 +32,7 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [originalDisplayName, setOriginalDisplayName] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -44,7 +45,9 @@ const ProfilePage: React.FC = () => {
       if (userData) {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        setDisplayName(parsedUser.displayName || parsedUser.username);
+        const nameToUse = parsedUser.displayName || parsedUser.username;
+        setDisplayName(nameToUse);
+        setOriginalDisplayName(nameToUse);
 
         const profile = await userService.getUserProfile();
         setStats({
@@ -87,11 +90,19 @@ const ProfilePage: React.FC = () => {
   const handleSaveDisplayName = async () => {
     try {
       await userService.updateProfile({ displayName });
-      setUser({ ...user, displayName });
+      const updatedUser = { ...user, displayName };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setOriginalDisplayName(displayName);
       setIsEditing(false);
     } catch (err) {
       console.error('Error updating profile:', err);
     }
+  };
+
+  const handleCancel = () => {
+    setDisplayName(originalDisplayName);
+    setIsEditing(false);
   };
 
   if (loading) {
@@ -131,18 +142,18 @@ const ProfilePage: React.FC = () => {
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               {isEditing ? (
-                <div className="flex items-center gap-2 flex-1">
+                <div className="flex items-center gap-3 flex-1">
                   <input
                     type="text"
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
-                    className="flex-1 px-4 py-2 bg-zinc-700 border border-zinc-600 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-1 px-4 py-3 bg-zinc-700 border border-zinc-600 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg"
                     placeholder="Display name"
                   />
-                  <Button size="sm" onClick={handleSaveDisplayName}>
+                  <Button onClick={handleSaveDisplayName} className="px-6 py-3 text-lg">
                     Save
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)}>
+                  <Button variant="ghost" onClick={handleCancel} className="px-6 py-3 text-lg">
                     Cancel
                   </Button>
                 </div>

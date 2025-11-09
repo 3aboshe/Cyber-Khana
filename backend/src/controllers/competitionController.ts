@@ -102,10 +102,21 @@ export const getSolvedChallenges = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // In a real implementation, you'd track which challenges each user has solved
-    // For now, return empty array
-    // TODO: Implement solved challenges tracking
-    res.json([]);
+    // Get the user whose solved challenges we want to fetch
+    const user = await User.findById(userId as string);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get IDs of challenges in this competition
+    const competitionChallengeIds = competition.challenges.map((c: any) => c._id.toString());
+
+    // Filter user's solved challenges to only include those from this competition
+    const solvedChallengeIds = user.solvedChallenges.filter((challengeId: string) =>
+      competitionChallengeIds.includes(challengeId)
+    );
+
+    res.json(solvedChallengeIds);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching solved challenges' });
   }
@@ -172,19 +183,66 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
       return res.status(404).json({ error: 'Competition not found' });
     }
 
-    const challenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
+    const challengeIndex = competition.challenges.findIndex((c: any) => c._id.toString() === challengeId);
+    const challenge = competition.challenges[challengeIndex];
 
     if (!challenge) {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
-    if (flag === challenge.flag) {
-      challenge.solves += 1;
-      await competition.save();
+    if (req.user?.role === 'user') {
+      const user = await User.findById(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
 
-      res.json({ success: true, points: challenge.points, message: 'Correct flag!' });
-    } else {
-      res.status(400).json({ error: 'Incorrect flag' });
+      // Check if user already solved this challenge
+      if (user.solvedChallenges.includes(challengeId)) {
+        return res.status(400).json({ error: 'Challenge already solved' });
+      }
+
+      // Check if flag is correct
+      if (flag === challenge.flag) {
+        // Calculate dynamic points
+        const { calculateDynamicScore } = require('../models/Challenge');
+        const awardedPoints = calculateDynamicScore(
+          challenge.initialPoints || 1000,
+          challenge.minimumPoints || 100,
+          challenge.decay || 200,
+          challenge.solves
+        );
+
+        let totalAwardedPoints = awardedPoints;
+
+        // Add first blood bonus
+        if (challenge.solves === 0) {
+          totalAwardedPoints += 20;
+        }
+
+        // Update user's solved challenges
+        user.solvedChallenges.push(challengeId);
+        user.solvedChallengesDetails.push({
+          challengeId,
+          solvedAt: new Date(),
+          points: totalAwardedPoints
+        });
+        user.points += totalAwardedPoints;
+        await user.save();
+
+        // Update challenge solve count in competition
+        competition.challenges[challengeIndex].solves += 1;
+        await competition.save();
+
+        res.json({
+          success: true,
+          points: totalAwardedPoints,
+          basePoints: awardedPoints,
+          firstBlood: challenge.solves === 0,
+          message: 'Correct flag!'
+        });
+      } else {
+        res.status(400).json({ error: 'Incorrect flag' });
+      }
     }
   } catch (error) {
     res.status(500).json({ error: 'Error submitting flag' });

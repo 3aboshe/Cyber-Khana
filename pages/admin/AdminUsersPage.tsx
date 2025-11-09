@@ -3,7 +3,8 @@ import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Search, Trophy, Ban, UserCheck, Shield, Users, MoreVertical, School } from 'lucide-react';
+import { Search, Trophy, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface User {
   _id: string;
@@ -39,6 +40,13 @@ const AdminUsersPage: React.FC = () => {
   const [filterBanned, setFilterBanned] = useState(false);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Password change state
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [targetUserId, setTargetUserId] = useState('');
+  const [targetUsername, setTargetUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -142,6 +150,52 @@ const AdminUsersPage: React.FC = () => {
     } catch (err: any) {
       console.error('Error demoting admin:', err);
       alert(err.message || 'Failed to demote admin');
+    }
+  };
+
+  const handleChangePassword = async (userId: string, username: string) => {
+    setTargetUserId(userId);
+    setTargetUsername(username);
+    setNewPassword('');
+    setShowPasswordModal(true);
+    setActionMenuOpen(null);
+  };
+
+  const submitPasswordChange = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const API_URL = '/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/users/change-password/${targetUserId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ newPassword })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to change password');
+      }
+
+      setShowPasswordModal(false);
+      setNewPassword('');
+      setTargetUserId('');
+      setTargetUsername('');
+      alert('Password changed successfully!');
+    } catch (err: any) {
+      console.error('Error changing password:', err);
+      alert(err.message || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -294,6 +348,15 @@ const AdminUsersPage: React.FC = () => {
                             Demote to User
                           </button>
                         )}
+                        {currentUser?.role === 'super-admin' && (
+                          <button
+                            onClick={() => handleChangePassword(user._id, user.username)}
+                            className="w-full px-4 py-2 text-left text-blue-400 hover:bg-zinc-700/50 flex items-center gap-2 rounded-t-lg"
+                          >
+                            <KeyRound className="w-4 h-4" />
+                            Change Password
+                          </button>
+                        )}
                         {!user.isBanned ? (
                           <button
                             onClick={() => handleBan(user._id)}
@@ -349,6 +412,67 @@ const AdminUsersPage: React.FC = () => {
           </div>
         </div>
       </Card>
+
+      {/* Change Password Modal */}
+      <AnimatePresence>
+        {showPasswordModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md w-full"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-zinc-100">Change Password</h3>
+                <button
+                  onClick={() => setShowPasswordModal(false)}
+                  className="text-zinc-400 hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-zinc-400 mb-4">
+                Changing password for user: <span className="text-zinc-200 font-semibold">{targetUsername}</span>
+              </p>
+
+              <div className="mb-6">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  New Password
+                </label>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password (min 6 characters)"
+                  className="w-full"
+                  disabled={changingPassword}
+                />
+                <p className="text-zinc-500 text-xs mt-1">Password must be at least 6 characters long</p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowPasswordModal(false)}
+                  variant="ghost"
+                  className="flex-1"
+                  disabled={changingPassword}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={submitPasswordChange}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  disabled={!newPassword || newPassword.length < 6 || changingPassword}
+                >
+                  {changingPassword ? 'Changing...' : 'Change Password'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -52,7 +52,8 @@ const NewLeaderboardPage: React.FC = () => {
   const filteredUsers = useMemo(() => {
     const data = leaderboardData || [];
     return data.filter(user => {
-      const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase());
+      const nameToCheck = user.displayName || user.fullName || user.username;
+      const matchesSearch = nameToCheck.toLowerCase().includes(searchTerm.toLowerCase()) || user.username.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesUniversity = !selectedUniversity || user.universityCode === selectedUniversity;
       return matchesSearch && matchesUniversity;
     });
@@ -74,7 +75,7 @@ const NewLeaderboardPage: React.FC = () => {
       case 3:
         return <Award className="w-8 h-8 text-amber-600" />;
       default:
-        return <span className="text-xl font-bold text-zinc-400">#{rank}</span>;
+        return <span className="text-xl font-bold text-zinc-400">{rank}</span>;
     }
   };
 
@@ -190,11 +191,11 @@ const NewLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {topThree[1].username.charAt(0).toUpperCase()}
+                        {(topThree[1].displayName || topThree[1].fullName || topThree[1].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-base font-bold text-white mb-1">
-                        {topThree[1].username}
+                        {topThree[1].displayName || topThree[1].fullName || topThree[1].username}
                       </h3>
 
                       <div className="text-2xl font-black text-white mb-1">
@@ -248,11 +249,11 @@ const NewLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {topThree[0].username.charAt(0).toUpperCase()}
+                        {(topThree[0].displayName || topThree[0].fullName || topThree[0].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-lg font-bold text-white mb-2">
-                        {topThree[0].username}
+                        {topThree[0].displayName || topThree[0].fullName || topThree[0].username}
                       </h3>
 
                       <div className="text-3xl font-black text-white mb-1">
@@ -306,11 +307,11 @@ const NewLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {topThree[2].username.charAt(0).toUpperCase()}
+                        {(topThree[2].displayName || topThree[2].fullName || topThree[2].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-base font-bold text-white mb-1">
-                        {topThree[2].username}
+                        {topThree[2].displayName || topThree[2].fullName || topThree[2].username}
                       </h3>
 
                       <div className="text-2xl font-black text-white mb-1">
@@ -419,11 +420,11 @@ const NewLeaderboardPage: React.FC = () => {
                                 transition-all duration-200
                               `}
                             >
-                              {user.username.charAt(0).toUpperCase()}
+                              {(user.displayName || user.fullName || user.username).charAt(0).toUpperCase()}
                             </div>
                             <div>
                               <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
-                                {user.username}
+                                {user.displayName || user.fullName || user.username}
                               </div>
                               <div className="text-xs text-zinc-500">{user.universityCode}</div>
                             </div>

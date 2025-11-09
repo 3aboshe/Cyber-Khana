@@ -10,6 +10,7 @@ import { IJWTPayload } from '../types';
 export const registerValidation = [
   body('username').trim().isLength({ min: 3, max: 30 }).withMessage('Username must be 3-30 characters')
     .matches(/^[a-zA-Z0-9_]+$/).withMessage('Username can only contain letters, numbers, and underscores'),
+  body('fullName').trim().notEmpty().withMessage('Full name is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('universityCode').trim().isLength({ min: 2, max: 10 }).withMessage('University code must be 2-10 characters')
     .matches(/^[A-Z0-9@_-]+$/).withMessage('University code must be alphanumeric uppercase or special characters (@, _, -)')
@@ -28,7 +29,7 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ error: errors.array()[0].msg });
     }
 
-    const { username, password, universityCode } = req.body;
+    const { username, fullName, password, universityCode } = req.body;
 
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -44,6 +45,7 @@ export const register = async (req: Request, res: Response) => {
 
     const user = new User({
       username,
+      fullName,
       password: hashedPassword,
       universityCode: universityCode.toUpperCase(),
       role: 'user'
@@ -65,6 +67,8 @@ export const register = async (req: Request, res: Response) => {
       user: {
         id: user._id,
         username: user.username,
+        fullName: user.fullName,
+        displayName: user.displayName || user.username,
         role: user.role,
         universityCode: user.universityCode,
         points: user.points

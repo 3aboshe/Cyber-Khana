@@ -10,6 +10,9 @@ export const userService = {
   getLeaderboard: (universityCode?: string) =>
     apiService.get('/users/leaderboard', universityCode ? { universityCode } : undefined),
 
+  updateProfile: (data: { displayName?: string }) =>
+    apiService.patch('/users/profile', data),
+
   updateProfileIcon: (icon: string) =>
     apiService.patch('/users/profile-icon', { icon }),
 

@@ -64,7 +64,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
-      .select('username points solvedChallenges solvedChallengesDetails profileIcon universityCode');
+      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode');
 
     users.sort((a, b) => {
       if (b.points !== a.points) {
@@ -110,6 +110,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       return {
         rank: index + 1,
         username: user.username,
+        fullName: user.fullName,
+        displayName: user.displayName || user.username,
         points: user.points,
         solvedChallenges: user.solvedChallenges.length,
         solvedDetails: user.solvedChallengesDetails,
@@ -136,6 +138,34 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching leaderboard' });
+  }
+};
+
+export const updateProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { displayName, fullName } = req.body;
+
+    const user = await User.findById(req.user?.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (displayName !== undefined) {
+      user.displayName = displayName;
+    }
+    if (fullName !== undefined) {
+      user.fullName = fullName;
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      displayName: user.displayName,
+      fullName: user.fullName
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating profile' });
   }
 };
 
@@ -288,5 +318,33 @@ export const demoteFromAdmin = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'User demoted to user successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error demoting user from admin' });
+  }
+};
+
+export const changeUserPassword = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can change user passwords' });
+    }
+
+    const { userId } = req.params;
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Password changed successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error changing user password' });
   }
 };

@@ -5,6 +5,8 @@ import Card from '../components/ui/EnhancedCard';
 import { Trophy, Code, Target, TrendingUp, Award, Clock, CheckCircle, Zap } from 'lucide-react';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import EmptyState from '../components/ui/EmptyState';
+import { userService } from '../services/userService';
+import { activityService } from '../services/activityService';
 //  // import { useToast } from '../hooks/useToast';
 // Temporary: Remove toast dependency for now
 const useToast = () => ({ toast: () => {} });
@@ -31,7 +33,7 @@ const NewDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
-  const [recentActivity] = useState<RecentActivity[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   // const { toast } = useToast();
 
@@ -57,6 +59,10 @@ const NewDashboardPage: React.FC = () => {
           streak: profile.streak || 0,
           favoriteCategory: profile.favoriteCategory || 'Web Exploitation',
         });
+
+        // Fetch recent activity
+        const activityData = await activityService.getRecentActivity();
+        setRecentActivity(activityData);
       }
     } catch (err) {
       console.error('Error fetching user data:', err);

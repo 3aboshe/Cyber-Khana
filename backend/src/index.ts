@@ -12,6 +12,7 @@ import competitionRoutes from './routes/competitions';
 import userRoutes from './routes/users';
 import universityRoutes from './routes/universities';
 import announcementRoutes from './routes/announcements';
+import activityRoutes from './routes/activity';
 
 dotenv.config();
 
@@ -58,6 +59,7 @@ app.use('/api/competitions', competitionRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/activity', activityRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'CyberKhana API is running' });
