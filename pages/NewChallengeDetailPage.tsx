@@ -298,23 +298,31 @@ const NewChallengeDetailPage: React.FC = () => {
             <Card className="p-6">
               <h2 className="text-xl font-bold text-zinc-100 mb-4">Hints</h2>
               <div className="space-y-3">
-                {challenge.hints.map((hint, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                        <HelpCircle className="w-4 h-4" />
-                        <span>Hint {index + 1}</span>
+                {challenge.hints
+                  .filter((hint: any) => hint.isPublished !== false)
+                  .map((hint: any, index: number) => (
+                    <div
+                      key={index}
+                      className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                          <HelpCircle className="w-4 h-4" />
+                          <span>Hint {index + 1}</span>
+                        </div>
+                        <span className="text-yellow-400 text-sm">
+                          -{hint.cost} points
+                        </span>
                       </div>
-                      <span className="text-yellow-400 text-sm">
-                        -{hint.cost} points
-                      </span>
+                      <p className="text-zinc-300">{hint.text}</p>
                     </div>
-                    <p className="text-zinc-300">{hint.text}</p>
+                  ))}
+                {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
+                  <div className="text-center py-8 text-zinc-500">
+                    <HelpCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No hints published yet</p>
                   </div>
-                ))}
+                )}
               </div>
             </Card>
           )}

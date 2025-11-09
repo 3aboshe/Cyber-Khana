@@ -203,17 +203,25 @@ const CompetitionChallengeDetailPage: React.FC = () => {
 
               {showHints && (
                 <div className="mt-4 space-y-3">
-                  {challenge.hints.map((hint, index) => (
-                    <div key={index} className="p-4 bg-zinc-800 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-zinc-400 text-sm">Hint {index + 1}</span>
-                        <span className="text-yellow-400 text-sm font-semibold">
-                          -{hint.cost} points
-                        </span>
+                  {challenge.hints
+                    .filter((hint: any) => hint.isPublished !== false)
+                    .map((hint: any, index: number) => (
+                      <div key={index} className="p-4 bg-zinc-800 rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-zinc-400 text-sm">Hint {index + 1}</span>
+                          <span className="text-yellow-400 text-sm font-semibold">
+                            -{hint.cost} points
+                          </span>
+                        </div>
+                        <p className="text-zinc-300">{hint.text}</p>
                       </div>
-                      <p className="text-zinc-300">{hint.text}</p>
+                    ))}
+                  {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
+                    <div className="text-center py-8 text-zinc-500">
+                      <Lightbulb className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No hints published yet</p>
                     </div>
-                  ))}
+                  )}
                 </div>
               )}
             </Card>
