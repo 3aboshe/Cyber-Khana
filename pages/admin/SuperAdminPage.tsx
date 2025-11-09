@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { universityService } from '../../services/universityService';
+import { challengeService } from '../../services/challengeService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Building2, Plus, Trash2 } from 'lucide-react';
+import { Building2, Plus, Trash2, Copy, Search } from 'lucide-react';
 
 interface University {
   _id: string;
@@ -11,14 +12,25 @@ interface University {
   code: string;
 }
 
+interface Challenge {
+  _id: string;
+  title: string;
+  category: string;
+  universityCode: string;
+}
+
 const SuperAdminPage: React.FC = () => {
   const [universities, setUniversities] = useState<University[]>([]);
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newUniversityName, setNewUniversityName] = useState('');
   const [newUniversityCode, setNewUniversityCode] = useState('');
   const [creating, setCreating] = useState(false);
+  const [showCopyForm, setShowCopyForm] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchUniversities();
@@ -34,6 +46,35 @@ const SuperAdminPage: React.FC = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchChallenges = async () => {
+    try {
+      const data = await challengeService.getAllChallenges();
+      setChallenges(data);
+    } catch (err: any) {
+      console.error('Error fetching challenges:', err);
+    }
+  };
+
+  const handleCopyChallenge = async (challengeId: string, targetUniversityCode: string) => {
+    if (!targetUniversityCode) {
+      setError('Please select a target university');
+      return;
+    }
+
+    setCopying(true);
+    setError('');
+
+    try {
+      await challengeService.copyChallengeToUniversity(challengeId, targetUniversityCode);
+      alert('Challenge copied successfully!');
+      setShowCopyForm(false);
+    } catch (err: any) {
+      setError(err.message || 'Error copying challenge');
+    } finally {
+      setCopying(false);
     }
   };
 
@@ -205,6 +246,103 @@ const SuperAdminPage: React.FC = () => {
               <p className="text-zinc-500 text-center py-4">No universities yet</p>
             )}
           </div>
+        )}
+      </Card>
+
+      {/* Copy Challenge Section */}
+      <Card className="p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Copy className="w-6 h-6 text-blue-400" />
+            <h2 className="text-2xl font-bold text-zinc-100">Copy Challenge</h2>
+          </div>
+          <Button
+            onClick={() => {
+              setShowCopyForm(true);
+              fetchChallenges();
+            }}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Copy Challenge
+          </Button>
+        </div>
+
+        {showCopyForm ? (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-zinc-300 text-sm font-medium mb-2">
+                Challenge
+              </label>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <Input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search challenges..."
+                  className="pl-10"
+                />
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-2">
+                {challenges
+                  .filter((challenge) =>
+                    challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    challenge.category.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((challenge) => (
+                    <div
+                      key={challenge._id}
+                      className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-3 flex items-center gap-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-zinc-200 font-medium truncate">{challenge.title}</p>
+                        <p className="text-zinc-400 text-xs">{challenge.category} • {challenge.universityCode}</p>
+                      </div>
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleCopyChallenge(challenge._id, e.target.value);
+                            e.target.value = '';
+                          }
+                        }}
+                        disabled={copying}
+                        className="px-3 py-2 bg-zinc-700 border border-zinc-600 rounded text-zinc-200 text-sm"
+                      >
+                        <option value="">Select University</option>
+                        {universities
+                          .filter((uni) => uni.code !== challenge.universityCode)
+                          .map((uni) => (
+                            <option key={uni._id} value={uni.code}>
+                              {uni.name} ({uni.code})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  ))}
+                {challenges.length === 0 && (
+                  <p className="text-zinc-500 text-center py-4">No challenges found</p>
+                )}
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setShowCopyForm(false);
+                setSearchTerm('');
+                setChallenges([]);
+              }}
+              disabled={copying}
+              className="text-zinc-400 hover:text-zinc-200"
+            >
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <p className="text-zinc-400">
+            Copy challenges from one university to another
+          </p>
         )}
       </Card>
     </div>
