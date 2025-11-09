@@ -80,7 +80,29 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.json(competition);
+    // Calculate dynamic points for each challenge
+    const { calculateDynamicScore } = require('../models/Challenge');
+    const challengesWithDynamicPoints = competition.challenges.map((challenge: any) => {
+      const dynamicPoints = calculateDynamicScore(
+        challenge.initialPoints || 1000,
+        challenge.minimumPoints || 100,
+        challenge.decay || 200,
+        challenge.solves
+      );
+
+      return {
+        ...challenge.toObject ? challenge.toObject() : challenge,
+        points: dynamicPoints,
+        currentPoints: dynamicPoints
+      };
+    });
+
+    const competitionWithDynamicPoints = {
+      ...competition.toObject ? competition.toObject() : competition,
+      challenges: challengesWithDynamicPoints
+    };
+
+    res.json(competitionWithDynamicPoints);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching competition details' });
   }
@@ -231,6 +253,8 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
 
         // Update challenge solve count in competition
         competition.challenges[challengeIndex].solves += 1;
+        // Mark the challenges array as modified so Mongoose saves the nested document
+        competition.markModified('challenges');
         await competition.save();
 
         res.json({
