@@ -23,7 +23,12 @@ import {
   Flame,
   Eye,
   BarChart3,
-  MousePointer
+  MousePointer,
+  Medal,
+  Award,
+  Search,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface Competition {
@@ -48,6 +53,9 @@ const CompetitionMonitoringPage: React.FC = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [stats, setStats] = useState({
     averageSolveTime: 0,
     challengeCompletionRate: 0,
@@ -177,6 +185,69 @@ const CompetitionMonitoringPage: React.FC = () => {
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
     return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
+
+  const filteredLeaderboard = leaderboard.filter((user: any) => {
+    const nameToCheck = user.displayName || user.fullName || user.username;
+    return nameToCheck.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           user.username.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
+  const paginatedLeaderboard = filteredLeaderboard.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalPages = Math.ceil(filteredLeaderboard.length / itemsPerPage);
+
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return <Trophy className="w-8 h-8 text-yellow-400" />;
+      case 2:
+        return <Medal className="w-8 h-8 text-zinc-300" />;
+      case 3:
+        return <Award className="w-8 h-8 text-amber-600" />;
+      default:
+        return <span className="text-xl font-bold text-zinc-400">{rank}</span>;
+    }
+  };
+
+  const getRankGradient = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return 'from-yellow-600 to-yellow-800 border-yellow-500/50 shadow-yellow-500/20';
+      case 2:
+        return 'from-zinc-500 to-zinc-700 border-zinc-400/50 shadow-zinc-400/20';
+      case 3:
+        return 'from-amber-700 to-amber-900 border-amber-600/50 shadow-amber-600/20';
+      default:
+        return 'from-zinc-800 to-zinc-900 border-zinc-700';
+    }
+  };
+
+  const getRankTextGradient = (rank: number) => {
+    switch (rank) {
+      case 1:
+        return 'text-yellow-400';
+      case 2:
+        return 'text-zinc-300';
+      case 3:
+        return 'text-amber-500';
+      default:
+        return 'text-zinc-300';
+    }
+  };
+
+  const getAvatarColor = (index: number) => {
+    const colors = [
+      'from-zinc-700 to-zinc-800',
+      'from-zinc-600 to-zinc-700',
+      'from-zinc-700 to-zinc-800',
+      'from-zinc-600 to-zinc-700',
+      'from-zinc-700 to-zinc-800',
+    ];
+    return colors[index % colors.length];
   };
 
   if (loading) {
@@ -529,59 +600,345 @@ const CompetitionMonitoringPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-6">
-          {/* Full Leaderboard */}
-          <Card className="group bg-gradient-to-br from-zinc-800 to-zinc-900 border-zinc-700">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-zinc-100">Leaderboard</h2>
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <Trophy className="w-4 h-4 text-yellow-400" />
-                  <span>{leaderboard.length} participants</span>
-                </div>
+        {/* Top 3 Podium */}
+        {filteredLeaderboard.length > 0 && (
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-zinc-100">Top Champions</h2>
+              <div className="flex items-center gap-2 text-xs text-zinc-500">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span>{leaderboard.length} participants</span>
               </div>
-              <div className="space-y-2 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-                {leaderboard.length > 0 ? leaderboard.map((user, index) => (
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+              {/* 2nd Place - Left */}
+              {filteredLeaderboard[1] && (
+                <div className="order-1 flex justify-center">
                   <div
-                    key={user._id}
-                    onClick={() => handleViewUser(user)}
-                    className="group/leader flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50 hover:bg-zinc-700/50 border border-zinc-700 hover:border-emerald-500/50 cursor-pointer transition-all duration-200 hover:scale-[1.01]"
+                    className={`
+                      relative w-56 h-72
+                      bg-gradient-to-b ${getRankGradient(2)}
+                      border border-zinc-400/50
+                      transform hover:scale-105 hover:-translate-y-2
+                      transition-all duration-300 ease-out cursor-pointer
+                      rounded-t-2xl
+                    `}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+                    }}
+                    onClick={() => handleViewUser(filteredLeaderboard[1])}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-black transition-all duration-200 ${
-                      index === 0 ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-yellow-900' :
-                      index === 1 ? 'bg-gradient-to-br from-zinc-300 to-zinc-500 text-zinc-900' :
-                      index === 2 ? 'bg-gradient-to-br from-amber-600 to-amber-800 text-amber-100' :
-                      index < 10 ? 'bg-gradient-to-br from-emerald-500 to-cyan-600 text-white' :
-                      'bg-zinc-700 text-zinc-300'
-                    }`}>
-                      {index + 1}
+                    <div className="absolute top-4 right-4">
+                      <Medal className="w-5 h-5 text-zinc-200" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-zinc-200 font-semibold text-sm truncate group-hover/leader:text-emerald-400 transition-colors">
-                        {user.displayName || user.fullName || user.username}
-                      </p>
-                      <div className="flex items-center gap-3 text-xs text-zinc-500">
-                        <span className="flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                          {user.solvedChallenges} solved
-                        </span>
+
+                    <div className="flex flex-col items-center text-center pt-6">
+                      <div
+                        className={`
+                          w-14 h-14 rounded-full
+                          bg-gradient-to-br ${getAvatarColor(1)}
+                          flex items-center justify-center
+                          text-lg font-bold text-white
+                          mb-3 ring-2 ring-white/20
+                        `}
+                      >
+                        {(filteredLeaderboard[1].displayName || filteredLeaderboard[1].fullName || filteredLeaderboard[1].username).charAt(0).toUpperCase()}
+                      </div>
+
+                      <h3 className="text-base font-bold text-white mb-1">
+                        {filteredLeaderboard[1].displayName || filteredLeaderboard[1].fullName || filteredLeaderboard[1].username}
+                      </h3>
+
+                      <div className="text-2xl font-black text-white mb-1">
+                        {filteredLeaderboard[1].points}
+                      </div>
+                      <div className="text-white/80 text-xs mb-2">points</div>
+
+                      <div className="text-white/90 text-xs">
+                        {filteredLeaderboard[1].solvedChallenges} challenges
+                      </div>
+
+                      <div className="mt-3 px-2 py-1 bg-zinc-500/20 rounded text-zinc-200 text-xs font-semibold">
+                        2nd Place
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-zinc-200 font-bold">{user.points}</p>
-                      <p className="text-xs text-zinc-500">points</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 1st Place - Center */}
+              {filteredLeaderboard[0] && (
+                <div className="order-2 flex justify-center">
+                  <div
+                    className={`
+                      relative w-64 h-80
+                      bg-gradient-to-b ${getRankGradient(1)}
+                      border border-yellow-500/50
+                      transform hover:scale-105 hover:-translate-y-2
+                      transition-all duration-300 ease-out cursor-pointer
+                      rounded-t-2xl
+                    `}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+                    }}
+                    onClick={() => handleViewUser(filteredLeaderboard[0])}
+                  >
+                    <div className="absolute top-4 right-4">
+                      <Trophy className="w-5 h-5 text-yellow-300" />
                     </div>
-                    <ExternalLink className="w-4 h-4 text-zinc-600 group-hover/leader:text-emerald-400 transition-colors" />
+
+                    <div className="flex flex-col items-center text-center pt-8">
+                      <div
+                        className={`
+                          w-16 h-16 rounded-full
+                          bg-gradient-to-br ${getAvatarColor(0)}
+                          flex items-center justify-center
+                          text-xl font-bold text-white
+                          mb-3 ring-2 ring-white/20
+                        `}
+                      >
+                        {(filteredLeaderboard[0].displayName || filteredLeaderboard[0].fullName || filteredLeaderboard[0].username).charAt(0).toUpperCase()}
+                      </div>
+
+                      <h3 className="text-lg font-bold text-white mb-2">
+                        {filteredLeaderboard[0].displayName || filteredLeaderboard[0].fullName || filteredLeaderboard[0].username}
+                      </h3>
+
+                      <div className="text-3xl font-black text-white mb-1">
+                        {filteredLeaderboard[0].points}
+                      </div>
+                      <div className="text-white/80 text-xs mb-2">points</div>
+
+                      <div className="text-white/90 text-xs">
+                        {filteredLeaderboard[0].solvedChallenges} challenges
+                      </div>
+
+                      <div className="mt-3 px-2 py-1 bg-yellow-500/20 rounded text-yellow-200 text-xs font-semibold">
+                        1st Place
+                      </div>
+                    </div>
                   </div>
-                )) : (
-                  <div className="text-center py-12 text-zinc-500">
-                    <Users className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-semibold mb-1">No participants yet</p>
-                    <p className="text-sm">Waiting for users to join the competition</p>
+                </div>
+              )}
+
+              {/* 3rd Place - Right */}
+              {filteredLeaderboard[2] && (
+                <div className="order-3 flex justify-center">
+                  <div
+                    className={`
+                      relative w-56 h-72
+                      bg-gradient-to-b ${getRankGradient(3)}
+                      border border-amber-600/50
+                      transform hover:scale-105 hover:-translate-y-2
+                      transition-all duration-300 ease-out cursor-pointer
+                      rounded-t-2xl
+                    `}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+                    }}
+                    onClick={() => handleViewUser(filteredLeaderboard[2])}
+                  >
+                    <div className="absolute top-4 right-4">
+                      <Award className="w-5 h-5 text-amber-300" />
+                    </div>
+
+                    <div className="flex flex-col items-center text-center pt-6">
+                      <div
+                        className={`
+                          w-14 h-14 rounded-full
+                          bg-gradient-to-br ${getAvatarColor(2)}
+                          flex items-center justify-center
+                          text-lg font-bold text-white
+                          mb-3 ring-2 ring-white/20
+                        `}
+                      >
+                        {(filteredLeaderboard[2].displayName || filteredLeaderboard[2].fullName || filteredLeaderboard[2].username).charAt(0).toUpperCase()}
+                      </div>
+
+                      <h3 className="text-base font-bold text-white mb-1">
+                        {filteredLeaderboard[2].displayName || filteredLeaderboard[2].fullName || filteredLeaderboard[2].username}
+                      </h3>
+
+                      <div className="text-2xl font-black text-white mb-1">
+                        {filteredLeaderboard[2].points}
+                      </div>
+                      <div className="text-white/80 text-xs mb-2">points</div>
+
+                      <div className="text-white/90 text-xs">
+                        {filteredLeaderboard[2].solvedChallenges} challenges
+                      </div>
+
+                      <div className="mt-3 px-2 py-1 bg-amber-600/20 rounded text-amber-200 text-xs font-semibold">
+                        3rd Place
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="mb-6 flex justify-center">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search participants..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="
+                w-full pl-12 pr-4 py-3
+                bg-zinc-800/50 border border-zinc-700
+                rounded-xl
+                text-zinc-100 placeholder-zinc-500
+                focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent
+                hover:border-zinc-600
+                transition-all duration-200
+              "
+            />
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          {/* Full Leaderboard Table */}
+          <Card className="group bg-gradient-to-br from-zinc-800 to-zinc-900 border-zinc-700 lg:col-span-1">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-zinc-100">All Participants</h2>
+                <div className="flex items-center gap-2 text-xs text-zinc-500">
+                  <Trophy className="w-4 h-4 text-yellow-400" />
+                  <span>{filteredLeaderboard.length} shown</span>
+                </div>
               </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-zinc-900/50 border-b border-zinc-800">
+                    <tr>
+                      <th className="text-left py-3 px-4 text-zinc-400 font-semibold text-xs tracking-wider">Rank</th>
+                      <th className="text-left py-3 px-4 text-zinc-400 font-semibold text-xs tracking-wider">Participant</th>
+                      <th className="text-center py-3 px-4 text-zinc-400 font-semibold text-xs tracking-wider">Points</th>
+                      <th className="text-right py-3 px-4 text-zinc-400 font-semibold text-xs tracking-wider">Solved</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedLeaderboard.map((user, index) => {
+                      const globalRank = (currentPage - 1) * itemsPerPage + index + 1;
+                      return (
+                        <tr
+                          key={user._id}
+                          onClick={() => handleViewUser(user)}
+                          className="border-b border-zinc-800/50 hover:bg-zinc-800/50 cursor-pointer group/row transition-all duration-200"
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {getRankIcon(globalRank)}
+                              {globalRank <= 3 && (
+                                <span className={`text-sm font-bold ${getRankTextGradient(globalRank)}`}>
+                                  {globalRank === 1 ? 'Champion' : globalRank === 2 ? 'Runner-up' : 'Third'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`
+                                  w-10 h-10 rounded-full
+                                  bg-gradient-to-br ${getAvatarColor(index)}
+                                  flex items-center justify-center
+                                  text-white font-bold
+                                  ring-2 ring-zinc-800
+                                  group-hover/row:ring-emerald-500
+                                  transition-all duration-200
+                                `}
+                              >
+                                {(user.displayName || user.fullName || user.username).charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-zinc-100 group-hover/row:text-emerald-400 transition-colors text-sm">
+                                  {user.displayName || user.fullName || user.username}
+                                </div>
+                                <div className="text-xs text-zinc-500">{user.username}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            <span className="text-xl font-bold text-zinc-200">
+                              {user.points}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <span className="text-zinc-300 font-semibold">
+                              {user.solvedChallenges}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-zinc-800">
+                  <div className="text-sm text-zinc-400">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredLeaderboard.length)} of {filteredLeaderboard.length} participants
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="
+                        px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg
+                        hover:bg-zinc-700 hover:text-white
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transition-all duration-200 text-sm
+                      "
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <div className="flex gap-1">
+                      {[...Array(totalPages)].map((_, i) => {
+                        const page = i + 1;
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`
+                              w-8 h-8 rounded-lg font-semibold transition-all duration-200 text-sm
+                              ${currentPage === page
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                              }
+                            `}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="
+                        px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg
+                        hover:bg-zinc-700 hover:text-white
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        transition-all duration-200 text-sm
+                      "
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 
