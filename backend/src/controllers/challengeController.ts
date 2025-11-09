@@ -335,10 +335,10 @@ export const updateWriteup = async (req: AuthRequest, res: Response) => {
     }
 
     challenge.writeup = {
-      content: content || '',
-      images: images || [],
-      isUnlocked: isUnlocked || false,
-      pdfFile: pdfFile || undefined
+      content: content ?? challenge.writeup?.content ?? '',
+      images: images ?? challenge.writeup?.images ?? [],
+      isUnlocked: isUnlocked ?? challenge.writeup?.isUnlocked ?? false,
+      pdfFile: pdfFile !== undefined ? pdfFile : challenge.writeup?.pdfFile
     };
 
     await challenge.save();
