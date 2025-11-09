@@ -30,6 +30,14 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
         challenge.decay,
         challenge.solves
       );
+
+      // If user is not admin and writeup is not unlocked, remove writeup data
+      if (req.user?.role === 'user' && !challenge.writeup?.isUnlocked) {
+        challengeObj.writeup = {
+          isUnlocked: false
+        };
+      }
+
       return challengeObj;
     });
 
@@ -88,6 +96,13 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
       challenge.decay,
       challenge.solves
     );
+
+    // If user is not admin and writeup is not unlocked, remove writeup data
+    if (req.user?.role === 'user' && !challenge.writeup?.isUnlocked) {
+      challengeObj.writeup = {
+        isUnlocked: false
+      };
+    }
 
     res.json(challengeObj);
   } catch (error) {
