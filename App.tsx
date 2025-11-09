@@ -20,6 +20,7 @@ import AdminChallengesPage from './pages/admin/AdminChallengesPage';
 import AdminAnnouncementsPage from './pages/admin/AdminAnnouncementsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminCompetitionsPage from './pages/admin/AdminCompetitionsPage';
+import CompetitionMonitoringPage from './pages/admin/CompetitionMonitoringPage';
 import SuperAdminPage from './pages/admin/SuperAdminPage';
 import Loader from './components/ui/Loader';
 
@@ -81,6 +82,7 @@ const App: React.FC = () => {
             <Route path="admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="admin/challenges" element={<AdminChallengesPage />} />
             <Route path="admin/competitions" element={<AdminCompetitionsPage />} />
+            <Route path="admin/competitions/:id/monitor" element={<CompetitionMonitoringPage />} />
             <Route path="admin/announcements" element={<AdminAnnouncementsPage />} />
             <Route path="admin/users" element={<AdminUsersPage />} />
             <Route path="*" element={<Navigate to="/admin/super" />} />
@@ -94,6 +96,7 @@ const App: React.FC = () => {
             <Route path="admin/dashboard" element={<AdminDashboardPage />} />
             <Route path="admin/challenges" element={<AdminChallengesPage />} />
             <Route path="admin/competitions" element={<AdminCompetitionsPage />} />
+            <Route path="admin/competitions/:id/monitor" element={<CompetitionMonitoringPage />} />
             <Route path="admin/announcements" element={<AdminAnnouncementsPage />} />
             <Route path="admin/users" element={<AdminUsersPage />} />
             <Route path="*" element={<Navigate to="/admin" />} />

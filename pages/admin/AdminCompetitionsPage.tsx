@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { competitionService } from '../../services/competitionService';
 import { challengeService } from '../../services/challengeService';
 import Card from '../../components/ui/card';
@@ -21,6 +22,7 @@ interface Competition {
 }
 
 const AdminCompetitionsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -178,15 +180,6 @@ const AdminCompetitionsPage: React.FC = () => {
     }
   };
 
-  const handleIntegrateChallenge = async (competitionId: string, challengeId: string) => {
-    try {
-      await challengeService.integrateCompetitionChallenge(competitionId, challengeId);
-      alert('Challenge integrated successfully to the challenges section!');
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
   const openModal = (competition?: Competition) => {
     if (competition) {
       setEditingCompetition(competition);
@@ -270,6 +263,12 @@ const AdminCompetitionsPage: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/admin/competitions/${competition._id}/monitor`)}
+                >
+                  Monitoring
+                </Button>
                 {competition.status === 'pending' && competition.duration && (
                   <Button
                     onClick={() => handleStartTimerCompetition(competition)}
@@ -296,17 +295,9 @@ const AdminCompetitionsPage: React.FC = () => {
               </div>
               <div className="grid gap-2">
                 {competition.challenges.map((challenge: any) => (
-                  <div key={challenge._id} className="flex justify-between items-center bg-zinc-800/50 p-3 rounded">
-                    <div>
-                      <div className="text-zinc-200 font-medium">{challenge.title}</div>
-                      <div className="text-sm text-zinc-500">{challenge.category} • {challenge.points} pts • {challenge.solves} solves</div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleIntegrateChallenge(competition._id, challenge._id)}
-                    >
-                      Integrate
-                    </Button>
+                  <div key={challenge._id} className="bg-zinc-800/50 p-3 rounded">
+                    <div className="text-zinc-200 font-medium">{challenge.title}</div>
+                    <div className="text-sm text-zinc-500">{challenge.category} • {challenge.points} pts • {challenge.solves} solves</div>
                   </div>
                 ))}
                 {competition.challenges.length === 0 && (

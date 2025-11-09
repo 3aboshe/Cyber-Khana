@@ -400,6 +400,41 @@ export const unpublishChallenge = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const publishHint = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can publish hints' });
+    }
+
+    const { id } = req.params;
+    const { hintIndex } = req.body;
+
+    const challenge = await Challenge.findById(id);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    if (!challenge.hints || challenge.hints.length === 0) {
+      return res.status(400).json({ error: 'No hints found for this challenge' });
+    }
+
+    if (hintIndex < 0 || hintIndex >= challenge.hints.length) {
+      return res.status(400).json({ error: 'Invalid hint index' });
+    }
+
+    challenge.hints[hintIndex].isPublished = true;
+    await challenge.save();
+
+    res.json({ message: 'Hint published successfully', hints: challenge.hints });
+  } catch (error) {
+    res.status(500).json({ error: 'Error publishing hint' });
+  }
+};
+
 export const uploadWriteupPdfController = async (req: AuthRequest, res: Response) => {
   try {
     if (req.user?.role === 'user') {

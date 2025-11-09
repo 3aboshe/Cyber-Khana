@@ -5,6 +5,7 @@ export interface IAnnouncement extends Document {
   content: string;
   author: string;
   universityCode: string;
+  competitionId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +28,10 @@ const AnnouncementSchema: Schema = new Schema(
     universityCode: {
       type: String,
       required: true
+    },
+    competitionId: {
+      type: String,
+      required: false
     }
   },
   {
@@ -35,6 +40,7 @@ const AnnouncementSchema: Schema = new Schema(
 );
 
 AnnouncementSchema.index({ universityCode: 1, createdAt: -1 });
+AnnouncementSchema.index({ competitionId: 1, createdAt: -1 });
 
 const Announcement = mongoose.model<IAnnouncement>('Announcement', AnnouncementSchema);
 

@@ -66,6 +66,10 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
       .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode');
 
+    // Get university name
+    const University = require('../models/University').default;
+    const university = await University.findOne({ code: universityCode });
+
     users.sort((a, b) => {
       if (b.points !== a.points) {
         return b.points - a.points;
@@ -120,7 +124,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         totalTimeHours: totalTime,
         averageSolveTimeHours: averageSolveTime,
         profileIcon: user.profileIcon || 'default',
-        universityCode: user.universityCode
+        universityCode: user.universityCode,
+        universityName: university?.name || user.universityCode
       };
     });
 

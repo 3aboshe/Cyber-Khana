@@ -13,13 +13,13 @@ export const getRecentActivity = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'University code is required' });
     }
 
+    // Get university name
+    const University = require('../models/University').default;
+    const university = await University.findOne({ code: universityCode });
+
     // Get all users in the university
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
       .select('username solvedChallengesDetails');
-
-    // Get all challenges for the university
-    const challenges = await Challenge.find({ universityCode })
-      .select('title category points');
 
     // Create a map of challenge IDs to challenge details
     const challengeMap = new Map();
@@ -44,7 +44,8 @@ export const getRecentActivity = async (req: AuthRequest, res: Response) => {
             challengeTitle: challengeDetails.title,
             category: challengeDetails.category,
             points: solve.points,
-            solvedAt: solve.solvedAt
+            solvedAt: solve.solvedAt,
+            universityName: university?.name || universityCode
           });
         }
       });

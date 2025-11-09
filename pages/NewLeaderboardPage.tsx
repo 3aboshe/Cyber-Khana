@@ -426,7 +426,7 @@ const NewLeaderboardPage: React.FC = () => {
                               <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
                                 {user.displayName || user.fullName || user.username}
                               </div>
-                              <div className="text-xs text-zinc-500">{user.universityCode}</div>
+                              <div className="text-xs text-zinc-500">{user.universityName || user.universityCode}</div>
                             </div>
                           </div>
                         </td>

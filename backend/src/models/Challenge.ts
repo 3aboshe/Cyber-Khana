@@ -16,6 +16,7 @@ export const calculateDynamicScore = (
 export interface IHint {
   text: string;
   cost: number;
+  isPublished: boolean;
 }
 
 export interface IChallengeFile {
@@ -56,7 +57,11 @@ export interface IChallenge extends Document {
 
 const HintSchema = new Schema({
   text: String,
-  cost: Number
+  cost: Number,
+  isPublished: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const ChallengeFileSchema = new Schema({
