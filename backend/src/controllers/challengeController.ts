@@ -325,7 +325,9 @@ export const integrateCompetitionChallenge = async (req: AuthRequest, res: Respo
       initialPoints: competitionChallenge.initialPoints || 1000,
       minimumPoints: competitionChallenge.minimumPoints || 100,
       decay: competitionChallenge.decay || 200,
-      currentPoints: competitionChallenge.currentPoints || 1000
+      currentPoints: competitionChallenge.currentPoints || 1000,
+      fromCompetition: true,
+      competitionId: competitionId
     });
 
     await newChallenge.save();

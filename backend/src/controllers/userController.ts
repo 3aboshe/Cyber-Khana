@@ -367,9 +367,25 @@ export const purchaseHint = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if user has enough points
-    if (user.points < cost) {
-      return res.status(400).json({ error: 'Not enough points to purchase this hint' });
+    // Import Challenge model to check if it's from a competition
+    const Challenge = require('../models/Challenge').default;
+    const challenge = await Challenge.findById(challengeId);
+
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    // Check if challenge came from a competition
+    const isFromCompetition = challenge.fromCompetition;
+
+    // Check if user has enough points (either regular or competition points)
+    const availablePoints = isFromCompetition ? user.competitionPoints : user.points;
+    if (availablePoints < cost) {
+      return res.status(400).json({
+        error: isFromCompetition
+          ? 'Not enough competition points to purchase this hint'
+          : 'Not enough points to purchase this hint'
+      });
     }
 
     // Check if hint is already unlocked
@@ -378,8 +394,12 @@ export const purchaseHint = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Hint already unlocked' });
     }
 
-    // Deduct points
-    user.points -= cost;
+    // Deduct points from the appropriate balance
+    if (isFromCompetition) {
+      user.competitionPoints -= cost;
+    } else {
+      user.points -= cost;
+    }
 
     // Add hint to unlocked hints
     user.unlockedHints.push(hintId);
@@ -388,7 +408,8 @@ export const purchaseHint = async (req: AuthRequest, res: Response) => {
 
     res.json({
       message: 'Hint purchased successfully',
-      remainingPoints: user.points,
+      remainingPoints: isFromCompetition ? user.competitionPoints : user.points,
+      pointsType: isFromCompetition ? 'competition' : 'regular',
       unlockedHint: hintId
     });
   } catch (error) {

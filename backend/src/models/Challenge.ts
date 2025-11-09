@@ -35,6 +35,8 @@ export interface IChallenge extends Document {
   files?: IChallengeFile[];
   universityCode: string;
   solves: number;
+  fromCompetition?: boolean;
+  competitionId?: string;
   challengeLink?: string;
   writeup?: {
     content: string;
@@ -105,6 +107,13 @@ const ChallengeSchema: Schema = new Schema({
   solves: {
     type: Number,
     default: 0
+  },
+  fromCompetition: {
+    type: Boolean,
+    default: false
+  },
+  competitionId: {
+    type: String
   },
   challengeLink: {
     type: String

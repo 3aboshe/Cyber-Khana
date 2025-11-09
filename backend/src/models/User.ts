@@ -8,6 +8,7 @@ export interface IUser extends Document {
   role: 'user' | 'admin';
   universityCode: string;
   points: number;
+  competitionPoints: number;
   solvedChallenges: string[];
   solvedChallengesDetails: Array<{
     challengeId: string;
@@ -51,6 +52,10 @@ const UserSchema: Schema = new Schema({
     uppercase: true
   },
   points: {
+    type: Number,
+    default: 0
+  },
+  competitionPoints: {
     type: Number,
     default: 0
   },
