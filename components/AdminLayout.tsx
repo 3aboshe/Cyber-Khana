@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
-import { LayoutDashboard, ShieldCheck, Megaphone, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, Users, LogOut } from 'lucide-react';
 import Button from './ui/button';
 
 interface AdminLayoutProps {
@@ -42,10 +42,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
                             </NavLink>
                         </>
                     )}
-                    <NavLink to="/admin/announcements" className={navLinkClasses}>
-                        <Megaphone className="w-5 h-5 mr-3" />
-                        Announcements
-                    </NavLink>
                     <NavLink to="/admin/users" className={navLinkClasses}>
                         <Users className="w-5 h-5 mr-3" />
                         Users
