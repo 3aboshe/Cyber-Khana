@@ -3,7 +3,7 @@ import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Search, Trophy, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X } from 'lucide-react';
+import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface User {
@@ -411,89 +411,6 @@ const AdminUsersPage: React.FC = () => {
             </p>
           </div>
         </div>
-      </Card>
-
-      {/* Leaderboard Section */}
-      <Card className="p-6 mb-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-yellow-500/20 rounded-lg">
-            <Trophy className="w-6 h-6 text-yellow-400" />
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-zinc-100">University Leaderboard</h2>
-            <p className="text-zinc-400 text-sm">Top performers in your university</p>
-          </div>
-        </div>
-
-        {users.filter(u => !u.isBanned).length === 0 ? (
-          <div className="text-center py-12">
-            <Trophy className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
-            <p className="text-zinc-400 text-lg">No data available</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {users
-              .filter(u => !u.isBanned)
-              .sort((a, b) => b.points - a.points)
-              .slice(0, 10)
-              .map((user, index) => {
-                const avatar = getAvatarInfo(user.profileIcon);
-                const rank = index + 1;
-                const getRankIcon = (rank: number) => {
-                  if (rank === 1) return '🥇';
-                  if (rank === 2) return '🥈';
-                  if (rank === 3) return '🥉';
-                  return `#${rank}`;
-                };
-
-                const getRankColor = (rank: number) => {
-                  if (rank === 1) return 'from-yellow-600 to-yellow-800 border-yellow-500';
-                  if (rank === 2) return 'from-zinc-500 to-zinc-700 border-zinc-400';
-                  if (rank === 3) return 'from-amber-600 to-amber-800 border-amber-500';
-                  return 'from-zinc-700 to-zinc-800 border-zinc-600';
-                };
-
-                return (
-                  <div
-                    key={user._id}
-                    className={`flex items-center gap-4 p-4 rounded-lg border bg-gradient-to-r ${getRankColor(rank)} transition-all hover:scale-[1.02]`}
-                  >
-                    <div className="text-2xl font-bold text-white w-12 text-center">
-                      {getRankIcon(rank)}
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center overflow-hidden border-2 border-white/20">
-                      {avatar.image !== '/avatars/user.svg' ? (
-                        <img src={avatar.image} alt={user.username} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-white font-bold text-lg">
-                          {user.username.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-white font-bold text-lg">
-                          {user.displayName || user.fullName || user.username}
-                        </h3>
-                        {user.role === 'admin' && (
-                          <span className="px-2 py-0.5 bg-white/20 text-white text-xs rounded-full">
-                            Admin
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-white/70 text-sm">
-                        {user.solvedChallengesCount} challenges solved
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-bold text-2xl">{user.points}</div>
-                      <div className="text-white/70 text-sm">points</div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        )}
       </Card>
 
       {/* Change Password Modal */}
