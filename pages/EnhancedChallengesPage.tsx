@@ -26,6 +26,7 @@ const CATEGORIES = [
 
 const DIFFICULTY_OPTIONS = [
   { label: 'All Difficulties', value: 'all' },
+  { label: 'Very Easy', value: 'Very Easy' },
   { label: 'Easy', value: 'Easy' },
   { label: 'Medium', value: 'Medium' },
   { label: 'Hard', value: 'Hard' },
