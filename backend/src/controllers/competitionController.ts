@@ -29,7 +29,32 @@ export const getCompetitions = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const competitions = await Competition.find({ universityCode });
-    res.json(competitions);
+
+    // Calculate dynamic points for each competition's challenges
+    const { calculateDynamicScore } = require('../models/Challenge');
+    const competitionsWithDynamicPoints = competitions.map((competition: any) => {
+      const challengesWithDynamicPoints = competition.challenges.map((challenge: any) => {
+        const dynamicPoints = calculateDynamicScore(
+          challenge.initialPoints || 1000,
+          challenge.minimumPoints || 100,
+          challenge.decay || 200,
+          challenge.solves
+        );
+
+        return {
+          ...challenge.toObject ? challenge.toObject() : challenge,
+          points: dynamicPoints,
+          currentPoints: dynamicPoints
+        };
+      });
+
+      return {
+        ...competition.toObject ? competition.toObject() : competition,
+        challenges: challengesWithDynamicPoints
+      };
+    });
+
+    res.json(competitionsWithDynamicPoints);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching competitions' });
   }

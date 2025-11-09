@@ -10,6 +10,7 @@ export enum ChallengeCategory {
 export interface Hint {
   text: string;
   cost: number;
+  isPublished?: boolean;
 }
 
 export interface ChallengeFile {

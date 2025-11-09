@@ -42,7 +42,9 @@ const AdminChallengesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
   const [isWriteupModalOpen, setIsWriteupModalOpen] = useState(false);
+  const [isHintModalOpen, setIsHintModalOpen] = useState(false);
   const [selectedChallengeForWriteup, setSelectedChallengeForWriteup] = useState<Challenge | null>(null);
+  const [selectedChallengeForHints, setSelectedChallengeForHints] = useState<Challenge | null>(null);
   const [writeupData, setWriteupData] = useState({
     content: '',
     images: [] as string[],
@@ -136,6 +138,20 @@ const AdminChallengesPage: React.FC = () => {
       pdfFile: null,
     });
     setIsWriteupModalOpen(true);
+  };
+
+  const openHintModal = (challenge: Challenge) => {
+    setSelectedChallengeForHints(challenge);
+    setIsHintModalOpen(true);
+  };
+
+  const handlePublishHint = async (challengeId: string, hintIndex: number) => {
+    try {
+      await challengeService.publishHint(challengeId, hintIndex);
+      await fetchChallenges();
+    } catch (err: any) {
+      setError(err.message);
+    }
   };
 
   const handleWriteupSubmit = async (e: React.FormEvent) => {
@@ -307,6 +323,11 @@ const AdminChallengesPage: React.FC = () => {
               <div className="flex gap-2 flex-wrap">
                 <Button variant="secondary" onClick={() => openModal(challenge)}>Edit</Button>
                 <Button variant="secondary" onClick={() => openWriteupModal(challenge)}>Writeup</Button>
+                {(challenge as any).hints && (challenge as any).hints.length > 0 && (
+                  <Button variant="secondary" onClick={() => openHintModal(challenge)}>
+                    Hints ({(challenge as any).hints.filter((h: any) => h.isPublished).length}/{(challenge as any).hints.length})
+                  </Button>
+                )}
                 {challenge.isPublished ? (
                   <Button
                     onClick={() => handleUnpublish(challenge._id)}
@@ -556,6 +577,85 @@ const AdminChallengesPage: React.FC = () => {
               </Button>
             </div>
           </form>
+        </div>
+      </Modal>
+
+      {/* Hint Management Modal */}
+      <Modal
+        isOpen={isHintModalOpen}
+        onClose={() => setIsHintModalOpen(false)}
+        className="max-w-3xl"
+      >
+        <div className="bg-zinc-900 p-8 rounded-lg max-h-[90vh] overflow-y-auto">
+          <h2 className="text-3xl font-bold text-zinc-100 mb-2">
+            Manage Hints
+          </h2>
+          <p className="text-zinc-400 mb-6">
+            {selectedChallengeForHints?.title}
+          </p>
+
+          {selectedChallengeForHints && (selectedChallengeForHints as any).hints && (selectedChallengeForHints as any).hints.length > 0 ? (
+            <div className="space-y-4">
+              {(selectedChallengeForHints as any).hints.map((hint: any, index: number) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border ${
+                    hint.isPublished
+                      ? 'border-emerald-500/30 bg-emerald-500/5'
+                      : 'border-zinc-700 bg-zinc-800/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-zinc-300 font-semibold">Hint #{index + 1}</span>
+                        {hint.isPublished ? (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400">
+                            Published
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-zinc-700 text-zinc-300">
+                            Unpublished
+                          </span>
+                        )}
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400">
+                          {hint.cost} points
+                        </span>
+                      </div>
+                      <p className="text-zinc-400 text-sm">
+                        {hint.text.length > 200
+                          ? `${hint.text.substring(0, 200)}...`
+                          : hint.text}
+                      </p>
+                    </div>
+                    {!hint.isPublished && (
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          if (selectedChallengeForHints) {
+                            handlePublishHint(selectedChallengeForHints._id, index);
+                          }
+                        }}
+                        className="ml-4"
+                      >
+                        Publish
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-zinc-500 text-center py-8">
+              No hints available for this challenge
+            </div>
+          )}
+
+          <div className="flex justify-end mt-6 pt-4 border-t border-zinc-700">
+            <Button onClick={() => setIsHintModalOpen(false)}>
+              Close
+            </Button>
+          </div>
         </div>
       </Modal>
     </div>

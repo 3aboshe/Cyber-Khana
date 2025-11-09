@@ -173,9 +173,10 @@ const CompetitionDashboardPage: React.FC = () => {
     if (!id) return;
     try {
       // Fetch competition-specific announcements
-      const response = await fetch(`/api/announcements/competition/${id}`, {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/announcements/competition/${id}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': token ? `Bearer ${token}` : ''
         }
       });
       if (response.ok) {
@@ -187,9 +188,15 @@ const CompetitionDashboardPage: React.FC = () => {
         const readIds = storedRead ? JSON.parse(storedRead) : [];
         const unread = data.filter((a: any) => !readIds.includes(a._id));
         setUnreadCount(unread.length);
+      } else {
+        // If API fails, show empty state
+        setAnnouncements([]);
+        setUnreadCount(0);
       }
     } catch (err) {
       console.error('Error fetching announcements:', err);
+      setAnnouncements([]);
+      setUnreadCount(0);
     }
   };
 
