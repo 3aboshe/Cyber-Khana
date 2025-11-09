@@ -109,7 +109,7 @@ const CompetitionChallengeSchema: Schema = new Schema({
   },
   difficulty: {
     type: String,
-    enum: ['Easy', 'Medium', 'Hard', 'Expert'],
+    enum: ['Very Easy', 'Easy', 'Medium', 'Hard', 'Expert'],
     default: 'Medium'
   },
   estimatedTime: {

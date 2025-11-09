@@ -23,7 +23,7 @@ const initialFormState: Omit<Challenge, 'id' | 'solves'> = {
   initialPoints: 1000,
   minimumPoints: 100,
   decay: 200,
-  difficulty: 'Medium',
+  difficulty: 'Very Easy',
   estimatedTime: 30,
   challengeLink: '',
 };
@@ -103,6 +103,7 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
         <div>
           <label className="text-sm font-medium text-zinc-300 mb-1 block">Difficulty</label>
           <Select name="difficulty" value={formData.difficulty} onChange={handleChange}>
+            <option value="Very Easy">Very Easy</option>
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
             <option value="Hard">Hard</option>

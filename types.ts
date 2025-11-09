@@ -35,7 +35,7 @@ export interface Challenge {
   minimumPoints?: number;
   decay?: number;
   currentPoints?: number;
-  difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  difficulty?: 'Very Easy' | 'Easy' | 'Medium' | 'Hard' | 'Expert';
   estimatedTime?: number;
   challengeLink?: string;
 }
