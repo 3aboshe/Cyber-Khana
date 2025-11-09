@@ -5,9 +5,11 @@ import { challengeService } from '../../services/challengeService';
 import { competitionService } from '../../services/competitionService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
+import { Copy, Building2 } from 'lucide-react';
 
 const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalChallenges: 0,
@@ -41,6 +43,13 @@ const AdminDashboardPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -104,6 +113,37 @@ const AdminDashboardPage: React.FC = () => {
           <Button onClick={() => navigate('/admin/announcements')}>Manage Announcements</Button>
         </Card>
       </div>
+
+      {/* Super Admin Section - Only visible to super admins */}
+      {user?.role === 'super-admin' && (
+        <>
+          <h2 className="text-2xl font-bold text-zinc-100 mb-4 mt-8">Super Admin Features</h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Building2 className="w-6 h-6 text-purple-400" />
+                <h3 className="text-xl font-bold text-zinc-100">University Management</h3>
+              </div>
+              <p className="text-zinc-400 mb-4">Manage universities and their settings</p>
+              <Button onClick={() => navigate('/admin/super')} className="bg-purple-600 hover:bg-purple-700">
+                Manage Universities
+              </Button>
+            </Card>
+
+            <Card className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Copy className="w-6 h-6 text-blue-400" />
+                <h3 className="text-xl font-bold text-zinc-100">Copy Challenge</h3>
+              </div>
+              <p className="text-zinc-400 mb-4">Copy challenges from one university to another</p>
+              <Button onClick={() => navigate('/admin/super')} className="bg-blue-600 hover:bg-blue-700">
+                <Copy className="w-4 h-4 mr-2" />
+                Copy Challenge
+              </Button>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   );
 };
