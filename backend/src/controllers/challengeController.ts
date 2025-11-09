@@ -450,11 +450,8 @@ export const uploadWriteupPdfController = async (req: AuthRequest, res: Response
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      // Construct URL more reliably, handling different environments
-      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
-      const host = req.get('host');
-      const baseUrl = process.env.PUBLIC_URL || `${protocol}://${host}`;
-      const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
+      // Use relative URL for better compatibility
+      const fileUrl = `/uploads/${req.file.filename}`;
 
       res.json({
         name: req.file.originalname,

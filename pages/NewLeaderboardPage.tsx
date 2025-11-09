@@ -6,6 +6,8 @@ import { userService } from '../services/userService';
 interface LeaderboardUser {
   _id: string;
   username: string;
+  fullName?: string;
+  displayName?: string;
   points: number;
   solvedChallenges: number;
   universityCode: string;

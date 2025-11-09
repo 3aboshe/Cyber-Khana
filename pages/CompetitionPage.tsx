@@ -94,6 +94,13 @@ const CompetitionPage: React.FC = () => {
     }
   };
 
+  // Check if competition has actually ended based on time
+  const isCompetitionTimeEnded = (endTime: string) => {
+    const now = new Date();
+    const end = new Date(endTime);
+    return now > end;
+  };
+
   const getTimeUntilStart = (startTime: string) => {
     const now = new Date();
     const start = new Date(startTime);
@@ -136,9 +143,9 @@ const CompetitionPage: React.FC = () => {
     );
   }
 
-  const activeCompetitions = competitions.filter(c => c.status === 'active');
-  const upcomingCompetitions = competitions.filter(c => c.status === 'pending');
-  const pastCompetitions = competitions.filter(c => c.status === 'ended');
+  const activeCompetitions = competitions.filter(c => c.status === 'active' && !isCompetitionTimeEnded(c.endTime));
+  const upcomingCompetitions = competitions.filter(c => c.status === 'pending' || (c.status === 'active' && new Date() < new Date(c.startTime)));
+  const pastCompetitions = competitions.filter(c => c.status === 'ended' || isCompetitionTimeEnded(c.endTime));
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -244,12 +251,12 @@ const CompetitionPage: React.FC = () => {
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             {pastCompetitions.map((competition) => (
-              <Card key={competition._id} className="p-6 border-red-500/50 opacity-90">
+              <Card key={competition._id} className="p-6 border-2 border-red-500/70 bg-red-950/20 shadow-lg shadow-red-500/10">
                 <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-red-500/20 rounded-lg">
-                    <Lock className="w-8 h-8 text-red-400" />
+                  <div className="p-3 bg-red-500/30 rounded-lg">
+                    <Lock className="w-8 h-8 text-red-300" />
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(competition.status)}`}>
+                  <span className="px-3 py-1 rounded-full text-sm bg-red-500/30 text-red-200 border border-red-500/50">
                     ENDED
                   </span>
                 </div>
@@ -260,7 +267,7 @@ const CompetitionPage: React.FC = () => {
                     <span>{competition.challenges?.length || 0} challenges</span>
                   </div>
                 </div>
-                <div className="text-zinc-500 text-sm">
+                <div className="text-red-300/80 text-sm font-medium">
                   Competition has ended
                 </div>
               </Card>

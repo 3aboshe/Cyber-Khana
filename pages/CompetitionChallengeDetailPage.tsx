@@ -138,6 +138,14 @@ const CompetitionChallengeDetailPage: React.FC = () => {
     );
   }
 
+  // Check if competition has ended
+  const isCompetitionEnded = () => {
+    if (!competition) return false;
+    const now = new Date();
+    const endTime = new Date(competition.endTime);
+    return now > endTime || competition.status === 'ended';
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
@@ -215,7 +223,15 @@ const CompetitionChallengeDetailPage: React.FC = () => {
           <Card className="p-6">
             <h2 className="text-2xl font-bold text-zinc-100 mb-4">Submit Flag</h2>
 
-            {isSolved ? (
+            {isCompetitionEnded() ? (
+              <div className="flex items-center gap-3 p-4 bg-red-500/20 rounded-lg border border-red-500/50">
+                <Lock className="w-6 h-6 text-red-400" />
+                <div>
+                  <p className="text-red-400 font-semibold">Competition Ended</p>
+                  <p className="text-red-400/80 text-sm">This challenge is no longer active</p>
+                </div>
+              </div>
+            ) : isSolved ? (
               <div className="flex items-center gap-3 p-4 bg-emerald-500/20 rounded-lg">
                 <CheckCircle className="w-6 h-6 text-emerald-400" />
                 <div>
