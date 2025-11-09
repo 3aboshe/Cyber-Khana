@@ -34,6 +34,8 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       // If user is not admin and writeup is not unlocked, remove writeup data
       if (req.user?.role === 'user' && !challenge.writeup?.isUnlocked) {
         challengeObj.writeup = {
+          content: '',
+          images: [],
           isUnlocked: false
         };
       }
@@ -100,6 +102,8 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
     // If user is not admin and writeup is not unlocked, remove writeup data
     if (req.user?.role === 'user' && !challenge.writeup?.isUnlocked) {
       challengeObj.writeup = {
+        content: '',
+        images: [],
         isUnlocked: false
       };
     }
