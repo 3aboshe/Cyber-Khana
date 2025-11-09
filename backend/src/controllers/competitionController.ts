@@ -570,3 +570,23 @@ export const buyCompetitionHint = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Error buying hint' });
   }
 };
+
+export const deleteCompetition = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    await competition.deleteOne();
+    res.json({ message: 'Competition deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting competition' });
+  }
+};

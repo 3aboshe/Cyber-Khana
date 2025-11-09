@@ -22,6 +22,9 @@ export const competitionService = {
   createCompetition: (competitionData: any) =>
     apiService.post('/competitions', competitionData),
 
+  deleteCompetition: (id: string) =>
+    apiService.delete(`/competitions/${id}`),
+
   updateCompetitionStatus: (id: string, status: string) =>
     apiService.patch(`/competitions/${id}/status`, { status }),
 

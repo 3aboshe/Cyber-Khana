@@ -204,6 +204,19 @@ const AdminCompetitionsPage: React.FC = () => {
     }
   };
 
+  const handleDeleteCompetition = async (competition: Competition) => {
+    if (!confirm(`Are you sure you want to delete the competition "${competition.name}"?\n\nThis action cannot be undone and all participant progress will be lost.`)) {
+      return;
+    }
+
+    try {
+      await competitionService.deleteCompetition(competition._id);
+      await fetchCompetitions();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const openModal = (competition?: Competition) => {
     if (competition) {
       setEditingCompetition(competition);
@@ -307,6 +320,12 @@ const AdminCompetitionsPage: React.FC = () => {
                 {competition.status === 'active' && (
                   <Button variant="secondary" onClick={() => handleStatusChange(competition._id, 'ended')}>End</Button>
                 )}
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDeleteCompetition(competition)}
+                >
+                  Delete
+                </Button>
               </div>
             </div>
 
