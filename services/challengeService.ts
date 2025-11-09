@@ -36,4 +36,7 @@ export const challengeService = {
 
   unpublishChallenge: (id: string) =>
     apiService.post(`/challenges/${id}/unpublish`),
+
+  publishHint: (id: string, hintIndex: number) =>
+    apiService.post(`/challenges/${id}/publish-hint`, { hintIndex }),
 };
