@@ -4,6 +4,7 @@ import { ChallengeCategory } from '../types';
 export interface ICompetitionHint {
   text: string;
   cost: number;
+  isPublished?: boolean;
 }
 
 export interface ICompetitionFile {
@@ -46,7 +47,11 @@ export interface ICompetition extends Document {
 
 const CompetitionHintSchema = new Schema({
   text: String,
-  cost: Number
+  cost: Number,
+  isPublished: {
+    type: Boolean,
+    default: false
+  }
 });
 
 const CompetitionFileSchema = new Schema({

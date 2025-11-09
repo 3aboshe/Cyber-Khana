@@ -29,8 +29,10 @@ const AdminCompetitionsPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
+  const [isHintModalOpen, setIsHintModalOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
+  const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [selectedChallenges, setSelectedChallenges] = useState<Set<string>>(new Set());
   const [timeMode, setTimeMode] = useState<'datetime' | 'timer'>('datetime');
   const [formData, setFormData] = useState({
@@ -164,6 +166,28 @@ const AdminCompetitionsPage: React.FC = () => {
     setSelectedChallenges(newSelected);
   };
 
+  const openHintModal = (competition: Competition, challenge: any) => {
+    setSelectedCompetition(competition);
+    setSelectedChallenge(challenge);
+    setIsHintModalOpen(true);
+  };
+
+  const handlePublishHint = async (hintIndex: number) => {
+    if (!selectedCompetition || !selectedChallenge) return;
+
+    try {
+      await competitionService.publishCompetitionHint(
+        selectedCompetition._id,
+        selectedChallenge._id,
+        hintIndex
+      );
+      await fetchCompetitions();
+      setIsHintModalOpen(false);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
   const handleAddSelectedChallenges = async () => {
     if (!selectedCompetition || selectedChallenges.size === 0) return;
 
@@ -294,12 +318,37 @@ const AdminCompetitionsPage: React.FC = () => {
                 </Button>
               </div>
               <div className="grid gap-2">
-                {competition.challenges.map((challenge: any) => (
-                  <div key={challenge._id} className="bg-zinc-800/50 p-3 rounded">
-                    <div className="text-zinc-200 font-medium">{challenge.title}</div>
-                    <div className="text-sm text-zinc-500">{challenge.category} • {challenge.points} pts • {challenge.solves} solves</div>
-                  </div>
-                ))}
+                {competition.challenges.map((challenge: any) => {
+                  // Calculate dynamic points if not already calculated
+                  const displayPoints = challenge.currentPoints ||
+                    (challenge.initialPoints && challenge.minimumPoints && challenge.decay
+                      ? Math.ceil(
+                          ((challenge.minimumPoints - challenge.initialPoints) / (challenge.decay * challenge.decay)) *
+                          ((challenge.solves || 0) * (challenge.solves || 0)) +
+                          challenge.initialPoints
+                        )
+                      : challenge.points);
+
+                  return (
+                    <div key={challenge._id} className="bg-zinc-800/50 p-3 rounded">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex-1">
+                          <div className="text-zinc-200 font-medium">{challenge.title}</div>
+                          <div className="text-sm text-zinc-500">{challenge.category} • {displayPoints} pts • {challenge.solves} solves</div>
+                        </div>
+                        {challenge.hints && challenge.hints.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openHintModal(competition, challenge)}
+                          >
+                            Hints ({challenge.hints.filter((h: any) => h.isPublished).length}/{challenge.hints.length})
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
                 {competition.challenges.length === 0 && (
                   <div className="text-zinc-500 text-center py-4">No challenges added yet</div>
                 )}
@@ -525,6 +574,81 @@ const AdminCompetitionsPage: React.FC = () => {
                 Add {selectedChallenges.size} Challenge{selectedChallenges.size !== 1 ? 's' : ''}
               </Button>
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Hint Management Modal */}
+      <Modal
+        isOpen={isHintModalOpen}
+        onClose={() => setIsHintModalOpen(false)}
+        className="max-w-3xl"
+      >
+        <div className="bg-zinc-900 p-8 rounded-lg max-h-[90vh] overflow-y-auto">
+          <h2 className="text-3xl font-bold text-zinc-100 mb-2">
+            Manage Hints
+          </h2>
+          <p className="text-zinc-400 mb-6">
+            {selectedChallenge?.title}
+          </p>
+
+          {selectedChallenge?.hints && selectedChallenge.hints.length > 0 ? (
+            <div className="space-y-4">
+              {selectedChallenge.hints.map((hint: any, index: number) => (
+                <div
+                  key={index}
+                  className={`p-4 rounded-lg border ${
+                    hint.isPublished
+                      ? 'border-emerald-500/30 bg-emerald-500/5'
+                      : 'border-zinc-700 bg-zinc-800/50'
+                  }`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-zinc-300 font-semibold">Hint #{index + 1}</span>
+                        {hint.isPublished ? (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400">
+                            Published
+                          </span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-zinc-700 text-zinc-300">
+                            Unpublished
+                          </span>
+                        )}
+                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-400">
+                          {hint.cost} points
+                        </span>
+                      </div>
+                      <p className="text-zinc-400 text-sm">
+                        {hint.text.length > 200
+                          ? `${hint.text.substring(0, 200)}...`
+                          : hint.text}
+                      </p>
+                    </div>
+                    {!hint.isPublished && (
+                      <Button
+                        size="sm"
+                        onClick={() => handlePublishHint(index)}
+                        className="ml-4"
+                      >
+                        Publish
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-zinc-500 text-center py-8">
+              No hints available for this challenge
+            </div>
+          )}
+
+          <div className="flex justify-end mt-6 pt-4 border-t border-zinc-700">
+            <Button onClick={() => setIsHintModalOpen(false)}>
+              Close
+            </Button>
           </div>
         </div>
       </Modal>

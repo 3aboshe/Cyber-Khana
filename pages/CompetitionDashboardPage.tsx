@@ -5,8 +5,7 @@ import { refreshCompetitionDashboard } from '../services/competitionRefreshServi
 import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
-import Announcements from '../components/Announcements';
-import { Trophy, Clock, Users, ArrowLeft, TrendingUp, Activity, CheckCircle, ArrowRight, Lock } from 'lucide-react';
+import { Trophy, Clock, Users, ArrowLeft, TrendingUp, Activity, CheckCircle, ArrowRight, Lock, Bell } from 'lucide-react';
 
 const getCategoryColor = (cat: string) => {
   const colors: { [key: string]: string } = {
@@ -78,6 +77,9 @@ const CompetitionDashboardPage: React.FC = () => {
   const [securityCode, setSecurityCode] = useState('');
   const [securityCodeError, setSecurityCodeError] = useState('');
   const [enteringCode, setEnteringCode] = useState(false);
+  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [showAnnouncements, setShowAnnouncements] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Mock data for leaderboard and activity (in real app, these would come from APIs)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -92,6 +94,7 @@ const CompetitionDashboardPage: React.FC = () => {
 
     fetchCompetition();
     fetchLeaderboardAndActivity();
+    fetchAnnouncements();
 
     // Listen for refresh events
     const handleStorageChange = (e: StorageEvent) => {
@@ -164,6 +167,36 @@ const CompetitionDashboardPage: React.FC = () => {
       setLeaderboard([]);
       setRecentActivity([]);
     }
+  };
+
+  const fetchAnnouncements = async () => {
+    if (!id) return;
+    try {
+      // Fetch competition-specific announcements
+      const response = await fetch(`/api/announcements/competition/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAnnouncements(data);
+
+        // Calculate unread count (for demo, all are unread if announcements exist)
+        const storedRead = localStorage.getItem(`competition_${id}_read_announcements`);
+        const readIds = storedRead ? JSON.parse(storedRead) : [];
+        const unread = data.filter((a: any) => !readIds.includes(a._id));
+        setUnreadCount(unread.length);
+      }
+    } catch (err) {
+      console.error('Error fetching announcements:', err);
+    }
+  };
+
+  const markAnnouncementsAsRead = () => {
+    const readIds = announcements.map((a: any) => a._id);
+    localStorage.setItem(`competition_${id}_read_announcements`, JSON.stringify(readIds));
+    setUnreadCount(0);
   };
 
   const handleSecurityCodeSubmit = (e: React.FormEvent) => {
@@ -251,13 +284,65 @@ const CompetitionDashboardPage: React.FC = () => {
               <Clock className="w-5 h-5 text-emerald-400" />
               <span>Ends in: {getTimeRemaining(competition.endTime)}</span>
             </div>
-            <div className="flex items-center gap-2 text-zinc-300">
+            <div className="flex items-center gap-2 text-zinc-300 mb-2">
               <Users className="w-5 h-5 text-emerald-400" />
               <span>{competition.challenges?.length || 0} challenges</span>
+            </div>
+            <div className="flex items-center justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAnnouncements(!showAnnouncements);
+                  if (!showAnnouncements) {
+                    markAnnouncementsAsRead();
+                  }
+                }}
+                className="relative"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {unreadCount}
+                  </span>
+                )}
+                <span className="ml-2">Announcements</span>
+              </Button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Announcements Section */}
+      {showAnnouncements && (
+        <Card className="p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-2xl font-bold text-zinc-100">Competition Announcements</h2>
+          </div>
+          {announcements.length > 0 ? (
+            <div className="space-y-4">
+              {announcements.map((announcement: any) => (
+                <div key={announcement._id} className="p-4 bg-zinc-800 rounded-lg border border-zinc-700">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-lg font-semibold text-zinc-200">{announcement.title}</h3>
+                    <span className="text-xs text-zinc-500">
+                      {new Date(announcement.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-zinc-300 text-sm">{announcement.content}</p>
+                  <div className="mt-2 text-xs text-zinc-500">
+                    By: {announcement.author}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-zinc-500">
+              No announcements for this competition yet
+            </div>
+          )}
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content - Challenges */}

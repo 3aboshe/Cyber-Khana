@@ -302,7 +302,11 @@ export const addChallengeToCompetition = async (req: AuthRequest, res: Response)
       author: challenge.author,
       flag: challenge.flag,
       hints: challenge.hints || [],
-      files: challenge.files || []
+      files: challenge.files || [],
+      initialPoints: challenge.initialPoints || 1000,
+      minimumPoints: challenge.minimumPoints || 100,
+      decay: challenge.decay || 200,
+      currentPoints: challenge.currentPoints || 1000
     };
 
     competition.challenges.push(competitionChallenge as any);
@@ -419,5 +423,125 @@ export const getCompetitionActivity = async (req: AuthRequest, res: Response) =>
     res.json(recentActivity);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching competition activity' });
+  }
+};
+
+export const publishCompetitionHint = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, challengeId } = req.params;
+    const { hintIndex } = req.body;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Check if user has access
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const challengeIndex = competition.challenges.findIndex((c: any) => c._id.toString() === challengeId);
+    if (challengeIndex === -1) {
+      return res.status(404).json({ error: 'Challenge not found in competition' });
+    }
+
+    const challenge = competition.challenges[challengeIndex];
+
+    if (!challenge.hints || challenge.hints.length === 0) {
+      return res.status(400).json({ error: 'No hints found for this challenge' });
+    }
+
+    if (hintIndex < 0 || hintIndex >= challenge.hints.length) {
+      return res.status(400).json({ error: 'Invalid hint index' });
+    }
+
+    // Add isPublished field if it doesn't exist
+    if (!challenge.hints[hintIndex].hasOwnProperty('isPublished')) {
+      challenge.hints[hintIndex].isPublished = true;
+    } else {
+      challenge.hints[hintIndex].isPublished = true;
+    }
+
+    competition.markModified('challenges');
+    await competition.save();
+
+    res.json({ message: 'Hint published successfully', hints: challenge.hints });
+  } catch (error) {
+    res.status(500).json({ error: 'Error publishing hint' });
+  }
+};
+
+export const buyCompetitionHint = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, challengeId } = req.params;
+    const { hintIndex } = req.body;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    // Check if competition is active
+    const now = new Date();
+    if (now < competition.startTime) {
+      return res.status(400).json({ error: 'Competition has not started yet' });
+    }
+
+    if (now > competition.endTime) {
+      return res.status(400).json({ error: 'Competition has ended' });
+    }
+
+    const challengeIndex = competition.challenges.findIndex((c: any) => c._id.toString() === challengeId);
+    if (challengeIndex === -1) {
+      return res.status(404).json({ error: 'Challenge not found in competition' });
+    }
+
+    const challenge = competition.challenges[challengeIndex];
+
+    if (!challenge.hints || challenge.hints.length === 0) {
+      return res.status(400).json({ error: 'No hints available for this challenge' });
+    }
+
+    if (hintIndex < 0 || hintIndex >= challenge.hints.length) {
+      return res.status(400).json({ error: 'Invalid hint index' });
+    }
+
+    const hint = challenge.hints[hintIndex];
+
+    if (!hint.isPublished) {
+      return res.status(400).json({ error: 'This hint has not been published by the admin yet' });
+    }
+
+    const user = await User.findById(req.user?.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user already bought this hint
+    const hintKey = `${id}_${challengeId}_${hintIndex}`;
+    if (user.unlockedHints.includes(hintKey)) {
+      return res.status(400).json({ error: 'You have already unlocked this hint' });
+    }
+
+    // Check if user has enough points
+    if (user.points < hint.cost) {
+      return res.status(400).json({ error: 'Insufficient points' });
+    }
+
+    // Deduct points and add hint to unlocked hints
+    user.points -= hint.cost;
+    user.unlockedHints.push(hintKey);
+    await user.save();
+
+    res.json({
+      success: true,
+      hint: hint.text,
+      remainingPoints: user.points
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error buying hint' });
   }
 };
