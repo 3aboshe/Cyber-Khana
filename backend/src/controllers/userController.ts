@@ -353,3 +353,45 @@ export const changeUserPassword = async (req: AuthRequest, res: Response) => {
     res.status(500).json({ error: 'Error changing user password' });
   }
 };
+
+export const purchaseHint = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'user') {
+      return res.status(403).json({ error: 'Only users can purchase hints' });
+    }
+
+    const { challengeId, hintIndex, cost } = req.body;
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user has enough points
+    if (user.points < cost) {
+      return res.status(400).json({ error: 'Not enough points to purchase this hint' });
+    }
+
+    // Check if hint is already unlocked
+    const hintId = `${challengeId}-${hintIndex}`;
+    if (user.unlockedHints.includes(hintId)) {
+      return res.status(400).json({ error: 'Hint already unlocked' });
+    }
+
+    // Deduct points
+    user.points -= cost;
+
+    // Add hint to unlocked hints
+    user.unlockedHints.push(hintId);
+
+    await user.save();
+
+    res.json({
+      message: 'Hint purchased successfully',
+      remainingPoints: user.points,
+      unlockedHint: hintId
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error purchasing hint' });
+  }
+};

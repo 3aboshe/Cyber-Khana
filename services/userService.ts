@@ -24,4 +24,7 @@ export const userService = {
 
   createAdmin: (adminData: any) =>
     apiService.post('/users/create-admin', adminData),
+
+  purchaseHint: (challengeId: string, hintIndex: number, cost: number) =>
+    apiService.post('/users/purchase-hint', { challengeId, hintIndex, cost }),
 };

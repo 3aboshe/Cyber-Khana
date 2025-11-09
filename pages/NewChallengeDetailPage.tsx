@@ -53,6 +53,10 @@ const NewChallengeDetailPage: React.FC = () => {
   const [solved, setSolved] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [solvedChallenges, setSolvedChallenges] = useState<string[]>([]);
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const [showHintModal, setShowHintModal] = useState(false);
+  const [selectedHint, setSelectedHint] = useState<{ index: number; cost: number; title: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     if (id) {
@@ -69,7 +73,9 @@ const NewChallengeDetailPage: React.FC = () => {
       ]);
 
       setChallenge(challengeData);
+      setCurrentUser(profileData);
       setSolvedChallenges(profileData.solvedChallenges || []);
+      setUnlockedHints(profileData.unlockedHints || []);
 
       // Check if this challenge is already solved
       const isAlreadySolved = profileData.solvedChallenges?.includes(id!);
@@ -109,6 +115,39 @@ const NewChallengeDetailPage: React.FC = () => {
       setMessage({ type: 'error', text: err.message || 'Incorrect flag. Try again!' });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handlePurchaseHint = (hintIndex: number, cost: number) => {
+    if (!currentUser || currentUser.points < cost) {
+      setMessage({ type: 'error', text: 'Not enough points to purchase this hint!' });
+      return;
+    }
+    setSelectedHint({ index: hintIndex, cost, title: `Hint ${hintIndex + 1}` });
+    setShowHintModal(true);
+  };
+
+  const confirmPurchaseHint = async () => {
+    if (!selectedHint || !currentUser) return;
+
+    try {
+      await userService.purchaseHint(challenge!._id, selectedHint.index, selectedHint.cost);
+
+      // Add the hint to unlocked hints
+      const hintId = `${challenge!._id}-${selectedHint.index}`;
+      setUnlockedHints([...unlockedHints, hintId]);
+
+      // Update user points
+      setCurrentUser({
+        ...currentUser,
+        points: currentUser.points - selectedHint.cost
+      });
+
+      setMessage({ type: 'success', text: 'Hint unlocked successfully!' });
+      setShowHintModal(false);
+      setSelectedHint(null);
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to purchase hint' });
     }
   };
 
@@ -300,23 +339,54 @@ const NewChallengeDetailPage: React.FC = () => {
               <div className="space-y-3">
                 {challenge.hints
                   .filter((hint: any) => hint.isPublished !== false)
-                  .map((hint: any, index: number) => (
-                    <div
-                      key={index}
-                      className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                          <HelpCircle className="w-4 h-4" />
-                          <span>Hint {index + 1}</span>
+                  .map((hint: any, index: number) => {
+                    const hintId = `${challenge._id}-${index}`;
+                    const isUnlocked = unlockedHints.includes(hintId);
+
+                    if (isUnlocked) {
+                      // Show unlocked hint
+                      return (
+                        <div
+                          key={index}
+                          className="p-4 bg-emerald-900/20 rounded-lg border border-emerald-700/50"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <HelpCircle className="w-4 h-4 text-emerald-400" />
+                            <span className="text-emerald-400 text-sm font-medium">Unlocked Hint {index + 1}</span>
+                          </div>
+                          <p className="text-zinc-300">{hint.text}</p>
                         </div>
-                        <span className="text-yellow-400 text-sm">
-                          -{hint.cost} points
-                        </span>
-                      </div>
-                      <p className="text-zinc-300">{hint.text}</p>
-                    </div>
-                  ))}
+                      );
+                    } else {
+                      // Show locked hint with purchase button
+                      return (
+                        <div
+                          key={index}
+                          className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                              <Lock className="w-4 h-4" />
+                              <span>Hint {index + 1}</span>
+                            </div>
+                            <span className="text-yellow-400 text-sm font-medium">
+                              {hint.cost} points
+                            </span>
+                          </div>
+                          <Button
+                            onClick={() => handlePurchaseHint(index, hint.cost)}
+                            disabled={!currentUser || currentUser.points < hint.cost}
+                            className="w-full"
+                            variant="secondary"
+                          >
+                            {currentUser && currentUser.points < hint.cost
+                              ? 'Not enough points'
+                              : `Purchase for ${hint.cost} points`}
+                          </Button>
+                        </div>
+                      );
+                    }
+                  })}
                 {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
                   <div className="text-center py-8 text-zinc-500">
                     <HelpCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -365,6 +435,44 @@ const NewChallengeDetailPage: React.FC = () => {
           >
             OK
           </button>
+        </div>
+      </Modal>
+
+      {/* Hint Purchase Modal */}
+      <Modal
+        isOpen={showHintModal}
+        onClose={() => setShowHintModal(false)}
+        className="max-w-md"
+      >
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-zinc-100 mb-4">Confirm Hint Purchase</h3>
+          {selectedHint && (
+            <>
+              <p className="text-zinc-400 mb-6">
+                Are you sure you want to purchase <strong className="text-yellow-400">{selectedHint.title}</strong> for{' '}
+                <strong className="text-yellow-400">{selectedHint.cost} points</strong>?
+                <br />
+                <span className="text-sm text-zinc-500 mt-2 block">
+                  This action cannot be undone.
+                </span>
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowHintModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmPurchaseHint}
+                  className="flex-1"
+                >
+                  Purchase
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
     </div>

@@ -10,7 +10,8 @@ import {
   updateProfileIcon,
   banUser,
   unbanUser,
-  changeUserPassword
+  changeUserPassword,
+  purchaseHint
 } from '../controllers/userController';
 import { authenticate, authenticateSuperAdmin, requireAdmin } from '../middleware/auth';
 
@@ -27,5 +28,6 @@ router.post('/demote/:userId', authenticate, authenticateSuperAdmin, demoteFromA
 router.post('/change-password/:userId', authenticate, authenticateSuperAdmin, changeUserPassword);
 router.post('/ban/:userId', authenticate, requireAdmin, banUser);
 router.post('/unban/:userId', authenticate, requireAdmin, unbanUser);
+router.post('/purchase-hint', authenticate, purchaseHint);
 
 export default router;
