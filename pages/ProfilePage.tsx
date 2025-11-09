@@ -4,7 +4,7 @@ import Card from '../components/ui/EnhancedCard';
 import Button from '../components/ui/EnhancedButton';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
-import { Trophy, Code, Target, Award, Calendar, TrendingUp, Star, Edit3 } from 'lucide-react';
+import { Trophy, Code, Target, Award, Calendar, TrendingUp, Star } from 'lucide-react';
 import AchievementsSystem from '../components/AchievementsSystem';
 
 interface UserStats {
@@ -30,9 +30,6 @@ const ProfilePage: React.FC = () => {
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState('');
-  const [originalDisplayName, setOriginalDisplayName] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -45,9 +42,6 @@ const ProfilePage: React.FC = () => {
       if (userData) {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        const nameToUse = parsedUser.displayName || parsedUser.username;
-        setDisplayName(nameToUse);
-        setOriginalDisplayName(nameToUse);
 
         const profile = await userService.getUserProfile();
         setStats({
@@ -87,24 +81,6 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleSaveDisplayName = async () => {
-    try {
-      await userService.updateProfile({ displayName });
-      const updatedUser = { ...user, displayName };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setOriginalDisplayName(displayName);
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Error updating profile:', err);
-    }
-  };
-
-  const handleCancel = () => {
-    setDisplayName(originalDisplayName);
-    setIsEditing(false);
-  };
-
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -135,42 +111,14 @@ const ProfilePage: React.FC = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center shadow-2xl">
             <span className="text-4xl md:text-5xl text-white font-bold">
-              {displayName.charAt(0).toUpperCase()}
+              {(user?.displayName || user?.fullName || user?.username).charAt(0).toUpperCase()}
             </span>
           </div>
 
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              {isEditing ? (
-                <div className="flex items-center gap-3 flex-1">
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="flex-1 px-4 py-3 bg-zinc-700 border border-zinc-600 rounded-lg text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-lg"
-                    placeholder="Display name"
-                  />
-                  <Button onClick={handleSaveDisplayName} className="px-6 py-3 text-lg">
-                    Save
-                  </Button>
-                  <Button variant="ghost" onClick={handleCancel} className="px-6 py-3 text-lg">
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <h2 className="text-3xl font-bold text-zinc-100">{displayName}</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    leftIcon={<Edit3 className="w-4 h-4" />}
-                  >
-                    Edit
-                  </Button>
-                </>
-              )}
-            </div>
+            <h2 className="text-3xl font-bold text-zinc-100 mb-2">
+              {user?.displayName || user?.fullName || user?.username}
+            </h2>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
               <span className="flex items-center gap-1">
