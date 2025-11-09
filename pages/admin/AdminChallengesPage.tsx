@@ -5,6 +5,7 @@ import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import Textarea from '../../components/ui/textarea';
 import Modal from '../../components/ui/Modal';
+import { PlusCircle, Trash2 } from 'lucide-react';
 
 interface Challenge {
   _id: string;
@@ -64,6 +65,7 @@ const AdminChallengesPage: React.FC = () => {
     difficulty: 'Medium',
     estimatedTime: 30,
     challengeLink: '',
+    hints: [] as Array<{ text: string; cost: number; isPublished?: boolean }>,
   });
   const [challengeFiles, setChallengeFiles] = useState<FileList | null>(null);
   const [filter, setFilter] = useState<'all' | 'published' | 'unpublished'>('all');
@@ -214,6 +216,7 @@ const AdminChallengesPage: React.FC = () => {
         difficulty: (challenge as any).difficulty || 'Medium',
         estimatedTime: (challenge as any).estimatedTime || 30,
         challengeLink: (challenge as any).challengeLink || '',
+        hints: (challenge as any).hints || [],
       });
     } else {
       setEditingChallenge(null);
@@ -230,10 +233,31 @@ const AdminChallengesPage: React.FC = () => {
         difficulty: 'Medium',
         estimatedTime: 30,
         challengeLink: '',
+        hints: [],
       });
     }
     setChallengeFiles(null);
     setIsModalOpen(true);
+  };
+
+  const addHint = () => {
+    setFormData({
+      ...formData,
+      hints: [...formData.hints, { text: '', cost: 10, isPublished: false }]
+    });
+  };
+
+  const removeHint = (index: number) => {
+    setFormData({
+      ...formData,
+      hints: formData.hints.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateHint = (index: number, field: 'text' | 'cost', value: string) => {
+    const newHints = [...formData.hints];
+    newHints[index] = { ...newHints[index], [field]: field === 'cost' ? parseInt(value) || 0 : value };
+    setFormData({ ...formData, hints: newHints });
   };
 
   const closeModal = () => {
@@ -492,6 +516,44 @@ const AdminChallengesPage: React.FC = () => {
                   />
                   <p className="text-zinc-500 text-xs mt-1">Controls how fast points drop</p>
                 </div>
+              </div>
+            </div>
+
+            <div className="border-t border-zinc-700 pt-4">
+              <h3 className="text-lg font-semibold text-zinc-100 mb-3">Hints</h3>
+              <div className="space-y-3">
+                {formData.hints.map((hint, index) => (
+                  <div key={index} className="flex items-center gap-2 p-3 bg-zinc-700 rounded-md">
+                    <div className="flex-grow">
+                      <Input
+                        placeholder="Hint text"
+                        value={hint.text}
+                        onChange={(e) => updateHint(index, 'text', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="w-24">
+                      <Input
+                        type="number"
+                        placeholder="Cost"
+                        value={hint.cost}
+                        onChange={(e) => updateHint(index, 'cost', e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="!p-2 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={() => removeHint(index)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="secondary" onClick={addHint} className="w-full">
+                  <PlusCircle size={16} /> Add Hint
+                </Button>
               </div>
             </div>
 
