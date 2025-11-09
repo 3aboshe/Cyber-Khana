@@ -3,7 +3,7 @@ import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X } from 'lucide-react';
+import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface User {
