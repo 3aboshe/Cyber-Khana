@@ -8,6 +8,9 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isSuperAdmin = user.role === 'super-admin';
     const navLinkClasses = ({ isActive }: { isActive: boolean }) =>
     `flex items-center px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 ${
       isActive
@@ -27,14 +30,18 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ onLogout }) => {
                         <LayoutDashboard className="w-5 h-5 mr-3" />
                         Dashboard
                     </NavLink>
-                    <NavLink to="/admin/competitions" className={navLinkClasses}>
-                        <ShieldCheck className="w-5 h-5 mr-3" />
-                        Competitions
-                    </NavLink>
-                    <NavLink to="/admin/challenges" className={navLinkClasses}>
-                        <ShieldCheck className="w-5 h-5 mr-3" />
-                        Challenges
-                    </NavLink>
+                    {!isSuperAdmin && (
+                        <>
+                            <NavLink to="/admin/competitions" className={navLinkClasses}>
+                                <ShieldCheck className="w-5 h-5 mr-3" />
+                                Competitions
+                            </NavLink>
+                            <NavLink to="/admin/challenges" className={navLinkClasses}>
+                                <ShieldCheck className="w-5 h-5 mr-3" />
+                                Challenges
+                            </NavLink>
+                        </>
+                    )}
                     <NavLink to="/admin/announcements" className={navLinkClasses}>
                         <Megaphone className="w-5 h-5 mr-3" />
                         Announcements
