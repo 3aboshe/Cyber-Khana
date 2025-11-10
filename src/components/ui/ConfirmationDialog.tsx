@@ -92,28 +92,28 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   const getBorderColor = () => {
     switch (type) {
       case 'danger':
-        return 'border-red-500/30';
+        return 'border-red-500/80';
       case 'warning':
-        return 'border-yellow-500/30';
+        return 'border-yellow-500/80';
       case 'info':
-        return 'border-blue-500/30';
+        return 'border-blue-500/80';
       case 'help':
       default:
-        return 'border-emerald-500/30';
+        return 'border-emerald-500/80';
     }
   };
 
   const getGlowColor = () => {
     switch (type) {
       case 'danger':
-        return 'shadow-[0_0_30px_rgba(239,68,68,0.15)]';
+        return 'shadow-[0_0_40px_rgba(239,68,68,0.3)]';
       case 'warning':
-        return 'shadow-[0_0_30px_rgba(251,191,36,0.15)]';
+        return 'shadow-[0_0_40px_rgba(251,191,36,0.3)]';
       case 'info':
-        return 'shadow-[0_0_30px_rgba(59,130,246,0.15)]';
+        return 'shadow-[0_0_40px_rgba(59,130,246,0.3)]';
       case 'help':
       default:
-        return 'shadow-[0_0_30px_rgba(52,211,153,0.15)]';
+        return 'shadow-[0_0_40px_rgba(52,211,153,0.3)]';
     }
   };
 
@@ -152,7 +152,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
               stiffness: 300,
             }}
             className={`
-              relative bg-zinc-800/95 border ${getBorderColor()} rounded-xl shadow-2xl
+              relative bg-zinc-700 border-2 ${getBorderColor()} rounded-xl shadow-2xl
               ${getGlowColor()}
               w-full max-w-md backdrop-blur-md
             `}
@@ -160,22 +160,22 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
           >
             {/* Corner Accents */}
             <div className="absolute top-0 left-0 w-8 h-8">
-              <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-emerald-500/40" />
+              <div className={`absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 ${type === 'danger' ? 'border-red-500/60' : type === 'warning' ? 'border-yellow-500/60' : type === 'info' ? 'border-blue-500/60' : 'border-emerald-500/60'}`} />
             </div>
             <div className="absolute top-0 right-0 w-8 h-8">
-              <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-emerald-500/40" />
+              <div className={`absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 ${type === 'danger' ? 'border-red-500/60' : type === 'warning' ? 'border-yellow-500/60' : type === 'info' ? 'border-blue-500/60' : 'border-emerald-500/60'}`} />
             </div>
             <div className="absolute bottom-0 left-0 w-8 h-8">
-              <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-emerald-500/40" />
+              <div className={`absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 ${type === 'danger' ? 'border-red-500/60' : type === 'warning' ? 'border-yellow-500/60' : type === 'info' ? 'border-blue-500/60' : 'border-emerald-500/60'}`} />
             </div>
             <div className="absolute bottom-0 right-0 w-8 h-8">
-              <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-emerald-500/40" />
+              <div className={`absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 ${type === 'danger' ? 'border-red-500/60' : type === 'warning' ? 'border-yellow-500/60' : type === 'info' ? 'border-blue-500/60' : 'border-emerald-500/60'}`} />
             </div>
 
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-200 transition-colors z-10"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors z-10"
               disabled={isLoading}
             >
               <X size={20} />
@@ -185,20 +185,20 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
             <div className="p-6 pt-8">
               {/* Icon and Title */}
               <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0 p-2 rounded-lg bg-zinc-700/50">
+                <div className="flex-shrink-0 p-3 rounded-lg bg-zinc-600/70">
                   {getIcon()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-semibold text-zinc-100 mb-1">
+                  <h3 className="text-xl font-bold text-white mb-1">
                     {title}
                   </h3>
-                  <div className="w-full h-px bg-gradient-to-r from-zinc-700 via-zinc-600 to-transparent mb-3" />
+                  <div className="w-full h-px bg-gradient-to-r from-zinc-600 via-zinc-500 to-transparent mb-3" />
                 </div>
               </div>
 
               {/* Message */}
               <div className="mb-6">
-                <p className="text-zinc-300 leading-relaxed whitespace-pre-line">
+                <p className="text-zinc-200 leading-relaxed whitespace-pre-line font-medium">
                   {message}
                 </p>
               </div>
@@ -209,7 +209,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   variant="ghost"
                   onClick={onClose}
                   disabled={isLoading}
-                  className="text-zinc-400 hover:text-zinc-200"
+                  className="text-zinc-300 hover:text-white border border-zinc-600 hover:border-zinc-500"
                 >
                   {cancelText}
                 </Button>
@@ -217,7 +217,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                   variant={isDestructive || type === 'danger' ? 'danger' : 'primary'}
                   onClick={handleConfirm}
                   isLoading={isLoading}
-                  className="min-w-[100px]"
+                  className="min-w-[100px] font-semibold"
                 >
                   {confirmText}
                 </Button>
