@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle, Bell, Target } from 'lucide-react';
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'announcement' | 'challenge';
 
 interface ToastProps {
   id: string;
@@ -34,6 +34,10 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
         return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
       case 'info':
         return <Info className="w-5 h-5 text-blue-400" />;
+      case 'announcement':
+        return <Bell className="w-5 h-5 text-purple-400" />;
+      case 'challenge':
+        return <Target className="w-5 h-5 text-orange-400" />;
     }
   };
 
@@ -47,6 +51,10 @@ const Toast: React.FC<ToastProps> = ({ id, type, message, duration = 5000, onClo
         return 'bg-yellow-500/20 border-yellow-500/30';
       case 'info':
         return 'bg-blue-500/20 border-blue-500/30';
+      case 'announcement':
+        return 'bg-purple-500/20 border-purple-500/30';
+      case 'challenge':
+        return 'bg-orange-500/20 border-orange-500/30';
     }
   };
 

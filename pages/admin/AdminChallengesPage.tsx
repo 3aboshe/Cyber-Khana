@@ -166,7 +166,7 @@ const AdminChallengesPage: React.FC = () => {
     try {
       await challengeService.publishChallenge(id);
       await fetchChallenges();
-      toast('success', 'Challenge published successfully');
+      toast('challenge', 'New challenge published successfully');
     } catch (err: any) {
       setError(err.message);
       toast('error', 'Failed to publish challenge');

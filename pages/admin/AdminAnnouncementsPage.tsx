@@ -58,7 +58,7 @@ const AdminAnnouncementsPage: React.FC = () => {
       } else {
         const created = await announcementService.createAnnouncement(formData);
         setAnnouncements(prev => [created, ...prev]);
-        toast('success', 'Announcement created successfully');
+        toast('announcement', 'New announcement published successfully');
       }
       closeModal();
     } catch (err) {
