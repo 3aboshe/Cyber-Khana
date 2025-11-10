@@ -5,6 +5,8 @@ import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X, Trophy } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useConfirmation } from '../../src/contexts/ConfirmationContext';
+import { useToast } from '../../src/hooks/useToast';
 
 interface User {
   _id: string;
@@ -44,6 +46,10 @@ const AdminUsersPage: React.FC = () => {
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Confirmation and toast hooks
+  const confirm = useConfirmation();
+  const { toast, ToastContainer } = useToast();
+
   // Password change state
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [targetUserId, setTargetUserId] = useState('');
@@ -79,43 +85,84 @@ const AdminUsersPage: React.FC = () => {
   };
 
   const handleBan = async (userId: string) => {
-    if (!confirm('Ban this user? They will be removed from the leaderboard.')) return;
+    const confirmed = await confirm(
+      'Ban this user? They will be removed from the leaderboard.',
+      {
+        type: 'warning',
+        title: 'Ban User',
+        confirmText: 'Ban',
+        isDestructive: true,
+      }
+    );
+    if (!confirmed) return;
+
     try {
       await userService.banUser(userId);
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, isBanned: true } : u));
       setActionMenuOpen(null);
+      toast('success', 'User banned successfully');
     } catch (err) {
       console.error('Error banning user:', err);
-      alert('Failed to ban user');
+      toast('error', 'Failed to ban user');
     }
   };
 
   const handleUnban = async (userId: string) => {
-    if (!confirm('Unban this user? They will be restored to the leaderboard.')) return;
+    const confirmed = await confirm(
+      'Unban this user? They will be restored to the leaderboard.',
+      {
+        type: 'info',
+        title: 'Unban User',
+        confirmText: 'Unban',
+      }
+    );
+    if (!confirmed) return;
+
     try {
       await userService.unbanUser(userId);
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, isBanned: false } : u));
       setActionMenuOpen(null);
+      toast('success', 'User unbanned successfully');
     } catch (err) {
       console.error('Error unbanning user:', err);
-      alert('Failed to unban user');
+      toast('error', 'Failed to unban user');
     }
   };
 
   const handleDeleteUser = async (userId: string, username: string) => {
-    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
+    const confirmed = await confirm(
+      `Are you sure you want to delete user "${username}"? This action cannot be undone.`,
+      {
+        type: 'danger',
+        title: 'Delete User',
+        confirmText: 'Delete',
+        isDestructive: true,
+      }
+    );
+    if (!confirmed) return;
+
     try {
       await userService.deleteUser(userId);
       setUsers(prev => prev.filter(u => u._id !== userId));
       setActionMenuOpen(null);
+      toast('success', 'User deleted successfully');
     } catch (err) {
       console.error('Error deleting user:', err);
-      alert('Failed to delete user');
+      toast('error', 'Failed to delete user');
     }
   };
 
   const handlePromoteToAdmin = async (userId: string) => {
-    if (!confirm('Promote this user to admin?')) return;
+    const confirmed = await confirm(
+      'Promote this user to admin?',
+      {
+        type: 'info',
+        title: 'Promote to Admin',
+        confirmText: 'Promote',
+      }
+    );
+    if (!confirmed) return;
+
     try {
       const API_URL = '/api';
       const token = localStorage.getItem('token');
@@ -135,14 +182,24 @@ const AdminUsersPage: React.FC = () => {
 
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: 'admin' } : u));
       setActionMenuOpen(null);
+      toast('success', 'User promoted to admin');
     } catch (err: any) {
       console.error('Error promoting user:', err);
-      alert(err.message || 'Failed to promote user');
+      toast('error', err.message || 'Failed to promote user');
     }
   };
 
   const handleDemoteFromAdmin = async (userId: string) => {
-    if (!confirm('Demote this admin back to user?')) return;
+    const confirmed = await confirm(
+      'Demote this admin back to user?',
+      {
+        type: 'warning',
+        title: 'Demote Admin',
+        confirmText: 'Demote',
+      }
+    );
+    if (!confirmed) return;
+
     try {
       const API_URL = '/api';
       const token = localStorage.getItem('token');
@@ -162,9 +219,10 @@ const AdminUsersPage: React.FC = () => {
 
       setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: 'user' } : u));
       setActionMenuOpen(null);
+      toast('success', 'Admin demoted to user');
     } catch (err: any) {
       console.error('Error demoting admin:', err);
-      alert(err.message || 'Failed to demote admin');
+      toast('error', err.message || 'Failed to demote admin');
     }
   };
 
@@ -178,7 +236,7 @@ const AdminUsersPage: React.FC = () => {
 
   const submitPasswordChange = async () => {
     if (!newPassword || newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
+      toast('warning', 'Password must be at least 6 characters long');
       return;
     }
 
@@ -205,10 +263,10 @@ const AdminUsersPage: React.FC = () => {
       setNewPassword('');
       setTargetUserId('');
       setTargetUsername('');
-      alert('Password changed successfully!');
+      toast('success', 'Password changed successfully!');
     } catch (err: any) {
       console.error('Error changing password:', err);
-      alert(err.message || 'Failed to change password');
+      toast('error', err.message || 'Failed to change password');
     } finally {
       setChangingPassword(false);
     }
@@ -500,6 +558,8 @@ const AdminUsersPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ToastContainer />
     </div>
   );
 };

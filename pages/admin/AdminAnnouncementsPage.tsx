@@ -5,6 +5,8 @@ import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import Textarea from '../../components/ui/textarea';
 import { Plus, Bell, Edit, Trash2, Calendar } from 'lucide-react';
+import { useConfirmation } from '../../src/contexts/ConfirmationContext';
+import { useToast } from '../../src/hooks/useToast';
 
 interface Announcement {
   _id: string;
@@ -25,6 +27,8 @@ const AdminAnnouncementsPage: React.FC = () => {
     title: '',
     content: '',
   });
+  const confirm = useConfirmation();
+  const { toast, ToastContainer } = useToast();
 
   useEffect(() => {
     fetchAnnouncements();
@@ -50,25 +54,34 @@ const AdminAnnouncementsPage: React.FC = () => {
         setAnnouncements(prev =>
           prev.map(a => a._id === editingAnnouncement._id ? updated : a)
         );
+        toast('success', 'Announcement updated successfully');
       } else {
         const created = await announcementService.createAnnouncement(formData);
         setAnnouncements(prev => [created, ...prev]);
+        toast('success', 'Announcement created successfully');
       }
       closeModal();
     } catch (err) {
       console.error('Error saving announcement:', err);
-      alert('Failed to save announcement');
+      toast('error', 'Failed to save announcement');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this announcement?')) return;
+    const confirmed = await confirm('Are you sure you want to delete this announcement?', {
+      type: 'danger',
+      title: 'Delete Announcement',
+      confirmText: 'Delete',
+      isDestructive: true
+    });
+    if (!confirmed) return;
     try {
       await announcementService.deleteAnnouncement(id);
       setAnnouncements(prev => prev.filter(a => a._id !== id));
+      toast('success', 'Announcement deleted successfully');
     } catch (err) {
       console.error('Error deleting announcement:', err);
-      alert('Failed to delete announcement');
+      toast('error', 'Failed to delete announcement');
     }
   };
 
@@ -206,6 +219,7 @@ const AdminAnnouncementsPage: React.FC = () => {
           </div>
         </div>
       )}
+      <ToastContainer />
     </div>
   );
 };

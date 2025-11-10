@@ -6,6 +6,8 @@ import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import { Plus, Building2, Trash2, Copy, CheckCircle, ArrowRight, X, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useConfirmation } from '../../src/contexts/ConfirmationContext';
+import { useToast } from '../../src/hooks/useToast.tsx';
 
 interface University {
   _id: string;
@@ -31,6 +33,8 @@ const SuperAdminPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copiedCount, setCopiedCount] = useState(0);
+  const confirm = useConfirmation();
+  const { toast, ToastContainer } = useToast();
 
   // Create university state
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -171,25 +175,31 @@ const SuperAdminPage: React.FC = () => {
       setNewUniversityCode('');
       setShowCreateForm(false);
       await fetchUniversities();
-      alert('University created successfully!');
+      toast('success', 'University created successfully!');
     } catch (err: any) {
       setError(err.message || 'Error creating university');
+      toast('error', 'Failed to create university');
     } finally {
       setCreating(false);
     }
   };
 
   const handleDeleteUniversity = async (universityId: string, universityName: string) => {
-    if (!confirm(`Are you sure you want to delete "${universityName}"?\n\nThis action cannot be undone. You can only delete universities with no users.`)) {
-      return;
-    }
+    const confirmed = await confirm(`Are you sure you want to delete "${universityName}"?\n\nThis action cannot be undone. You can only delete universities with no users.`, {
+      type: 'danger',
+      title: 'Delete University',
+      confirmText: 'Delete',
+      isDestructive: true
+    });
+    if (!confirmed) return;
 
     try {
       await universityService.deleteUniversity(universityId);
       await fetchUniversities();
-      alert('University deleted successfully!');
+      toast('success', 'University deleted successfully!');
     } catch (err: any) {
       setError(err.message || 'Error deleting university');
+      toast('error', 'Failed to delete university');
     }
   };
 
@@ -544,6 +554,7 @@ const SuperAdminPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+      <ToastContainer />
     </div>
   );
 };

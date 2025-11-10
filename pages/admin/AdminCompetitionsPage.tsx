@@ -7,6 +7,8 @@ import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
 import Textarea from '../../components/ui/textarea';
 import Modal from '../../components/ui/Modal';
+import { useConfirmation } from '../../src/contexts/ConfirmationContext';
+import { useToast } from '../../src/hooks/useToast';
 
 interface Competition {
   _id: string;
@@ -42,6 +44,8 @@ const AdminCompetitionsPage: React.FC = () => {
     endTime: '',
     duration: 120, // default 2 hours in minutes
   });
+  const confirm = useConfirmation();
+  const { toast, ToastContainer } = useToast();
 
   useEffect(() => {
     fetchCompetitions();
@@ -74,7 +78,7 @@ const AdminCompetitionsPage: React.FC = () => {
     e.preventDefault();
     try {
       if (editingCompetition) {
-        alert('Competition updates are limited. Please delete and recreate for major changes.');
+        toast('info', 'Competition updates are limited. Please delete and recreate for major changes.');
       } else {
         let startTimeISO: string;
         let endTimeISO: string;
@@ -99,11 +103,13 @@ const AdminCompetitionsPage: React.FC = () => {
           endTime: endTimeISO,
           timerDuration: timerDuration,
         });
+        toast('success', 'Competition created successfully');
       }
       await fetchCompetitions();
       closeModal();
     } catch (err: any) {
       setError(err.message);
+      toast('error', 'Failed to create competition');
     }
   };
 
@@ -121,9 +127,13 @@ const AdminCompetitionsPage: React.FC = () => {
     const minutes = competition.duration! % 60;
     const durationText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 
-    if (!confirm(`Start this competition now?\n\nDuration: ${durationText}\nEnd Time: ${new Date(Date.now() + competition.duration! * 60000).toLocaleString()}\n\nThis action cannot be undone.`)) {
-      return;
-    }
+    const confirmed = await confirm(`Start this competition now?\n\nDuration: ${durationText}\nEnd Time: ${new Date(Date.now() + competition.duration! * 60000).toLocaleString()}\n\nThis action cannot be undone.`, {
+      type: 'danger',
+      title: 'Start Competition',
+      confirmText: 'Start',
+      isDestructive: false
+    });
+    if (!confirmed) return;
 
     try {
       const now = new Date();
@@ -136,8 +146,10 @@ const AdminCompetitionsPage: React.FC = () => {
       });
 
       await fetchCompetitions();
+      toast('success', 'Competition started successfully');
     } catch (err: any) {
       setError(err.message);
+      toast('error', 'Failed to start competition');
     }
   };
 
@@ -205,15 +217,21 @@ const AdminCompetitionsPage: React.FC = () => {
   };
 
   const handleDeleteCompetition = async (competition: Competition) => {
-    if (!confirm(`Are you sure you want to delete the competition "${competition.name}"?\n\nThis action cannot be undone and all participant progress will be lost.`)) {
-      return;
-    }
+    const confirmed = await confirm(`Are you sure you want to delete the competition "${competition.name}"?\n\nThis action cannot be undone and all participant progress will be lost.`, {
+      type: 'danger',
+      title: 'Delete Competition',
+      confirmText: 'Delete',
+      isDestructive: true
+    });
+    if (!confirmed) return;
 
     try {
       await competitionService.deleteCompetition(competition._id);
       await fetchCompetitions();
+      toast('success', 'Competition deleted successfully');
     } catch (err: any) {
       setError(err.message);
+      toast('error', 'Failed to delete competition');
     }
   };
 
@@ -671,6 +689,8 @@ const AdminCompetitionsPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer />
     </div>
   );
 };

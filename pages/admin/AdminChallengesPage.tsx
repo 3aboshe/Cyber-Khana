@@ -6,6 +6,8 @@ import Input from '../../components/ui/input';
 import Textarea from '../../components/ui/textarea';
 import Modal from '../../components/ui/Modal';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { useConfirmation } from '../../src/contexts/ConfirmationContext';
+import { useToast } from '../../src/hooks/useToast';
 
 interface Challenge {
   _id: string;
@@ -46,12 +48,17 @@ const AdminChallengesPage: React.FC = () => {
   const [isHintModalOpen, setIsHintModalOpen] = useState(false);
   const [selectedChallengeForWriteup, setSelectedChallengeForWriteup] = useState<Challenge | null>(null);
   const [selectedChallengeForHints, setSelectedChallengeForHints] = useState<Challenge | null>(null);
+  const [originalFlag, setOriginalFlag] = useState<string>('');
   const [writeupData, setWriteupData] = useState({
     content: '',
     images: [] as string[],
     isUnlocked: false,
     pdfFile: null as File | null,
   });
+
+  // Confirmation and toast hooks
+  const confirm = useConfirmation();
+  const { toast, ToastContainer } = useToast();
   const [formData, setFormData] = useState({
     title: '',
     category: 'Web Exploitation',
@@ -99,18 +106,31 @@ const AdminChallengesPage: React.FC = () => {
       }
 
       // Prepare challenge data
-      const challengeData = {
-        ...formData,
+      // When editing, only include flag if it's not empty
+      const { flag, ...formDataWithoutFlag } = formData;
+      const challengeData: any = {
+        ...formDataWithoutFlag,
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined
       };
+
+      // Only add flag if it's not empty (for new challenges) or if editing with a new value
+      if (editingChallenge) {
+        if (formData.flag && formData.flag.trim() !== '') {
+          challengeData.flag = formData.flag;
+        }
+        // If flag is empty, it won't be included, keeping the original value
+      } else {
+        challengeData.flag = formData.flag;
+      }
 
       console.log('Submitting challenge data:', challengeData);
 
       if (editingChallenge) {
         await challengeService.updateChallenge(editingChallenge._id, challengeData);
-        alert('Challenge updated successfully!');
+        toast('success', 'Challenge updated successfully!');
       } else {
         await challengeService.createChallenge(challengeData);
+        toast('success', 'Challenge created successfully!');
       }
       await fetchChallenges();
       closeModal();
@@ -121,12 +141,24 @@ const AdminChallengesPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this challenge?')) return;
+    const confirmed = await confirm(
+      'Are you sure you want to delete this challenge?',
+      {
+        type: 'danger',
+        title: 'Delete Challenge',
+        confirmText: 'Delete',
+        isDestructive: true,
+      }
+    );
+    if (!confirmed) return;
+
     try {
       await challengeService.deleteChallenge(id);
       await fetchChallenges();
+      toast('success', 'Challenge deleted successfully');
     } catch (err: any) {
       setError(err.message);
+      toast('error', 'Failed to delete challenge');
     }
   };
 
@@ -134,18 +166,31 @@ const AdminChallengesPage: React.FC = () => {
     try {
       await challengeService.publishChallenge(id);
       await fetchChallenges();
+      toast('success', 'Challenge published successfully');
     } catch (err: any) {
       setError(err.message);
+      toast('error', 'Failed to publish challenge');
     }
   };
 
   const handleUnpublish = async (id: string) => {
-    if (!confirm('Are you sure you want to unpublish this challenge? It will no longer be visible to users.')) return;
+    const confirmed = await confirm(
+      'Are you sure you want to unpublish this challenge? It will no longer be visible to users.',
+      {
+        type: 'warning',
+        title: 'Unpublish Challenge',
+        confirmText: 'Unpublish',
+      }
+    );
+    if (!confirmed) return;
+
     try {
       await challengeService.unpublishChallenge(id);
       await fetchChallenges();
+      toast('success', 'Challenge unpublished successfully');
     } catch (err: any) {
       setError(err.message);
+      toast('error', 'Failed to unpublish challenge');
     }
   };
 
@@ -221,6 +266,7 @@ const AdminChallengesPage: React.FC = () => {
   const openModal = (challenge?: Challenge) => {
     if (challenge) {
       setEditingChallenge(challenge);
+      setOriginalFlag(challenge.flag || '');
       setFormData({
         title: challenge.title,
         category: challenge.category,
@@ -238,6 +284,7 @@ const AdminChallengesPage: React.FC = () => {
       });
     } else {
       setEditingChallenge(null);
+      setOriginalFlag('');
       setFormData({
         title: '',
         category: 'Web Exploitation',
@@ -739,6 +786,8 @@ const AdminChallengesPage: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      <ToastContainer />
     </div>
   );
 };
