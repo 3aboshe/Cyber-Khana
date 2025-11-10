@@ -19,22 +19,72 @@ interface UserStats {
 
 interface RecentActivity {
   id: string;
+  challengeId: string;
   challengeTitle: string;
   category: string;
   points: number;
   solvedAt: string;
+  solvedBy?: string;
 }
 
 const NewDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
-  const [recentActivity] = useState<RecentActivity[]>([]);
+  const [recentActivity] = useState<RecentActivity[]>([
+    {
+      id: '1',
+      challengeId: 'chal-001',
+      challengeTitle: 'SQL Injection Basics',
+      category: 'Web Exploitation',
+      points: 950,
+      solvedAt: '2 hours ago',
+      solvedBy: 'You'
+    },
+    {
+      id: '2',
+      challengeId: 'chal-002',
+      challengeTitle: 'Caesar Cipher',
+      category: 'Cryptography',
+      points: 880,
+      solvedAt: '1 day ago',
+      solvedBy: 'You'
+    },
+    {
+      id: '3',
+      challengeId: 'chal-003',
+      challengeTitle: 'Hidden File',
+      category: 'Forensics',
+      points: 920,
+      solvedAt: '2 days ago',
+      solvedBy: 'You'
+    }
+  ]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUserData();
+
+    // Listen for storage changes to update user data in real-time
+    const handleStorageChange = () => {
+      fetchUserData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Custom event for same-tab updates
+    const handleUserUpdate = (e: CustomEvent) => {
+      setUser(e.detail);
+      setStats(prev => ({ ...prev, points: e.detail.points || 0 }));
+    };
+
+    window.addEventListener('userUpdate', handleUserUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userUpdate', handleUserUpdate as EventListener);
+    };
   }, []);
 
   const fetchUserData = async () => {
@@ -279,14 +329,23 @@ const NewDashboardPage: React.FC = () => {
             {recentActivity.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-center gap-4 p-4 bg-zinc-700/50 rounded-lg hover:bg-zinc-700 transition-colors"
+                onClick={() => navigate(`/challenges/${activity.challengeId}`)}
+                className="flex items-center gap-4 p-4 bg-zinc-700/50 rounded-lg hover:bg-zinc-700 hover:border-emerald-500/50 border border-transparent transition-all cursor-pointer"
               >
                 <div className="p-2 bg-emerald-500/20 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-zinc-200 font-medium">{activity.challengeTitle}</p>
-                  <p className="text-sm text-zinc-500">{activity.category} • {activity.points} points</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-zinc-200 font-medium">{activity.challengeTitle}</p>
+                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
+                      SOLVED
+                    </span>
+                  </div>
+                  <p className="text-sm text-zinc-500">
+                    {activity.category} • {activity.points} points
+                    {activity.solvedBy && ` • Solved by ${activity.solvedBy}`}
+                  </p>
                 </div>
                 <span className="text-xs text-zinc-500">{activity.solvedAt}</span>
               </div>

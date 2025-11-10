@@ -6,6 +6,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
+import PointDecayInfo from '../src/components/PointDecayInfo';
 import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock } from 'lucide-react';
 
 interface Challenge {
@@ -111,6 +112,21 @@ const NewChallengeDetailPage: React.FC = () => {
 
       // Refresh challenge to get updated solve count
       await fetchData();
+
+      // Refresh user profile to get updated points
+      const profileData = await userService.getUserProfile();
+      setCurrentUser(profileData);
+
+      // Update localStorage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const updatedUser = { ...user, ...profileData };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+
+        // Dispatch custom event to update header and other components
+        window.dispatchEvent(new CustomEvent('userUpdate', { detail: updatedUser }));
+      }
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Incorrect flag. Try again!' });
     } finally {
@@ -138,10 +154,20 @@ const NewChallengeDetailPage: React.FC = () => {
       setUnlockedHints([...unlockedHints, hintId]);
 
       // Update user points
+      const newPoints = currentUser.points - selectedHint.cost;
       setCurrentUser({
         ...currentUser,
-        points: currentUser.points - selectedHint.cost
+        points: newPoints
       });
+
+      // Update localStorage and dispatch event
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        const updatedUser = { ...user, points: newPoints };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        window.dispatchEvent(new CustomEvent('userUpdate', { detail: updatedUser }));
+      }
 
       setMessage({ type: 'success', text: 'Hint unlocked successfully!' });
       setShowHintModal(false);
@@ -288,6 +314,9 @@ const NewChallengeDetailPage: React.FC = () => {
               </div>
             </Card>
           )}
+
+          {/* Point Decay Information */}
+          <PointDecayInfo challenge={challenge} />
         </div>
 
         {/* Sidebar */}
