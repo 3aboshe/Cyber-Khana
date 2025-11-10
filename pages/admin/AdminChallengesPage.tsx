@@ -104,14 +104,18 @@ const AdminChallengesPage: React.FC = () => {
         files: uploadedFiles.length > 0 ? uploadedFiles : undefined
       };
 
+      console.log('Submitting challenge data:', challengeData);
+
       if (editingChallenge) {
         await challengeService.updateChallenge(editingChallenge._id, challengeData);
+        alert('Challenge updated successfully!');
       } else {
         await challengeService.createChallenge(challengeData);
       }
       await fetchChallenges();
       closeModal();
     } catch (err: any) {
+      console.error('Error submitting challenge:', err);
       setError(err.message);
     }
   };

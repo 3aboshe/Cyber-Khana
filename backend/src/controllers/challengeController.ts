@@ -63,10 +63,15 @@ export const getAllChallenges = async (req: AuthRequest, res: Response) => {
 
     const challengesWithCurrentPoints = challenges.map(challenge => {
       const challengeObj = challenge.toObject();
+      // Provide defaults for challenges created before these fields were added
+      const initialPoints = challenge.initialPoints || challenge.points || 1000;
+      const minimumPoints = challenge.minimumPoints || 100;
+      const decay = challenge.decay || 38;
+
       challengeObj.currentPoints = calculateDynamicScore(
-        challenge.initialPoints,
-        challenge.minimumPoints,
-        challenge.decay,
+        initialPoints,
+        minimumPoints,
+        decay,
         challenge.solves
       );
       return challengeObj;
@@ -92,10 +97,15 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
     }
 
     const challengeObj = challenge.toObject();
+    // Provide defaults for challenges created before these fields were added
+    const initialPoints = challenge.initialPoints || challenge.points || 1000;
+    const minimumPoints = challenge.minimumPoints || 100;
+    const decay = challenge.decay || 38;
+
     challengeObj.currentPoints = calculateDynamicScore(
-      challenge.initialPoints,
-      challenge.minimumPoints,
-      challenge.decay,
+      initialPoints,
+      minimumPoints,
+      decay,
       challenge.solves
     );
 
