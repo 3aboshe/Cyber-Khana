@@ -246,7 +246,7 @@ const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
                 repeatType: 'reverse',
               }}
             >
-              <div className="w-full h-full rounded-xl bg-zinc-800/95" />
+              <div className="w-full h-full rounded-xl bg-zinc-800/20" />
             </motion.div>
           </motion.div>
         </motion.div>
