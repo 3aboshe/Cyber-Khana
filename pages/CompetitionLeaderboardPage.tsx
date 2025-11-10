@@ -30,6 +30,19 @@ const CompetitionLeaderboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchCompetition();
+
+    // Listen for competition updates
+    const handleCompetitionUpdate = () => {
+      fetchCompetition();
+    };
+
+    window.addEventListener('userUpdate', handleCompetitionUpdate);
+    window.addEventListener('storage', handleCompetitionUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdate', handleCompetitionUpdate);
+      window.removeEventListener('storage', handleCompetitionUpdate);
+    };
   }, [id]);
 
   useEffect(() => {

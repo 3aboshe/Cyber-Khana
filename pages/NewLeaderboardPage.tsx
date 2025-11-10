@@ -28,6 +28,19 @@ const NewLeaderboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchLeaderboard();
+
+    // Listen for leaderboard updates
+    const handleLeaderboardUpdate = () => {
+      fetchLeaderboard();
+    };
+
+    window.addEventListener('userUpdate', handleLeaderboardUpdate);
+    window.addEventListener('storage', handleLeaderboardUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdate', handleLeaderboardUpdate);
+      window.removeEventListener('storage', handleLeaderboardUpdate);
+    };
   }, []);
 
   useEffect(() => {

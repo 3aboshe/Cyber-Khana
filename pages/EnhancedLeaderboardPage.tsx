@@ -18,6 +18,19 @@ const EnhancedLeaderboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchLeaderboard();
+
+    // Listen for leaderboard updates
+    const handleLeaderboardUpdate = () => {
+      fetchLeaderboard();
+    };
+
+    window.addEventListener('userUpdate', handleLeaderboardUpdate);
+    window.addEventListener('storage', handleLeaderboardUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdate', handleLeaderboardUpdate);
+      window.removeEventListener('storage', handleLeaderboardUpdate);
+    };
   }, [timeframe]);
 
   const fetchLeaderboard = async () => {
