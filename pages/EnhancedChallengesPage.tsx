@@ -58,6 +58,19 @@ const EnhancedChallengesPage: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+
+    // Listen for challenge updates to refetch data
+    const handleChallengeUpdate = () => {
+      fetchData();
+    };
+
+    window.addEventListener('userUpdate', handleChallengeUpdate);
+    window.addEventListener('storage', handleChallengeUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdate', handleChallengeUpdate);
+      window.removeEventListener('storage', handleChallengeUpdate);
+    };
   }, []);
 
   const fetchData = async () => {

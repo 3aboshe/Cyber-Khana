@@ -95,15 +95,32 @@ const NewDashboardPage: React.FC = () => {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
 
-        // Mock stats - in real app, fetch from API
-        setStats({
-          points: parsedUser.points || 0,
-          solvedCount: parsedUser.solvedChallenges?.length || 0,
-          rank: Math.floor(Math.random() * 50) + 1,
-          totalUsers: 250,
-          streak: Math.floor(Math.random() * 7),
-          favoriteCategory: 'Web Exploitation',
-        });
+        // Fetch latest profile from backend
+        try {
+          const profileData = await userService.getUserProfile();
+          const updatedUser = { ...parsedUser, ...profileData };
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+
+          setStats({
+            points: profileData.points || 0,
+            solvedCount: profileData.solvedChallengesCount || parsedUser.solvedChallenges?.length || 0,
+            rank: profileData.rank || Math.floor(Math.random() * 50) + 1,
+            totalUsers: profileData.totalUsers || 250,
+            streak: Math.floor(Math.random() * 7),
+            favoriteCategory: 'Web Exploitation',
+          });
+        } catch (profileErr) {
+          // Fallback to localStorage data
+          setStats({
+            points: parsedUser.points || 0,
+            solvedCount: parsedUser.solvedChallenges?.length || 0,
+            rank: Math.floor(Math.random() * 50) + 1,
+            totalUsers: 250,
+            streak: Math.floor(Math.random() * 7),
+            favoriteCategory: 'Web Exploitation',
+          });
+        }
       }
     } catch (err) {
       console.error('Error fetching user data:', err);

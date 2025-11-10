@@ -37,6 +37,17 @@ const App: React.FC = () => {
     }
 
     setTimeout(() => setIsLoading(false), 1000);
+
+    // Listen for user updates to sync across components
+    const handleUserUpdate = (e: CustomEvent) => {
+      setUser(e.detail);
+    };
+
+    window.addEventListener('userUpdate', handleUserUpdate as EventListener);
+
+    return () => {
+      window.removeEventListener('userUpdate', handleUserUpdate as EventListener);
+    };
   }, []);
 
   const handleLogin = (userData: any) => {
