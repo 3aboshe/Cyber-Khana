@@ -7,9 +7,11 @@ export const calculateDynamicScore = (
   decay: number,
   solveCount: number
 ): number => {
-  const value = Math.ceil(
-    ((minimumPoints - initialPoints) / (decay * decay)) * (solveCount * solveCount) + initialPoints
-  );
+  // Calculate the percentage decrease based on solves
+  const solvePercentage = (solveCount * solveCount) / (decay * decay);
+  const totalDecrease = initialPoints - minimumPoints;
+  const decreaseAmount = totalDecrease * solvePercentage;
+  const value = Math.ceil(initialPoints - decreaseAmount);
   return Math.max(value, minimumPoints);
 };
 
@@ -159,7 +161,7 @@ const ChallengeSchema: Schema = new Schema({
   },
   decay: {
     type: Number,
-    default: 200
+    default: 38
   },
   currentPoints: {
     type: Number,
