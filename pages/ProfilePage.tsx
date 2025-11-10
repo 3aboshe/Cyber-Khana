@@ -127,7 +127,7 @@ const ProfilePage: React.FC = () => {
               </span>
               <span className="flex items-center gap-1">
                 <Target className="w-4 h-4" />
-                {user?.universityCode}
+                {user?.universityName || user?.universityCode}
               </span>
             </div>
           </div>

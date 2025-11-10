@@ -76,7 +76,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({ user, onLogout }) =
                 </span>
               </div>
               <div>
-                <p className="font-semibold text-zinc-100">{user?.username}</p>
+                <p className="font-semibold text-zinc-100">{user?.fullName || user?.displayName || user?.username}</p>
                 <p className="text-sm text-zinc-400">{user?.points} pts</p>
               </div>
             </div>

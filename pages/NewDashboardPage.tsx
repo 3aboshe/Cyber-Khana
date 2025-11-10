@@ -115,7 +115,7 @@ const NewDashboardPage: React.FC = () => {
           Welcome back, {user?.fullName || user?.displayName || user?.username}
         </h1>
         <p className="text-zinc-400 flex items-center gap-2">
-          <span>{user?.universityCode}</span>
+          <span>{user?.universityName || user?.universityCode}</span>
           <span className="w-1 h-1 bg-zinc-600 rounded-full"></span>
           <span>{stats.solvedCount} challenges solved</span>
         </p>
