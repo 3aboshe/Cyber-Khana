@@ -452,7 +452,7 @@ const CompetitionDashboardPage: React.FC = () => {
                           </p>
                         </div>
                         <span className="px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/20 text-emerald-400 whitespace-nowrap ml-4">
-                          {challenge.points} pts
+                          {(challenge as any).currentPoints || challenge.points} pts
                         </span>
                       </div>
 

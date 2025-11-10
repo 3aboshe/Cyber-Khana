@@ -71,6 +71,7 @@ export const register = async (req: Request, res: Response) => {
         displayName: user.displayName || user.username,
         role: user.role,
         universityCode: user.universityCode,
+        universityName: university.name,
         points: user.points
       }
     });
@@ -134,13 +135,19 @@ export const login = async (req: Request, res: Response) => {
 
     const token = generateToken(payload);
 
+    // Get university name
+    const university = await University.findOne({ code: user.universityCode });
+
     res.json({
       token,
       user: {
         id: user._id,
         username: user.username,
+        fullName: user.fullName,
+        displayName: user.displayName || user.username,
         role: user.role,
         universityCode: user.universityCode,
+        universityName: university?.name || user.universityCode,
         points: user.points
       }
     });
@@ -176,13 +183,19 @@ export const loginAdmin = async (req: Request, res: Response) => {
 
     const token = generateToken(payload);
 
+    // Get university name
+    const university = await University.findOne({ code: user.universityCode });
+
     res.json({
       token,
       user: {
         id: user._id,
         username: user.username,
+        fullName: user.fullName,
+        displayName: user.displayName || user.username,
         role: user.role,
         universityCode: user.universityCode,
+        universityName: university?.name || user.universityCode,
         points: user.points
       }
     });

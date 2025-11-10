@@ -328,7 +328,7 @@ const EnhancedLeaderboardPage: React.FC = () => {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className={`font-medium ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-200'}`}>
-                                {user.username}
+                                {user.fullName || user.displayName || user.username}
                               </span>
                               {isCurrentUser && (
                                 <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
@@ -336,7 +336,11 @@ const EnhancedLeaderboardPage: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                            <span className="text-xs text-zinc-500">{user.universityCode}</span>
+                            <div className="flex items-center gap-2 text-xs text-zinc-500">
+                              <span>@{user.username}</span>
+                              <span>•</span>
+                              <span>{user.universityName || user.universityCode}</span>
+                            </div>
                           </div>
                         </div>
                       </td>

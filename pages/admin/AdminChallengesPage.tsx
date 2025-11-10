@@ -340,7 +340,7 @@ const AdminChallengesPage: React.FC = () => {
                 <p className="text-zinc-400 mb-2">{challenge.description.substring(0, 100)}...</p>
                 <div className="flex gap-4 text-sm text-zinc-500">
                   <span>Category: {challenge.category}</span>
-                  <span>Points: {challenge.points}</span>
+                  <span>Points: {(challenge as any).currentPoints || challenge.points}</span>
                   <span>Solves: {challenge.solves}</span>
                 </div>
               </div>

@@ -9,6 +9,10 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       ? req.query.universityCode as string
       : req.user?.universityCode;
 
+    // Get university name
+    const University = require('../models/University').default;
+    const university = universityCode ? await University.findOne({ code: universityCode }) : null;
+
     const query = universityCode ? { universityCode } : {};
     const users = await User.find(query).select('-password');
 
@@ -17,9 +21,12 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
       return {
         _id: user._id,
         username: user.username,
+        fullName: user.fullName,
+        displayName: user.displayName,
         points: user.points,
         role: user.role,
         universityCode: user.universityCode,
+        universityName: university?.name || user.universityCode,
         isBanned: user.isBanned,
         profileIcon: user.profileIcon,
         solvedChallengesCount: user.solvedChallenges.length,
@@ -40,6 +47,10 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Get university name
+    const University = require('../models/University').default;
+    const university = await University.findOne({ code: user.universityCode });
+
     const allUsers = await User.find({ universityCode: user.universityCode, isBanned: { $ne: true } })
       .select('points')
       .sort({ points: -1 });
@@ -50,7 +61,8 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
       ...user.toJSON(),
       rank,
       totalUsers: allUsers.length,
-      solvedChallengesCount: user.solvedChallenges.length
+      solvedChallengesCount: user.solvedChallenges.length,
+      universityName: university?.name || user.universityCode
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching user profile' });

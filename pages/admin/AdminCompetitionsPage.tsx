@@ -548,7 +548,7 @@ const AdminCompetitionsPage: React.FC = () => {
                       </div>
                       <div className="flex flex-wrap gap-2 mb-3">
                         <span className="px-2 py-1 text-xs font-semibold rounded-full bg-emerald-500/20 text-emerald-400">
-                          {challenge.points} pts
+                          {(challenge as any).currentPoints || challenge.points} pts
                         </span>
                         <span className="px-2 py-1 text-xs font-semibold rounded-full bg-zinc-700 text-zinc-300">
                           {challenge.category}

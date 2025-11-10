@@ -200,7 +200,7 @@ const NewChallengeDetailPage: React.FC = () => {
               </span>
               <div className="flex items-center gap-2 text-zinc-400">
                 <Trophy className="w-4 h-4 text-yellow-400" />
-                <span className="font-semibold text-zinc-200">{challenge.points} points</span>
+                <span className="font-semibold text-zinc-200">{(challenge as any).currentPoints || challenge.points} points</span>
               </div>
               <div className="flex items-center gap-2 text-zinc-400">
                 <Users className="w-4 h-4" />
@@ -424,7 +424,7 @@ const NewChallengeDetailPage: React.FC = () => {
               <p className="text-zinc-100 font-semibold">{challenge.title}</p>
               <div className="flex items-center justify-center gap-2 mt-2 text-emerald-400">
                 <Trophy className="w-4 h-4" />
-                <span className="font-bold">{challenge.points} points</span>
+                <span className="font-bold">{(challenge as any).currentPoints || challenge.points} points</span>
               </div>
             </div>
           )}

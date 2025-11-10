@@ -409,7 +409,7 @@ const SuperAdminPage: React.FC = () => {
                         {challenge.category}
                       </span>
                       <span className="px-2 py-1 bg-zinc-700/50 rounded text-zinc-300">
-                        {challenge.points} points
+                        {(challenge as any).currentPoints || challenge.points} points
                       </span>
                       <span className="px-2 py-1 bg-zinc-700/50 rounded text-zinc-300">
                         {challenge.solves} solves

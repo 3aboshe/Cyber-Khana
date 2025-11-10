@@ -9,9 +9,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface User {
   _id: string;
   username: string;
+  fullName?: string;
+  displayName?: string;
   points: number;
   role: string;
   universityCode: string;
+  universityName?: string;
   isBanned: boolean;
   profileIcon?: string;
   solvedChallengesCount: number;
@@ -291,7 +294,7 @@ const AdminUsersPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-semibold text-zinc-100 truncate">
-                        {user.username}
+                        {user.fullName || user.displayName || user.username}
                       </h3>
                       {user.role === 'admin' && (
                         <Shield className="w-4 h-4 text-emerald-400" />
@@ -302,11 +305,14 @@ const AdminUsersPage: React.FC = () => {
                         </span>
                       )}
                     </div>
+                    {user.fullName && (
+                      <p className="text-zinc-400 text-xs">@{user.username}</p>
+                    )}
                     <div className="flex items-center gap-4 text-zinc-400 text-sm">
                       {currentUser?.role === 'super-admin' && (
                         <div className="flex items-center gap-1">
                           <School className="w-4 h-4 text-blue-400" />
-                          <span>{user.universityCode}</span>
+                          <span>{user.universityName || user.universityCode}</span>
                         </div>
                       )}
                       <div className="flex items-center gap-1">

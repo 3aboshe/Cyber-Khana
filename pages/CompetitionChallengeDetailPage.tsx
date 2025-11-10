@@ -162,7 +162,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
             <div className="flex items-center gap-3 mb-2">
               <h1 className="text-4xl font-bold text-zinc-100">{challenge.title}</h1>
               <span className="px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/20 text-emerald-400">
-                {challenge.points} pts
+                {(challenge as any).currentPoints || challenge.points} pts
               </span>
             </div>
             <div className="flex items-center gap-4 text-zinc-400">
@@ -300,12 +300,12 @@ const CompetitionChallengeDetailPage: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Points</span>
-                <span className="text-emerald-400 font-bold">{challenge.points}</span>
+                <span className="text-emerald-400 font-bold">{(challenge as any).currentPoints || challenge.points}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-zinc-400">Difficulty</span>
                 <span className="text-zinc-200">
-                  {challenge.points <= 100 ? 'Easy' : challenge.points <= 300 ? 'Medium' : 'Hard'}
+                  {(challenge as any).currentPoints <= 100 ? 'Easy' : (challenge as any).currentPoints <= 300 ? 'Medium' : 'Hard'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -362,7 +362,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
               <p className="text-zinc-100 font-semibold">{challenge.title}</p>
               <div className="flex items-center justify-center gap-2 mt-2 text-emerald-400">
                 <Trophy className="w-4 h-4" />
-                <span className="font-bold">{challenge.points} points</span>
+                <span className="font-bold">{(challenge as any).currentPoints || challenge.points} points</span>
               </div>
             </div>
           )}

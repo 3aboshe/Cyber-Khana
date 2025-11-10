@@ -118,7 +118,7 @@ const EnhancedProfilePage: React.FC = () => {
           </div>
 
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex flex-col gap-2 mb-2">
               {isEditing ? (
                 <div className="flex items-center gap-2 flex-1">
                   <input
@@ -136,8 +136,8 @@ const EnhancedProfilePage: React.FC = () => {
                   </Button>
                 </div>
               ) : (
-                <>
-                  <h2 className="text-3xl font-bold text-zinc-100">{displayName}</h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-3xl font-bold text-zinc-100">{user?.fullName || displayName}</h2>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -146,7 +146,10 @@ const EnhancedProfilePage: React.FC = () => {
                   >
                     Edit
                   </Button>
-                </>
+                </div>
+              )}
+              {!isEditing && user?.fullName && user.fullName !== displayName && (
+                <p className="text-zinc-400 text-sm">@{displayName}</p>
               )}
             </div>
 
@@ -157,7 +160,7 @@ const EnhancedProfilePage: React.FC = () => {
               </span>
               <span className="flex items-center gap-1">
                 <Target className="w-4 h-4" />
-                {user?.universityCode}
+                {user?.universityName || user?.universityCode}
               </span>
             </div>
           </div>

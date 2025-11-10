@@ -60,7 +60,7 @@ const ChallengeDetailPage: React.FC = () => {
                 <div className="flex justify-between items-center">
                     <h1 className="text-3xl font-bold text-zinc-100">{challenge.title}</h1>
                     <div className="text-right">
-                        <p className="text-2xl font-bold text-emerald-400">{challenge.points}</p>
+                        <p className="text-2xl font-bold text-emerald-400">{(challenge as any).currentPoints || challenge.points}</p>
                         <p className="text-xs text-zinc-500">POINTS</p>
                     </div>
                 </div>
