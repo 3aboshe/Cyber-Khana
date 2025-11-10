@@ -11,6 +11,7 @@ import {
   banUser,
   unbanUser,
   changeUserPassword,
+  deleteUser,
   purchaseHint
 } from '../controllers/userController';
 import { authenticate, authenticateSuperAdmin, requireAdmin } from '../middleware/auth';
@@ -26,6 +27,7 @@ router.post('/create-admin', authenticate, requireAdmin, createAdmin);
 router.post('/promote/:userId', authenticate, authenticateSuperAdmin, promoteToAdmin);
 router.post('/demote/:userId', authenticate, authenticateSuperAdmin, demoteFromAdmin);
 router.post('/change-password/:userId', authenticate, authenticateSuperAdmin, changeUserPassword);
+router.delete('/:userId', authenticate, authenticateSuperAdmin, deleteUser);
 router.post('/ban/:userId', authenticate, requireAdmin, banUser);
 router.post('/unban/:userId', authenticate, requireAdmin, unbanUser);
 router.post('/purchase-hint', authenticate, purchaseHint);

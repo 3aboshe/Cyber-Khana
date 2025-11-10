@@ -6,6 +6,8 @@ import { Trophy, Code, Target, TrendingUp, Award, Clock, CheckCircle, Zap } from
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import EmptyState from '../components/ui/EmptyState';
 import { useToast } from '../hooks/useToast';
+import { activityService } from '../../services/activityService';
+import { userService } from '../../services/userService';
 
 interface UserStats {
   points: number;
@@ -19,56 +21,35 @@ interface UserStats {
 
 interface RecentActivity {
   id: string;
-  challengeId: string;
+  username: string;
   challengeTitle: string;
+  challengeId: string;
   category: string;
   points: number;
   solvedAt: string;
-  solvedBy?: string;
+  universityName?: string;
 }
 
 const NewDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
-  const [recentActivity] = useState<RecentActivity[]>([
-    {
-      id: '1',
-      challengeId: 'chal-001',
-      challengeTitle: 'SQL Injection Basics',
-      category: 'Web Exploitation',
-      points: 950,
-      solvedAt: '2 hours ago',
-      solvedBy: 'You'
-    },
-    {
-      id: '2',
-      challengeId: 'chal-002',
-      challengeTitle: 'Caesar Cipher',
-      category: 'Cryptography',
-      points: 880,
-      solvedAt: '1 day ago',
-      solvedBy: 'You'
-    },
-    {
-      id: '3',
-      challengeId: 'chal-003',
-      challengeTitle: 'Hidden File',
-      category: 'Forensics',
-      points: 920,
-      solvedAt: '2 days ago',
-      solvedBy: 'You'
-    }
-  ]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchUserData();
+    const loadData = async () => {
+      await fetchUserData();
+      await fetchRecentActivity();
+      setLoading(false);
+    };
+    loadData();
 
     // Listen for storage changes to update user data in real-time
     const handleStorageChange = () => {
       fetchUserData();
+      fetchRecentActivity();
     };
 
     window.addEventListener('storage', handleStorageChange);
@@ -77,6 +58,7 @@ const NewDashboardPage: React.FC = () => {
     const handleUserUpdate = (e: CustomEvent) => {
       setUser(e.detail);
       setStats(prev => ({ ...prev, points: e.detail.points || 0 }));
+      fetchRecentActivity();
     };
 
     window.addEventListener('userUpdate', handleUserUpdate as EventListener);
@@ -89,7 +71,6 @@ const NewDashboardPage: React.FC = () => {
 
   const fetchUserData = async () => {
     try {
-      setLoading(true);
       const userData = localStorage.getItem('user');
       if (userData) {
         const parsedUser = JSON.parse(userData);
@@ -125,8 +106,21 @@ const NewDashboardPage: React.FC = () => {
     } catch (err) {
       console.error('Error fetching user data:', err);
       toast('error', 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
+    }
+  };
+
+  const fetchRecentActivity = async () => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        const activity = await activityService.getRecentActivity(parsedUser.universityCode);
+        setRecentActivity(activity);
+      }
+    } catch (err) {
+      console.error('Error fetching recent activity:', err);
+      // Keep empty array on error
+      setRecentActivity([]);
     }
   };
 
@@ -346,25 +340,42 @@ const NewDashboardPage: React.FC = () => {
             {recentActivity.map((activity) => (
               <div
                 key={activity.id}
-                onClick={() => navigate(`/challenges/${activity.challengeId}`)}
-                className="flex items-center gap-4 p-4 bg-zinc-700/50 rounded-lg hover:bg-zinc-700 hover:border-emerald-500/50 border border-transparent transition-all cursor-pointer"
+                className="flex items-start gap-4 p-4 bg-zinc-700/50 rounded-lg hover:bg-zinc-700/70 border border-zinc-700 transition-all"
               >
                 <div className="p-2 bg-emerald-500/20 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-emerald-400" />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-zinc-200 font-medium">{activity.challengeTitle}</p>
-                    <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
-                      SOLVED
+                <div className="flex-1 min-w-0">
+                  <p className="text-zinc-200 text-sm leading-relaxed">
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/profile/${activity.username}`);
+                      }}
+                      className="text-emerald-400 hover:text-emerald-300 cursor-pointer font-medium"
+                    >
+                      {activity.username}
+                    </span>{' '}
+                    solved{' '}
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/challenges/${activity.challengeId}`);
+                      }}
+                      className="text-blue-400 hover:text-blue-300 cursor-pointer font-medium"
+                    >
+                      {activity.challengeTitle}
                     </span>
-                  </div>
-                  <p className="text-sm text-zinc-500">
-                    {activity.category} • {activity.points} points
-                    {activity.solvedBy && ` • Solved by ${activity.solvedBy}`}
                   </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="px-2 py-0.5 bg-zinc-600 text-zinc-300 text-xs rounded-full">
+                      {activity.category}
+                    </span>
+                    <span className="text-zinc-500 text-xs">{activity.points} points</span>
+                    <span className="text-zinc-500 text-xs">•</span>
+                    <span className="text-zinc-500 text-xs">{new Date(activity.solvedAt).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <span className="text-xs text-zinc-500">{activity.solvedAt}</span>
               </div>
             ))}
           </div>

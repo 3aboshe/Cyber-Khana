@@ -22,6 +22,9 @@ export const userService = {
   unbanUser: (userId: string) =>
     apiService.post(`/users/unban/${userId}`),
 
+  deleteUser: (userId: string) =>
+    apiService.delete(`/users/${userId}`),
+
   createAdmin: (adminData: any) =>
     apiService.post('/users/create-admin', adminData),
 

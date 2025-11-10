@@ -102,6 +102,18 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) return;
+    try {
+      await userService.deleteUser(userId);
+      setUsers(prev => prev.filter(u => u._id !== userId));
+      setActionMenuOpen(null);
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      alert('Failed to delete user');
+    }
+  };
+
   const handlePromoteToAdmin = async (userId: string) => {
     if (!confirm('Promote this user to admin?')) return;
     try {
@@ -378,6 +390,15 @@ const AdminUsersPage: React.FC = () => {
                           >
                             <UserCheck className="w-4 h-4" />
                             Unban User
+                          </button>
+                        )}
+                        {currentUser?.role === 'super-admin' && (
+                          <button
+                            onClick={() => handleDeleteUser(user._id, user.username)}
+                            className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-500/20 flex items-center gap-2 rounded-b-lg border-t border-zinc-700"
+                          >
+                            <X className="w-4 h-4" />
+                            Delete User
                           </button>
                         )}
                       </div>

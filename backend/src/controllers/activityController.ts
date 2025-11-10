@@ -49,7 +49,8 @@ export const getRecentActivity = async (req: AuthRequest, res: Response) => {
             category: challengeDetails.category,
             points: solve.points,
             solvedAt: solve.solvedAt,
-            universityName: university?.name || universityCode
+            universityName: university?.name || universityCode,
+            challengeId: solve.challengeId
           });
         }
       });

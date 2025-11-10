@@ -366,6 +366,33 @@ export const changeUserPassword = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const deleteUser = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can delete users' });
+    }
+
+    const { userId } = req.params;
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Prevent super admin from deleting themselves
+    if ((targetUser as any)._id.toString() === req.user?.userId) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    // Delete the user
+    await User.findByIdAndDelete(userId);
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting user' });
+  }
+};
+
 export const purchaseHint = async (req: AuthRequest, res: Response) => {
   try {
     if (req.user?.role !== 'user') {

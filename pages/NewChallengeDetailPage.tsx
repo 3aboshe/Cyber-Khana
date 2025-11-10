@@ -315,8 +315,8 @@ const NewChallengeDetailPage: React.FC = () => {
             </Card>
           )}
 
-          {/* Point Decay Information */}
-          <PointDecayInfo challenge={challenge} />
+          {/* Point Decay Information - Only visible to admins */}
+          <PointDecayInfo challenge={challenge} user={currentUser} />
         </div>
 
         {/* Sidebar */}

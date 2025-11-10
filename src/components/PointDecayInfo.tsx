@@ -6,12 +6,18 @@ import Button from './ui/EnhancedButton';
 
 interface PointDecayInfoProps {
   challenge: any;
+  user?: any;
 }
 
-const PointDecayInfo: React.FC<PointDecayInfoProps> = ({ challenge }) => {
+const PointDecayInfo: React.FC<PointDecayInfoProps> = ({ challenge, user }) => {
   const [showDetails, setShowDetails] = useState(false);
 
   if (!challenge) return null;
+
+  // Only show to admins and super-admins
+  if (!user || (user.role !== 'admin' && user.role !== 'super-admin')) {
+    return null;
+  }
 
   const initialPoints = challenge.initialPoints || 1000;
   const minimumPoints = challenge.minimumPoints || 100;
