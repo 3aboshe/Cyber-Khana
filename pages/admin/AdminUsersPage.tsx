@@ -47,7 +47,7 @@ const AdminUsersPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Confirmation and toast hooks
-  const confirm = useConfirmation();
+  const { confirm } = useConfirmation();
   const { toast, ToastContainer } = useToast();
 
   // Password change state

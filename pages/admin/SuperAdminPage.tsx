@@ -33,7 +33,7 @@ const SuperAdminPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copiedCount, setCopiedCount] = useState(0);
-  const confirm = useConfirmation();
+  const { confirm } = useConfirmation();
   const { toast, ToastContainer } = useToast();
 
   // Create university state

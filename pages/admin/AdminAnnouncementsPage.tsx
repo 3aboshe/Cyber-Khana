@@ -27,7 +27,7 @@ const AdminAnnouncementsPage: React.FC = () => {
     title: '',
     content: '',
   });
-  const confirm = useConfirmation();
+  const { confirm } = useConfirmation();
   const { toast, ToastContainer } = useToast();
 
   useEffect(() => {

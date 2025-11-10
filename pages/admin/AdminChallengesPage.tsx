@@ -57,7 +57,7 @@ const AdminChallengesPage: React.FC = () => {
   });
 
   // Confirmation and toast hooks
-  const confirm = useConfirmation();
+  const { confirm } = useConfirmation();
   const { toast, ToastContainer } = useToast();
   const [formData, setFormData] = useState({
     title: '',

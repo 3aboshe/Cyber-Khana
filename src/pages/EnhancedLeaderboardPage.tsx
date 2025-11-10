@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { userService } from '../services/userService';
-import Card from '../components/ui/EnhancedCard';
-import Button from '../components/ui/EnhancedButton';
-import Breadcrumbs from '../components/ui/Breadcrumbs';
-import LoadingSkeleton from '../components/ui/LoadingSkeleton';
-import EmptyState from '../components/ui/EmptyState';
+import { userService } from '../../services/userService';
+import Card from '../../components/ui/EnhancedCard';
+import Button from '../../components/ui/EnhancedButton';
+import Breadcrumbs from '../../components/ui/Breadcrumbs';
+import LoadingSkeleton from '../../components/ui/LoadingSkeleton';
+import EmptyState from '../../components/ui/EmptyState';
 import { Trophy, Clock, Target, TrendingUp, Award, Crown, Medal, Star, Search } from 'lucide-react';
-import Input from '../components/ui/EnhancedInput';
+import Input from '../../components/ui/EnhancedInput';
 
 const EnhancedLeaderboardPage: React.FC = () => {
   const [leaderboardData, setLeaderboardData] = useState<any>(null);

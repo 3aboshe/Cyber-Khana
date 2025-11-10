@@ -44,7 +44,7 @@ const AdminCompetitionsPage: React.FC = () => {
     endTime: '',
     duration: 120, // default 2 hours in minutes
   });
-  const confirm = useConfirmation();
+  const { confirm } = useConfirmation();
   const { toast, ToastContainer } = useToast();
 
   useEffect(() => {
