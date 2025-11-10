@@ -4,6 +4,7 @@ import { calculateDynamicScore } from '../models/Challenge';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { uploadWriteupPdf, uploadChallengeFiles } from '../utils/fileUpload';
+import { applyRetroactiveDecay } from '../services/retroactiveDecayService';
 import path from 'path';
 
 export const getChallenges = async (req: AuthRequest, res: Response) => {
@@ -211,6 +212,7 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       }
 
       if (flag === challenge.flag) {
+        // Calculate points based on current solve count (before incrementing)
         const awardedPoints = calculateDynamicScore(
           challenge.initialPoints,
           challenge.minimumPoints,
@@ -236,20 +238,24 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
 
         // Update challenge
         challenge.solves += 1;
-        challenge.currentPoints = calculateDynamicScore(
-          challenge.initialPoints,
-          challenge.minimumPoints,
-          challenge.decay,
-          challenge.solves
-        );
         await challenge.save();
+
+        // Apply retroactive decay to update ALL solvers (including this new one)
+        try {
+          await applyRetroactiveDecay(challengeIdStr);
+          console.log(`✓ Retroactive decay applied for challenge: ${challenge.title}`);
+        } catch (error) {
+          console.error('Failed to apply retroactive decay:', error);
+          // Don't fail the request if retroactive decay fails
+          // The points are still correct for the new solver
+        }
 
         res.json({
           success: true,
           points: totalAwardedPoints,
           basePoints: awardedPoints,
           firstBlood: challenge.solves === 1,
-          message: 'Correct flag!'
+          message: 'Correct flag! Points updated for all solvers.'
         });
       } else {
         res.status(400).json({ error: 'Incorrect flag' });
@@ -528,5 +534,54 @@ export const uploadChallengeFilesController = async (req: AuthRequest, res: Resp
     });
   } catch (error) {
     res.status(500).json({ error: 'Error uploading files' });
+  }
+};
+
+export const applyRetroactiveDecayToAll = async (req: AuthRequest, res: Response) => {
+  try {
+    // Only allow admins to trigger this
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can apply retroactive decay' });
+    }
+
+    const { universityCode } = req.query;
+    const { applyRetroactiveDecayToAllChallenges } = require('../services/retroactiveDecayService');
+
+    const result = await applyRetroactiveDecayToAllChallenges(universityCode as string);
+
+    res.json({
+      success: true,
+      message: 'Retroactive decay applied to all challenges',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error in applyRetroactiveDecayToAll:', error);
+    res.status(500).json({
+      error: 'Error applying retroactive decay',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+export const applyRetroactiveDecayToChallenge = async (req: AuthRequest, res: Response) => {
+  try {
+    // Only allow admins to trigger this
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can apply retroactive decay' });
+    }
+
+    const { id } = req.params;
+    const result = await applyRetroactiveDecay(id);
+
+    res.json({
+      message: 'Retroactive decay applied to challenge',
+      ...result
+    });
+  } catch (error) {
+    console.error('Error in applyRetroactiveDecayToChallenge:', error);
+    res.status(500).json({
+      error: 'Error applying retroactive decay to challenge',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };

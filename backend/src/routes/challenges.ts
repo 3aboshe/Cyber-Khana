@@ -14,7 +14,9 @@ import {
   uploadChallengeFilesController,
   publishHint,
   publishChallenge,
-  unpublishChallenge
+  unpublishChallenge,
+  applyRetroactiveDecayToAll,
+  applyRetroactiveDecayToChallenge
 } from '../controllers/challengeController';
 import { authenticate, requireAdmin, authenticateSuperAdmin } from '../middleware/auth';
 
@@ -35,5 +37,7 @@ router.post('/upload-files', authenticate, requireAdmin, uploadChallengeFilesCon
 router.post('/:id/publish-hint', authenticate, requireAdmin, publishHint);
 router.post('/:id/publish', authenticate, requireAdmin, publishChallenge);
 router.post('/:id/unpublish', authenticate, requireAdmin, unpublishChallenge);
+router.post('/apply-retroactive-decay', authenticate, requireAdmin, applyRetroactiveDecayToAll);
+router.post('/:id/apply-retroactive-decay', authenticate, requireAdmin, applyRetroactiveDecayToChallenge);
 
 export default router;
