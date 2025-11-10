@@ -38,6 +38,8 @@ export interface IChallenge extends Document {
   fromCompetition?: boolean;
   competitionId?: string;
   challengeLink?: string;
+  difficulty?: 'Very Easy' | 'Easy' | 'Medium' | 'Hard' | 'Expert';
+  estimatedTime?: number;
   writeup?: {
     content: string;
     images?: string[];
@@ -117,6 +119,15 @@ const ChallengeSchema: Schema = new Schema({
   },
   challengeLink: {
     type: String
+  },
+  difficulty: {
+    type: String,
+    enum: ['Very Easy', 'Easy', 'Medium', 'Hard', 'Expert'],
+    default: 'Medium'
+  },
+  estimatedTime: {
+    type: Number,
+    default: 30
   },
   writeup: {
     content: String,

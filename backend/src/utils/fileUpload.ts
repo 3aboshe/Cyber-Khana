@@ -26,10 +26,34 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: any) => {
   }
 };
 
+const challengeFileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'challenge-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const challengeFileFilter = (req: any, file: Express.Multer.File, cb: any) => {
+  // Allow all file types for challenge files
+  cb(null, true);
+};
+
 export const uploadWriteupPdf = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024
+  }
+});
+
+export const uploadChallengeFiles = multer({
+  storage: challengeFileStorage,
+  fileFilter: challengeFileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB per file
+    files: 10 // Maximum 10 files per challenge
   }
 });

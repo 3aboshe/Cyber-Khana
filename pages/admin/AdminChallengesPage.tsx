@@ -62,7 +62,7 @@ const AdminChallengesPage: React.FC = () => {
     initialPoints: 1000,
     minimumPoints: 100,
     decay: 200,
-    difficulty: 'Medium',
+    difficulty: 'Very Easy',
     estimatedTime: 30,
     challengeLink: '',
     hints: [] as Array<{ text: string; cost: number; isPublished?: boolean }>,
@@ -90,10 +90,24 @@ const AdminChallengesPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let uploadedFiles: Array<{ name: string; url: string }> = [];
+
+      // Upload files if any
+      if (challengeFiles && challengeFiles.length > 0) {
+        const uploadResult = await challengeService.uploadChallengeFiles(challengeFiles);
+        uploadedFiles = uploadResult.files;
+      }
+
+      // Prepare challenge data
+      const challengeData = {
+        ...formData,
+        files: uploadedFiles.length > 0 ? uploadedFiles : undefined
+      };
+
       if (editingChallenge) {
-        await challengeService.updateChallenge(editingChallenge._id, formData);
+        await challengeService.updateChallenge(editingChallenge._id, challengeData);
       } else {
-        await challengeService.createChallenge(formData);
+        await challengeService.createChallenge(challengeData);
       }
       await fetchChallenges();
       closeModal();
@@ -230,7 +244,7 @@ const AdminChallengesPage: React.FC = () => {
         initialPoints: 1000,
         minimumPoints: 100,
         decay: 200,
-        difficulty: 'Medium',
+        difficulty: 'Very Easy',
         estimatedTime: 30,
         challengeLink: '',
         hints: [],
@@ -424,6 +438,7 @@ const AdminChallengesPage: React.FC = () => {
                   className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200"
                   required
                 >
+                  <option value="Very Easy">Very Easy</option>
                   <option value="Easy">Easy</option>
                   <option value="Medium">Medium</option>
                   <option value="Hard">Hard</option>

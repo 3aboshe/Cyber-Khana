@@ -3,7 +3,7 @@ import Challenge from '../models/Challenge';
 import { calculateDynamicScore } from '../models/Challenge';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
-import { uploadWriteupPdf } from '../utils/fileUpload';
+import { uploadWriteupPdf, uploadChallengeFiles } from '../utils/fileUpload';
 import path from 'path';
 
 export const getChallenges = async (req: AuthRequest, res: Response) => {
@@ -484,5 +484,39 @@ export const uploadWriteupPdfController = async (req: AuthRequest, res: Response
     });
   } catch (error) {
     res.status(500).json({ error: 'Error uploading PDF' });
+  }
+};
+
+export const uploadChallengeFilesController = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role === 'user') {
+      return res.status(403).json({ error: 'Only admins can upload challenge files' });
+    }
+
+    uploadChallengeFiles.array('files', 10)(req as any, res as any, async (err: any) => {
+      if (err) {
+        return res.status(400).json({ error: err.message });
+      }
+
+      if (!req.files || (req.files as Express.Multer.File[]).length === 0) {
+        return res.status(400).json({ error: 'No files uploaded' });
+      }
+
+      const files = (req.files as Express.Multer.File[]).map(file => {
+        // Construct absolute URL for better compatibility with HashRouter
+        const protocol = req.protocol;
+        const host = req.get('host');
+        const fileUrl = `${protocol}://${host}/api/uploads/${file.filename}`;
+
+        return {
+          name: file.originalname,
+          url: fileUrl
+        };
+      });
+
+      res.json({ files });
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error uploading files' });
   }
 };

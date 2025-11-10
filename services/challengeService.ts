@@ -39,4 +39,28 @@ export const challengeService = {
 
   publishHint: (id: string, hintIndex: number) =>
     apiService.post(`/challenges/${id}/publish-hint`, { hintIndex }),
+
+  uploadChallengeFiles: async (files: FileList) => {
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
+    const token = localStorage.getItem('token');
+    const API_URL = '/api';
+
+    const uploadResponse = await fetch(`${API_URL}/challenges/upload-files`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error('Failed to upload files');
+    }
+
+    return await uploadResponse.json();
+  },
 };

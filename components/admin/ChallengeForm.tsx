@@ -26,15 +26,17 @@ const initialFormState: Omit<Challenge, 'id' | 'solves'> = {
   difficulty: 'Very Easy',
   estimatedTime: 30,
   challengeLink: '',
+  files: [],
 };
 
 
 const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCancel }) => {
   const [formData, setFormData] = useState<Omit<Challenge, 'id' | 'solves'>>(initialFormState);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
 
   useEffect(() => {
     if (challenge) {
-      setFormData({ ...challenge, hints: challenge.hints || [] });
+      setFormData({ ...challenge, hints: challenge.hints || [], files: challenge.files || [] });
     } else {
       setFormData(initialFormState);
     }
