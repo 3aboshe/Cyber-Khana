@@ -5,7 +5,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
-import { Trophy, Clock, Users, Lock, Play, ArrowRight, Calendar } from 'lucide-react';
+import { Trophy, Clock, Users, Lock, Play, ArrowRight, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Competition {
   _id: string;
@@ -26,6 +26,7 @@ const CompetitionPage: React.FC = () => {
   const [enteringCode, setEnteringCode] = useState(false);
   const [securityCode, setSecurityCode] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [expandedCompetition, setExpandedCompetition] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompetitions();
@@ -38,7 +39,11 @@ const CompetitionPage: React.FC = () => {
       const universityCode = userData ? JSON.parse(userData).universityCode : undefined;
 
       const data = await competitionService.getCompetitions(universityCode);
-      setCompetitions(data);
+      // Sort by startTime descending (newest first)
+      const sortedData = data.sort((a: Competition, b: Competition) =>
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+      );
+      setCompetitions(sortedData);
     } catch (err) {
       console.error('Error fetching competitions:', err);
     } finally {
@@ -143,9 +148,9 @@ const CompetitionPage: React.FC = () => {
     );
   }
 
-  const activeCompetitions = competitions.filter(c => c.status === 'active' && !isCompetitionTimeEnded(c.endTime));
-  const upcomingCompetitions = competitions.filter(c => c.status === 'pending' || (c.status === 'active' && new Date() < new Date(c.startTime)));
-  const pastCompetitions = competitions.filter(c => c.status === 'ended' || isCompetitionTimeEnded(c.endTime));
+  const toggleExpanded = (competitionId: string) => {
+    setExpandedCompetition(expandedCompetition === competitionId ? null : competitionId);
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -162,137 +167,122 @@ const CompetitionPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Active Competitions */}
-      {activeCompetitions.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Play className="w-6 h-6 text-emerald-400" />
-            <h2 className="text-2xl font-bold text-zinc-100">Active Competitions</h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {activeCompetitions.map((competition) => (
-              <Card key={competition._id} className="p-6 border-emerald-500/50">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-emerald-500/20 rounded-lg">
-                    <Trophy className="w-8 h-8 text-emerald-400" />
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(competition.status)}`}>
-                    LIVE
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Clock className="w-4 h-4" />
-                    <span>Ends in: {getTimeRemaining(competition.endTime)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Users className="w-4 h-4" />
-                    <span>{competition.challenges?.length || 0} challenges</span>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => navigate(`/competition/${competition._id}`)}
-                  className="w-full"
+      {/* Competitions List - Newest First */}
+      {competitions.length > 0 ? (
+        <div className="space-y-4">
+          {competitions.map((competition) => {
+            const isExpanded = expandedCompetition === competition._id;
+            const ended = isCompetitionTimeEnded(competition.endTime);
+
+            return (
+              <Card key={competition._id} className="overflow-hidden">
+                {/* Competition Header - Always Visible */}
+                <div
+                  className="p-6 cursor-pointer hover:bg-zinc-800/30 transition-colors"
+                  onClick={() => toggleExpanded(competition._id)}
                 >
-                  Join Competition
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-lg ${ended ? 'bg-zinc-700/50' : 'bg-emerald-500/20'}`}>
+                        <Trophy className={`w-8 h-8 ${ended ? 'text-zinc-400' : 'text-emerald-400'}`} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-zinc-100">{competition.name}</h3>
+                        <p className="text-zinc-400 text-sm mt-1">
+                          {ended ? 'Ended' : competition.status === 'active' ? 'Live' : 'Upcoming'} • {competition.challenges?.length || 0} challenges
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className={`px-3 py-1 rounded-full text-sm ${
+                        ended ? 'bg-red-500/20 text-red-400 border border-red-500/50' :
+                        competition.status === 'active' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' :
+                        'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50'
+                      }`}>
+                        {ended ? 'ENDED' : competition.status.toUpperCase()}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-zinc-400" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-zinc-400" />
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-      {/* Upcoming Competitions */}
-      {upcomingCompetitions.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <Calendar className="w-6 h-6 text-yellow-400" />
-            <h2 className="text-2xl font-bold text-zinc-100">Upcoming Competitions</h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {upcomingCompetitions.map((competition) => (
-              <Card key={competition._id} className="p-6 border-yellow-500/30 opacity-75">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-yellow-500/20 rounded-lg">
-                    <Clock className="w-8 h-8 text-yellow-400" />
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(competition.status)}`}>
-                    UPCOMING
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Clock className="w-4 h-4" />
-                    <span>Starts in: {getTimeUntilStart(competition.startTime)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Users className="w-4 h-4" />
-                    <span>{competition.challenges?.length || 0} challenges</span>
-                  </div>
-                </div>
-                <div className="text-zinc-500 text-sm">
-                  Will be available soon...
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      )}
+                {/* Expanded Content - Challenges */}
+                {isExpanded && (
+                  <div className="border-t border-zinc-700 bg-zinc-800/30">
+                    <div className="p-6">
+                      <h4 className="text-lg font-semibold text-zinc-200 mb-4">Challenges</h4>
+                      {competition.challenges && competition.challenges.length > 0 ? (
+                        <div className="space-y-3">
+                          {competition.challenges.map((challenge: any, index: number) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between p-4 bg-zinc-800 rounded-lg hover:bg-zinc-750 transition-colors"
+                            >
+                              <div>
+                                <h5 className="text-zinc-200 font-medium">{challenge.title}</h5>
+                                <p className="text-zinc-500 text-sm">{challenge.category} • {(challenge as any).currentPoints || challenge.points} pts</p>
+                              </div>
+                              <div className="flex items-center gap-4 text-zinc-400 text-sm">
+                                <span>{challenge.solves} solves</span>
+                                <Button
+                                  size="sm"
+                                  onClick={() => navigate(`/competition/${competition._id}/challenge/${challenge._id}`)}
+                                  disabled={ended}
+                                >
+                                  {ended ? 'View' : 'Solve'}
+                                  <ArrowRight className="w-4 h-4 ml-1" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-zinc-500">No challenges added yet</p>
+                      )}
 
-      {/* Past Competitions */}
-      {pastCompetitions.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-            <Trophy className="w-6 h-6 text-zinc-400" />
-            <h2 className="text-2xl font-bold text-zinc-100">Past Competitions</h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {pastCompetitions.map((competition) => (
-              <Card
-                key={competition._id}
-                className="p-6 border border-zinc-700 hover:border-red-500/50 transition-all duration-300 cursor-pointer"
-                onClick={() => navigate(`/competition/${competition._id}/leaderboard`)}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-zinc-700/50 rounded-lg">
-                    <Trophy className="w-8 h-8 text-zinc-400" />
+                      {/* Action Buttons */}
+                      <div className="flex gap-3 mt-6">
+                        {ended ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => navigate(`/competition/${competition._id}/leaderboard`)}
+                            className="flex-1"
+                          >
+                            <Trophy className="w-4 h-4 mr-2" />
+                            View Leaderboard
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={() => navigate(`/competition/${competition._id}`)}
+                            className="flex-1"
+                          >
+                            <Play className="w-4 h-4 mr-2" />
+                            Enter Competition
+                          </Button>
+                        )}
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            // Enter security code logic
+                            openJoinModal();
+                          }}
+                        >
+                          <Lock className="w-4 h-4 mr-2" />
+                          Security Code
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <span className="px-3 py-1 rounded-full text-sm bg-red-500/20 text-red-400 border border-red-500/50">
-                    ENDED
-                  </span>
-                </div>
-                <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
-                <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Users className="w-4 h-4" />
-                    <span>{competition.challenges?.length || 0} challenges</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-zinc-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>Ended {new Date(competition.endTime).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/competition/${competition._id}/leaderboard`);
-                  }}
-                  className="w-full border-zinc-600 hover:border-red-500/50 hover:bg-red-500/10"
-                >
-                  View Leaderboard
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                )}
               </Card>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
-
-      {competitions.length === 0 && (
+      ) : (
         <div className="text-center py-12">
           <Trophy className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
           <p className="text-zinc-400 text-lg">No competitions available</p>

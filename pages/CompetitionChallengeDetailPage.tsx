@@ -6,7 +6,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
-import { ArrowLeft, Trophy, Clock, Users, CheckCircle, AlertCircle, Lightbulb, Download, Lock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink } from 'lucide-react';
 
 interface CompetitionChallenge {
   _id: string;
@@ -16,9 +16,21 @@ interface CompetitionChallenge {
   description: string;
   author: string;
   flag: string;
-  hints?: { text: string; cost: number }[];
+  hints?: Array<{ text: string; cost: number }>;
+  files?: Array<{ name: string; url: string }>;
   solves: number;
+  challengeLink?: string;
 }
+
+const CATEGORY_COLORS: Record<string, string> = {
+  'Web Exploitation': 'from-blue-500 to-cyan-500',
+  'Reverse Engineering': 'from-purple-500 to-violet-500',
+  'Binary Exploitation': 'from-red-500 to-pink-500',
+  'Cryptography': 'from-yellow-500 to-orange-500',
+  'Forensics': 'from-green-500 to-emerald-500',
+  'Social Engineering': 'from-indigo-500 to-blue-500',
+  'Miscellaneous': 'from-gray-500 to-zinc-500',
+};
 
 const CompetitionChallengeDetailPage: React.FC = () => {
   const { id, challengeId } = useParams<{ id: string; challengeId: string }>();
@@ -27,55 +39,56 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   const [challenge, setChallenge] = useState<CompetitionChallenge | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
   const [flag, setFlag] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [showHints, setShowHints] = useState(false);
+  const [solved, setSolved] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isSolved, setIsSolved] = useState(false);
   const [solvedChallenges, setSolvedChallenges] = useState<string[]>([]);
-  const [userData, setUserData] = useState<any>(null);
-  const [purchasedHints, setPurchasedHints] = useState<Set<string>>(new Set());
+  const [unlockedHints, setUnlockedHints] = useState<string[]>([]);
+  const [showHintModal, setShowHintModal] = useState(false);
+  const [selectedHint, setSelectedHint] = useState<{ index: number; cost: number; title: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userDataStr = localStorage.getItem('user');
-    if (userDataStr) {
-      setUserData(JSON.parse(userDataStr));
+    if (id && challengeId) {
+      fetchData();
     }
-
-    fetchChallenge();
   }, [id, challengeId]);
 
-  const fetchChallenge = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const data = await competitionService.getCompetitionById(id!);
-      setCompetition(data);
+      const [competitionData, profileData] = await Promise.all([
+        competitionService.getCompetitionById(id!),
+        JSON.parse(localStorage.getItem('user') || '{}')
+      ]);
+
+      setCompetition(competitionData);
+      setCurrentUser(profileData);
 
       // Find the challenge in the competition
-      const foundChallenge = data.challenges.find((c: CompetitionChallenge) => c._id === challengeId);
+      const foundChallenge = competitionData.challenges.find((c: CompetitionChallenge) => c._id === challengeId);
       if (foundChallenge) {
         setChallenge(foundChallenge);
       }
 
       // Check if this challenge is already solved
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        try {
-          const solved = await competitionService.getSolvedChallenges(id!, user.id);
-          setSolvedChallenges(solved);
-          setIsSolved(solved.includes(challengeId!));
-        } catch (err) {
-          setSolvedChallenges([]);
-          setIsSolved(false);
-        }
+      try {
+        const solved = await competitionService.getSolvedChallenges(id!, profileData.id);
+        setSolvedChallenges(solved);
+        setSolved(solved.includes(challengeId!));
+      } catch (err) {
+        setSolvedChallenges([]);
+        setSolved(false);
       }
 
-      setError('');
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch challenge');
+      // Get unlocked hints
+      setUnlockedHints(profileData.unlockedHints || []);
+
+      setMessage({ type: '', text: '' });
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setMessage({ type: 'error', text: 'Failed to load challenge' });
     } finally {
       setLoading(false);
     }
@@ -92,69 +105,68 @@ const CompetitionChallengeDetailPage: React.FC = () => {
       setSubmitting(true);
       setMessage({ type: '', text: '' });
 
-      // Try to submit the flag
       const result = await competitionService.submitCompetitionFlag(id!, challengeId!, flag);
 
       if (result.success) {
-        setMessage({
-          type: 'success',
-          text: `Correct flag! You earned ${result.points} points.`
-        });
+        setSolved(true);
         setFlag('');
-        setShowHints(false);
         setShowSuccessModal(true);
+        setMessage({ type: '', text: '' });
 
         // Refresh the competition dashboard to show solved challenge
         refreshCompetitionDashboard(id!);
+
+        // Update user data
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.competitionPoints = (user.competitionPoints || 0) + result.points;
+          localStorage.setItem('user', JSON.stringify(user));
+          window.dispatchEvent(new CustomEvent('userUpdate', { detail: user }));
+        }
       } else {
-        setMessage({
-          type: 'error',
-          text: result.message || 'Incorrect flag. Try again!'
-        });
+        setMessage({ type: 'error', text: result.message || 'Incorrect flag. Try again!' });
       }
     } catch (err: any) {
-      setMessage({
-        type: 'error',
-        text: err.message || 'An error occurred. Please try again!'
-      });
+      setMessage({ type: 'error', text: err.message || 'Incorrect flag. Try again!' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const buyHint = async (hintIndex: number, cost: number) => {
-    if (!userData || !challenge) return;
+  const handlePurchaseHint = (hintIndex: number, cost: number) => {
+    if (!currentUser || (currentUser.competitionPoints || 0) < cost) {
+      setMessage({ type: 'error', text: 'Not enough competition points to purchase this hint!' });
+      return;
+    }
+    setSelectedHint({ index: hintIndex, cost, title: `Hint ${hintIndex + 1}` });
+    setShowHintModal(true);
+  };
 
-    const hintId = `${challenge._id}-${hintIndex}`;
-    setPurchasedHints(prev => new Set([...prev, hintId]));
+  const confirmPurchaseHint = async () => {
+    if (!selectedHint || !currentUser) return;
 
     try {
-      await competitionService.buyCompetitionHint(id!, challenge._id, hintIndex, cost);
+      await competitionService.buyCompetitionHint(id!, challenge!._id, selectedHint.index, selectedHint.cost);
 
-      // Update user data
-      const updatedUserData = {
-        ...userData,
-        competitionPoints: userData.competitionPoints - cost,
-        unlockedHints: [...(userData.unlockedHints || []), hintId]
-      };
-      setUserData(updatedUserData);
-      localStorage.setItem('user', JSON.stringify(updatedUserData));
+      // Add the hint to unlocked hints
+      const hintId = `${challenge!._id}-${selectedHint.index}`;
+      setUnlockedHints([...unlockedHints, hintId]);
 
-      setMessage({
-        type: 'success',
-        text: `Hint purchased successfully!`
-      });
+      // Update user points
+      const newPoints = (currentUser.competitionPoints || 0) - selectedHint.cost;
+      const updatedUser = { ...currentUser, competitionPoints: newPoints };
+      setCurrentUser(updatedUser);
+
+      // Update localStorage and dispatch event
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      window.dispatchEvent(new CustomEvent('userUpdate', { detail: updatedUser }));
+
+      setMessage({ type: 'success', text: 'Hint unlocked successfully!' });
+      setShowHintModal(false);
+      setSelectedHint(null);
     } catch (err: any) {
-      setMessage({
-        type: 'error',
-        text: err.message || 'Failed to purchase hint'
-      });
-    } finally {
-      setPurchasedHints(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(hintId);
-        return newSet;
-      });
+      setMessage({ type: 'error', text: err.message || 'Failed to purchase hint' });
     }
   };
 
@@ -171,8 +183,8 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   if (!challenge) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <p className="text-zinc-400 text-lg">Challenge not found</p>
+        <div className="text-center">
+          <p className="text-zinc-400">Challenge not found</p>
           <Button onClick={() => navigate(`/competition/${id}`)} className="mt-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Competition
@@ -182,7 +194,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
     );
   }
 
-  // Check if competition has ended
+  const categoryColor = CATEGORY_COLORS[challenge.category] || CATEGORY_COLORS['Miscellaneous'];
   const isCompetitionEnded = () => {
     if (!competition) return false;
     const now = new Date();
@@ -191,153 +203,107 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <button
+        onClick={() => navigate(`/competition/${id}`)}
+        className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 mb-6 transition-colors"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        <span>Back to Competition</span>
+      </button>
+
       {/* Header */}
-      <div className="mb-8">
-        <Button variant="ghost" onClick={() => navigate(`/competition/${id}`)} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Competition
-        </Button>
-        <div className="flex items-start gap-4">
-          <div className="p-4 bg-emerald-500/20 rounded-lg">
-            <Trophy className="w-10 h-10 text-emerald-400" />
+      <Card className="p-8 mb-6">
+        <div className="flex items-start gap-6">
+          <div className={`p-4 rounded-xl bg-gradient-to-br ${categoryColor} shrink-0`}>
+            <Trophy className="w-10 h-10 text-white" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-4xl font-bold text-zinc-100">{challenge.title}</h1>
-              <span className="px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/20 text-emerald-400">
-                {(challenge as any).currentPoints || challenge.points} pts
+            <h1 className="text-3xl font-bold text-zinc-100 mb-2">{challenge.title}</h1>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="px-3 py-1 bg-zinc-800 rounded-full text-sm text-zinc-300">
+                {challenge.category}
               </span>
-            </div>
-            <div className="flex items-center gap-4 text-zinc-400">
-              <span className="px-3 py-1 bg-zinc-700 rounded">{challenge.category}</span>
-              <span>By: {challenge.author}</span>
-              <span className="flex items-center gap-1">
+              <div className="flex items-center gap-2 text-zinc-400">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="font-semibold text-zinc-200">{(challenge as any).currentPoints || challenge.points} points</span>
+              </div>
+              <div className="flex items-center gap-2 text-zinc-400">
                 <Users className="w-4 h-4" />
-                {challenge.solves} solves
-              </span>
+                <span>{challenge.solves} solves</span>
+              </div>
             </div>
+            <p className="text-zinc-400">Author: {challenge.author}</p>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid gap-6 md:grid-cols-3">
         {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="md:col-span-2 space-y-6">
           {/* Description */}
           <Card className="p-6">
-            <h2 className="text-2xl font-bold text-zinc-100 mb-4">Description</h2>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-zinc-300 whitespace-pre-wrap">{challenge.description}</p>
+            <h2 className="text-xl font-bold text-zinc-100 mb-4">Description</h2>
+            <div className="text-zinc-300 whitespace-pre-wrap">
+              {challenge.description}
             </div>
           </Card>
 
           {/* Files */}
           {challenge.files && challenge.files.length > 0 && (
             <Card className="p-6">
-              <h2 className="text-2xl font-bold text-zinc-100 mb-4">Challenge Files</h2>
-              <ul className="space-y-2">
-                {challenge.files.map((file: any, index: number) => (
-                  <li key={index}>
-                    <a
-                      href={file.url}
-                      download
-                      className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
-                    >
-                      <Download size={16} />
-                      {file.name}
-                    </a>
-                  </li>
+              <h2 className="text-xl font-bold text-zinc-100 mb-4">Files</h2>
+              <div className="space-y-2">
+                {challenge.files.map((file, index) => (
+                  <a
+                    key={index}
+                    href={file.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors"
+                  >
+                    <Download className="w-5 h-5 text-zinc-400" />
+                    <span className="text-zinc-300">{file.name}</span>
+                  </a>
                 ))}
-              </ul>
+              </div>
             </Card>
           )}
 
           {/* Challenge Link */}
           {(challenge as any).challengeLink && (
             <Card className="p-6">
-              <h2 className="text-2xl font-bold text-zinc-100 mb-4">Challenge Link</h2>
+              <h2 className="text-xl font-bold text-zinc-100 mb-4">Challenge Link</h2>
               <a
                 href={(challenge as any).challengeLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300 transition-colors text-lg"
+                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors"
               >
-                <ExternalLink size={20} />
-                <span>View Challenge</span>
+                <ExternalLink className="w-5 h-5 text-emerald-400" />
+                <span className="text-emerald-400">View Challenge</span>
               </a>
             </Card>
           )}
 
-          {/* Hints */}
-          {challenge.hints && challenge.hints.length > 0 && (
-            <Card className="p-6">
-              <h2 className="text-2xl font-bold text-zinc-100 mb-4 flex items-center gap-2">
-                <Lightbulb className="w-6 h-6 text-yellow-400" />
-                <span>Hints Available</span>
-              </h2>
+          {/* Point Decay Information - Only visible to admins */}
+          <div className="hidden">
+            {/* Placeholder for future admin features */}
+          </div>
+        </div>
 
-              <div className="space-y-3">
-                {challenge.hints
-                  .filter((hint: any) => hint.isPublished !== false)
-                  .map((hint: any, index: number) => {
-                    const hintId = `${challenge._id}-${index}`;
-                    const isUnlocked = userData?.unlockedHints?.includes(hintId);
-                    const isPurchasing = purchasedHints.has(hintId);
-
-                    return (
-                      <div key={index} className="p-4 bg-zinc-800 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-zinc-400 text-sm">Hint {index + 1}</span>
-                          <span className="text-yellow-400 text-sm font-semibold">
-                            -{hint.cost} points
-                          </span>
-                        </div>
-                        {isUnlocked ? (
-                          <p className="text-zinc-300">{hint.text}</p>
-                        ) : (
-                          <div>
-                            <p className="text-zinc-500 italic text-sm mb-2">This hint is locked</p>
-                            <Button
-                              onClick={() => buyHint(index, hint.cost)}
-                              disabled={isPurchasing || userData?.competitionPoints < hint.cost || isCompetitionEnded()}
-                              variant="outline"
-                              className="w-full border-zinc-600 hover:border-yellow-500/50"
-                            >
-                              {isPurchasing ? (
-                                'Purchasing...'
-                              ) : userData?.competitionPoints < hint.cost ? (
-                                `Need ${hint.cost} points`
-                              ) : (
-                                `Buy for ${hint.cost} points`
-                              )}
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
-                  <div className="text-center py-8 text-zinc-500">
-                    <Lightbulb className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No hints published yet</p>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
-
+        {/* Sidebar */}
+        <div className="space-y-6">
           {/* Flag Submission */}
           <Card className="p-6">
-            <h2 className="text-2xl font-bold text-zinc-100 mb-4">Submit Flag</h2>
-
+            <h2 className="text-xl font-bold text-zinc-100 mb-4">Submit Flag</h2>
             {isCompetitionEnded() ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
                   <Lock className="w-6 h-6 text-zinc-400" />
                   <div>
                     <p className="text-zinc-300 font-semibold">Competition Ended</p>
-                    <p className="text-zinc-500 text-sm">This challenge is no longer active. View the leaderboard to see final results.</p>
+                    <p className="text-zinc-500 text-sm">This challenge is no longer active.</p>
                   </div>
                 </div>
                 <Button
@@ -349,43 +315,25 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                   View Leaderboard
                 </Button>
               </div>
-            ) : isSolved ? (
+            ) : solved ? (
               <div className="flex items-center gap-3 p-4 bg-emerald-500/20 rounded-lg">
                 <CheckCircle className="w-6 h-6 text-emerald-400" />
                 <div>
-                  <p className="text-emerald-400 font-semibold">Already Solved!</p>
-                  <p className="text-emerald-400/80 text-sm">You have successfully solved this challenge</p>
+                  <p className="text-emerald-400 font-semibold">Solved!</p>
+                  <p className="text-emerald-400/80 text-sm">Great job!</p>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-zinc-200 mb-2">Flag</label>
                   <Input
                     type="text"
-                    placeholder="Enter flag (e.g., flag{...})"
+                    placeholder="flag{...}"
                     value={flag}
                     onChange={(e) => setFlag(e.target.value)}
-                    disabled={submitting}
-                    className="font-mono"
+                    className="w-full"
                   />
                 </div>
-
-                {message.text && (
-                  <div className={`p-4 rounded-lg flex items-center gap-2 ${
-                    message.type === 'success'
-                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50'
-                      : 'bg-red-500/20 text-red-400 border border-red-500/50'
-                  }`}>
-                    {message.type === 'success' ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      <AlertCircle className="w-5 h-5" />
-                    )}
-                    <span>{message.text}</span>
-                  </div>
-                )}
-
                 <Button
                   type="submit"
                   disabled={submitting}
@@ -395,52 +343,83 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                 </Button>
               </form>
             )}
-          </Card>
-        </div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Challenge Info */}
-          <Card className="p-6">
-            <h3 className="text-lg font-bold text-zinc-100 mb-4">Challenge Info</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Category</span>
-                <span className="text-zinc-200">{challenge.category}</span>
+            {message.text && message.type === 'error' && (
+              <div className="mt-4 p-3 rounded-lg flex items-center gap-2 bg-red-500/20 text-red-400">
+                <XCircle className="w-5 h-5" />
+                <span>{message.text}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Points</span>
-                <span className="text-emerald-400 font-bold">{(challenge as any).currentPoints || challenge.points}</span>
+            )}
+
+            {message.text && message.type === 'success' && (
+              <div className="mt-4 p-3 rounded-lg flex items-center gap-2 bg-emerald-500/20 text-emerald-400">
+                <CheckCircle className="w-5 h-5" />
+                <span>{message.text}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Difficulty</span>
-                <span className="text-zinc-200">
-                  {(challenge as any).currentPoints <= 100 ? 'Easy' : (challenge as any).currentPoints <= 300 ? 'Medium' : 'Hard'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Solves</span>
-                <span className="text-zinc-200">{challenge.solves}</span>
-              </div>
-            </div>
+            )}
           </Card>
 
-          {/* Competition Status */}
-          {competition && (
+          {/* Hints */}
+          {challenge.hints && challenge.hints.length > 0 && (
             <Card className="p-6">
-              <h3 className="text-lg font-bold text-zinc-100 mb-4">Competition</h3>
+              <h2 className="text-xl font-bold text-zinc-100 mb-4">Hints</h2>
               <div className="space-y-3">
-                <div>
-                  <div className="text-zinc-400 text-sm mb-1">Competition</div>
-                  <div className="text-zinc-200">{competition.name}</div>
-                </div>
-                <div>
-                  <div className="text-zinc-400 text-sm mb-1">Time Remaining</div>
-                  <div className="text-zinc-200 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-emerald-400" />
-                    {getTimeRemaining(competition.endTime)}
+                {challenge.hints
+                  .filter((hint: any) => hint.isPublished !== false)
+                  .map((hint: any, index: number) => {
+                    const hintId = `${challenge._id}-${index}`;
+                    const isUnlocked = unlockedHints.includes(hintId);
+
+                    if (isUnlocked) {
+                      // Show unlocked hint
+                      return (
+                        <div
+                          key={index}
+                          className="p-4 bg-emerald-900/20 rounded-lg border border-emerald-700/50"
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <HelpCircle className="w-4 h-4 text-emerald-400" />
+                            <span className="text-emerald-400 text-sm font-medium">Unlocked Hint {index + 1}</span>
+                          </div>
+                          <p className="text-zinc-300">{hint.text}</p>
+                        </div>
+                      );
+                    } else {
+                      // Show locked hint with purchase button
+                      return (
+                        <div
+                          key={index}
+                          className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                              <Lock className="w-4 h-4" />
+                              <span>Hint {index + 1}</span>
+                            </div>
+                            <span className="text-yellow-400 text-sm font-medium">
+                              {hint.cost} points
+                            </span>
+                          </div>
+                          <Button
+                            onClick={() => handlePurchaseHint(index, hint.cost)}
+                            disabled={!currentUser || (currentUser.competitionPoints || 0) < hint.cost || isCompetitionEnded()}
+                            className="w-full"
+                            variant="secondary"
+                          >
+                            {currentUser && (currentUser.competitionPoints || 0) < hint.cost
+                              ? 'Not enough points'
+                              : `Purchase for ${hint.cost} points`}
+                          </Button>
+                        </div>
+                      );
+                    }
+                  })}
+                {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
+                  <div className="text-center py-8 text-zinc-500">
+                    <HelpCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No hints published yet</p>
                   </div>
-                </div>
+                )}
               </div>
             </Card>
           )}
@@ -485,24 +464,46 @@ const CompetitionChallengeDetailPage: React.FC = () => {
           </button>
         </div>
       </Modal>
+
+      {/* Hint Purchase Modal */}
+      <Modal
+        isOpen={showHintModal}
+        onClose={() => setShowHintModal(false)}
+        className="max-w-md"
+      >
+        <div className="p-6">
+          <h3 className="text-xl font-bold text-zinc-100 mb-4">Confirm Hint Purchase</h3>
+          {selectedHint && (
+            <>
+              <p className="text-zinc-400 mb-6">
+                Are you sure you want to purchase <strong className="text-yellow-400">{selectedHint.title}</strong> for{' '}
+                <strong className="text-yellow-400">{selectedHint.cost} points</strong>?
+                <br />
+                <span className="text-sm text-zinc-500 mt-2 block">
+                  This action cannot be undone.
+                </span>
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowHintModal(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmPurchaseHint}
+                  className="flex-1"
+                >
+                  Purchase
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
-};
-
-const getTimeRemaining = (endTime: string) => {
-  const now = new Date();
-  const end = new Date(endTime);
-  const diff = end.getTime() - now.getTime();
-
-  if (diff <= 0) return 'Ended';
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (days > 0) return `${days}d ${hours}h`;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  return `${minutes}m`;
 };
 
 export default CompetitionChallengeDetailPage;
