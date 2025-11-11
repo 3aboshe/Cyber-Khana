@@ -16,6 +16,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
     let challenge = await Challenge.findById(challengeId);
     let isFromCompetition = false;
     let competitionId: string | null = null;
+    let challengeData: any = null;
 
     // If not found in Challenge collection, check if it's from a competition
     if (!challenge) {
@@ -28,7 +29,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
         const compChallenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
         if (compChallenge) {
           // Create a challenge-like object for decay calculation
-          challenge = {
+          challengeData = {
             title: compChallenge.title,
             initialPoints: compChallenge.initialPoints || 1000,
             minimumPoints: compChallenge.minimumPoints || 100,
@@ -41,15 +42,16 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       }
     }
 
-    if (!challenge) {
+    if (!challenge && !challengeData) {
       throw new Error('Challenge not found in any collection');
     }
 
     // Calculate what the current points should be
-    const initialPoints = (challenge as any).initialPoints || (challenge as any).points || 1000;
-    const minimumPoints = (challenge as any).minimumPoints || 100;
-    const decay = (challenge as any).decay || 38;
-    const currentSolveCount = (challenge as any).solves;
+    const challengeObj = challenge || challengeData;
+    const initialPoints = challengeObj.initialPoints || challengeObj.points || 1000;
+    const minimumPoints = challengeObj.minimumPoints || 100;
+    const decay = challengeObj.decay || 38;
+    const currentSolveCount = challengeObj.solves;
 
     const correctPoints = calculateDynamicScore(
       initialPoints,
@@ -58,7 +60,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       currentSolveCount
     );
 
-    console.log(`Applying retroactive decay for challenge: ${(challenge as any).title}`);
+    console.log(`Applying retroactive decay for challenge: ${challengeObj.title}`);
     console.log(`Total solves: ${currentSolveCount}, Correct points: ${correctPoints}`);
     console.log(`From competition: ${isFromCompetition}`);
 
@@ -104,10 +106,9 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
     }
 
     // For regular challenges, update the challenge's currentPoints field
-    if (!isFromCompetition && (challenge as any)._id) {
-      const challengeDoc = challenge as any;
-      challengeDoc.currentPoints = correctPoints;
-      await challengeDoc.save();
+    if (!isFromCompetition && challenge) {
+      challenge.currentPoints = correctPoints;
+      await challenge.save();
     }
 
     console.log(`✓ Retroactive decay applied successfully`);
