@@ -6,7 +6,7 @@ import Button from '../components/ui/button';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { Trophy, Clock, Target, TrendingUp, Award, Crown, Medal, Star, Search, ArrowLeft, Users } from 'lucide-react';
+import { Trophy, Crown, Medal, Search, ArrowLeft, Users } from 'lucide-react';
 import Input from '../components/ui/input';
 
 const CompetitionLeaderboardPage: React.FC = () => {
@@ -92,178 +92,331 @@ const CompetitionLeaderboardPage: React.FC = () => {
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Crown className="w-6 h-6 text-yellow-400" />;
+        return <Crown className="w-8 h-8 text-yellow-300" />;
       case 2:
-        return <Medal className="w-6 h-6 text-zinc-400" />;
+        return <Medal className="w-8 h-8 text-zinc-300" />;
       case 3:
-        return <Medal className="w-6 h-6 text-amber-600" />;
+        return <Medal className="w-8 h-8 text-amber-600" />;
       default:
-        return <span className="w-6 h-6 flex items-center justify-center text-sm font-bold text-zinc-400">#{rank}</span>;
+        return <span className="text-xl font-bold text-zinc-400">#{rank}</span>;
     }
   };
 
   const getRankGradient = (rank: number) => {
     switch (rank) {
       case 1:
-        return 'from-yellow-600 to-yellow-800 border-yellow-400 shadow-yellow-500/50';
+        return 'from-yellow-600 via-yellow-500 to-yellow-700';
       case 2:
-        return 'from-zinc-500 to-zinc-700 border-zinc-400 shadow-zinc-400/50';
+        return 'from-zinc-500 via-zinc-400 to-zinc-600';
       case 3:
-        return 'from-amber-600 to-amber-800 border-amber-400 shadow-amber-500/50';
+        return 'from-amber-700 via-amber-600 to-amber-800';
       default:
-        return 'from-zinc-700 to-zinc-800 border-zinc-600';
+        return 'from-zinc-700 to-zinc-800';
     }
   };
 
+  const getAvatarColor = (index: number) => {
+    const colors = [
+      'from-emerald-500 to-cyan-600',
+      'from-blue-500 to-indigo-600',
+      'from-purple-500 to-pink-600',
+      'from-orange-500 to-red-600',
+    ];
+    return colors[index % colors.length];
+  };
+
+  const topThree = filteredLeaderboard.slice(0, 3);
+
   return (
-    <div className="container mx-auto px-4 py-8 pb-24 md:pb-8">
-      <Button variant="ghost" onClick={() => navigate('/competition')} className="mb-4">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Competitions
-      </Button>
+    <div className="min-h-screen bg-zinc-900 text-zinc-100">
+      <div className="container mx-auto px-4 py-8">
+        <Button variant="ghost" onClick={() => navigate('/competition')} className="mb-4">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Competitions
+        </Button>
 
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-zinc-100 mb-2">{competition?.name} - Leaderboard</h1>
-        <p className="text-zinc-400">See how you rank against other participants</p>
-      </div>
-
-      {/* Search */}
-      <div className="mb-8">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-500" />
-          <Input
-            type="text"
-            placeholder="Search by username..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="mb-12">
+          <h1 className="text-4xl font-bold text-zinc-100 tracking-tight mb-2">
+            {competition?.name} - Leaderboard
+          </h1>
+          <p className="text-zinc-400">Track your progress and compete with the best</p>
         </div>
-      </div>
 
-      {/* Top 3 Podium */}
-      {filteredLeaderboard.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-zinc-100 mb-4">Top Champions</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            {filteredLeaderboard.slice(0, 3).map((user: any, index: number) => {
-              const rank = index + 1;
-              const isCurrentUser = user.username === JSON.parse(localStorage.getItem('user') || '{}').username;
-
-              return (
-                <Card
-                  key={user._id}
-                  className={`relative overflow-hidden transform hover:scale-105 transition-all duration-300 ${
-                    isCurrentUser ? 'ring-2 ring-emerald-500' : ''
-                  }`}
-                >
-                  {isCurrentUser && (
+        {/* Top 3 Winner Cards */}
+        {topThree.length > 0 && (
+          <div className="mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+              {/* 2nd Place - Left */}
+              {topThree[1] && (
+                <div className="order-1 flex justify-center">
+                  <div
+                    className={`
+                      relative w-56 h-72
+                      bg-gradient-to-b ${getRankGradient(2)}
+                      border-2 border-zinc-400/30
+                      transform hover:scale-105 hover:-translate-y-2
+                      transition-all duration-300 ease-out cursor-pointer
+                    `}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+                    }}
+                    onClick={() => {/* TODO: Show profile modal */}}
+                  >
                     <div className="absolute top-4 right-4">
-                      <span className="px-2 py-1 bg-emerald-500 text-white text-xs font-semibold rounded-full">
-                        You
-                      </span>
+                      <Medal className="w-6 h-6 text-zinc-200" />
                     </div>
-                  )}
 
-                  <div className={`absolute inset-0 bg-gradient-to-br ${getRankGradient(rank)} opacity-90`} />
+                    <div className="flex flex-col items-center text-center pt-6">
+                      <div
+                        className={`
+                          w-14 h-14 rounded-full
+                          bg-gradient-to-br ${getAvatarColor(1)}
+                          flex items-center justify-center
+                          text-lg font-bold text-white
+                          mb-3 ring-2 ring-white/20
+                        `}
+                      >
+                        {topThree[1].username.charAt(0).toUpperCase()}
+                      </div>
 
-                  <div className="relative z-10 p-8 text-center text-white">
-                    <div className="flex justify-center mb-4">
-                      {getRankIcon(rank)}
+                      <h3 className="text-base font-bold text-white mb-1">
+                        {topThree[1].username}
+                      </h3>
+
+                      <div className="text-2xl font-black text-white mb-1">
+                        {topThree[1].points}
+                      </div>
+                      <div className="text-white/80 text-xs mb-2">points</div>
+
+                      <div className="text-white/90 text-xs">
+                        {topThree[1].solvedChallenges} challenges
+                      </div>
+
+                      <div className="mt-3 px-2 py-1 bg-zinc-500/20 rounded text-zinc-200 text-xs font-semibold">
+                        2nd Place
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">{user.username}</h3>
-                    <p className="text-3xl font-black mb-2">{user.points}</p>
-                    <p className="text-white/80">points</p>
-                    <p className="text-white/70 text-sm mt-4">
-                      {user.solvedChallenges} challenges solved
-                    </p>
                   </div>
-                </Card>
-              );
-            })}
+                </div>
+              )}
+
+              {/* 1st Place - Center */}
+              {topThree[0] && (
+                <div className="order-2 flex justify-center">
+                  <div
+                    className={`
+                      relative w-64 h-80
+                      bg-gradient-to-b ${getRankGradient(1)}
+                      border-2 border-yellow-400/50
+                      transform hover:scale-105 hover:-translate-y-2
+                      transition-all duration-300 ease-out cursor-pointer
+                    `}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+                    }}
+                    onClick={() => {/* TODO: Show profile modal */}}
+                  >
+                    <div className="absolute top-4 right-4">
+                      <Crown className="w-6 h-6 text-yellow-200" />
+                    </div>
+
+                    <div className="flex flex-col items-center text-center pt-8">
+                      <div
+                        className={`
+                          w-16 h-16 rounded-full
+                          bg-gradient-to-br ${getAvatarColor(0)}
+                          flex items-center justify-center
+                          text-xl font-bold text-white
+                          mb-3 ring-2 ring-white/20
+                        `}
+                      >
+                        {topThree[0].username.charAt(0).toUpperCase()}
+                      </div>
+
+                      <h3 className="text-lg font-bold text-white mb-2">
+                        {topThree[0].username}
+                      </h3>
+
+                      <div className="text-3xl font-black text-white mb-1">
+                        {topThree[0].points}
+                      </div>
+                      <div className="text-white/80 text-xs mb-2">points</div>
+
+                      <div className="text-white/90 text-xs">
+                        {topThree[0].solvedChallenges} challenges
+                      </div>
+
+                      <div className="mt-3 px-2 py-1 bg-yellow-500/20 rounded text-yellow-200 text-xs font-semibold">
+                        1st Place
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 3rd Place - Right */}
+              {topThree[2] && (
+                <div className="order-3 flex justify-center">
+                  <div
+                    className={`
+                      relative w-56 h-72
+                      bg-gradient-to-b ${getRankGradient(3)}
+                      border-2 border-amber-600/30
+                      transform hover:scale-105 hover:-translate-y-2
+                      transition-all duration-300 ease-out cursor-pointer
+                    `}
+                    style={{
+                      clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
+                    }}
+                    onClick={() => {/* TODO: Show profile modal */}}
+                  >
+                    <div className="absolute top-4 right-4">
+                      <Medal className="w-6 h-6 text-amber-300" />
+                    </div>
+
+                    <div className="flex flex-col items-center text-center pt-6">
+                      <div
+                        className={`
+                          w-14 h-14 rounded-full
+                          bg-gradient-to-br ${getAvatarColor(2)}
+                          flex items-center justify-center
+                          text-lg font-bold text-white
+                          mb-3 ring-2 ring-white/20
+                        `}
+                      >
+                        {topThree[2].username.charAt(0).toUpperCase()}
+                      </div>
+
+                      <h3 className="text-base font-bold text-white mb-1">
+                        {topThree[2].username}
+                      </h3>
+
+                      <div className="text-2xl font-black text-white mb-1">
+                        {topThree[2].points}
+                      </div>
+                      <div className="text-white/80 text-xs mb-2">points</div>
+
+                      <div className="text-white/90 text-xs">
+                        {topThree[2].solvedChallenges} challenges
+                      </div>
+
+                      <div className="mt-3 px-2 py-1 bg-amber-600/20 rounded text-amber-200 text-xs font-semibold">
+                        3rd Place
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="mb-8 flex justify-center">
+          <div className="relative w-full max-w-md">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search teams"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="
+                w-full pl-12 pr-4 py-3
+                bg-zinc-900/50 border border-zinc-800
+                rounded-xl
+                text-zinc-100 placeholder-zinc-500
+                focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent
+                hover:border-zinc-700
+                transition-all duration-200
+              "
+            />
           </div>
         </div>
-      )}
 
-      {/* Full Rankings Table */}
-      <Card padding="none">
-        <div className="p-6 border-b border-zinc-700">
-          <h2 className="text-xl font-bold text-zinc-100">Full Rankings</h2>
-        </div>
-
-        {filteredLeaderboard.length === 0 ? (
-          <div className="p-12 text-center">
-            <p className="text-zinc-400">No users found</p>
-          </div>
-        ) : (
+        {/* Leaderboard Table */}
+        <div className="bg-zinc-900/30 rounded-2xl border border-zinc-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-zinc-800/50">
+              <thead className="bg-zinc-900/50 border-b border-zinc-800">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    Points
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    Solved
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                    University
-                  </th>
+                  <th className="text-left py-4 px-6 text-zinc-400 font-semibold text-sm tracking-wider">Rank</th>
+                  <th className="text-left py-4 px-6 text-zinc-400 font-semibold text-sm tracking-wider">Team</th>
+                  <th className="text-center py-4 px-6 text-zinc-400 font-semibold text-sm tracking-wider">Points</th>
+                  <th className="text-right py-4 px-6 text-zinc-400 font-semibold text-sm tracking-wider">Flags</th>
+                  <th className="text-left py-4 px-6 text-zinc-400 font-semibold text-sm tracking-wider">University</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-700">
+              <tbody>
                 {filteredLeaderboard.map((user: any, index: number) => {
-                  const rank = index + 1;
-                  const isCurrentUser = user.username === JSON.parse(localStorage.getItem('user') || '{}').username;
+                  const globalRank = index + 1;
+                  const isTopThree = globalRank <= 3;
 
                   return (
                     <tr
                       key={user._id}
-                      className={`hover:bg-zinc-800/50 transition-colors ${
-                        isCurrentUser ? 'bg-emerald-500/5' : ''
-                      }`}
+                      onClick={() => {/* TODO: Show profile modal */}}
+                      className={`
+                        border-b border-zinc-800/50
+                        hover:bg-zinc-800/50
+                        cursor-pointer
+                        group
+                        ${isTopThree ? 'bg-zinc-800/20' : ''}
+                      `}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center justify-center w-12 h-12">
-                          {getRankIcon(rank)}
+                      <td className="py-4 px-6">
+                        <div className="flex items-center gap-2">
+                          {getRankIcon(globalRank)}
+                          {isTopThree && (
+                            <span className="text-sm font-bold text-yellow-400">
+                              {globalRank === 1 ? 'Champion' : globalRank === 2 ? 'Runner-up' : 'Third'}
+                            </span>
+                          )}
+                          {!isTopThree && (
+                            <span className="text-zinc-400 font-semibold">#{globalRank}</span>
+                          )}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center">
-                            <span className="text-sm font-bold text-white">
-                              {user.username.charAt(0).toUpperCase()}
-                            </span>
+                          <div
+                            className={`
+                              w-10 h-10 rounded-full
+                              bg-gradient-to-br ${getAvatarColor(index)}
+                              flex items-center justify-center
+                              text-white font-bold
+                              ring-2 ring-zinc-800
+                              group-hover:ring-purple-500
+                              transition-all duration-200
+                            `}
+                          >
+                            {user.username.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <span className={`font-medium ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-200'}`}>
-                                {user.username}
-                              </span>
-                              {isCurrentUser && (
-                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
-                                  You
-                                </span>
-                              )}
+                            <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
+                              {user.username}
                             </div>
-                            <div className="text-xs text-zinc-500">@{user.username}</div>
+                            <div className="text-xs text-zinc-500">{user.universityCode}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-emerald-400 font-bold text-lg">{user.points}</span>
+
+                      <td className="py-4 px-6 text-center">
+                        <span className="text-xl font-bold text-zinc-200">
+                          {user.points}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-zinc-300">
-                        {user.solvedChallenges}
+
+                      <td className="py-4 px-6 text-right">
+                        <span className="text-zinc-300 font-semibold">
+                          {user.solvedChallenges}
+                        </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-zinc-400">
-                        {user.universityCode}
+
+                      <td className="py-4 px-6 text-left">
+                        <span className="text-zinc-400 text-sm">
+                          {user.universityCode}
+                        </span>
                       </td>
                     </tr>
                   );
@@ -271,8 +424,8 @@ const CompetitionLeaderboardPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

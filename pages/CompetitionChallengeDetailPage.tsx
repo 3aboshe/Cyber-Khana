@@ -6,7 +6,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
-import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink, Clock, Tag, Star } from 'lucide-react';
 
 interface CompetitionChallenge {
   _id: string;
@@ -23,13 +23,13 @@ interface CompetitionChallenge {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Web Exploitation': 'from-blue-500 to-cyan-500',
-  'Reverse Engineering': 'from-purple-500 to-violet-500',
-  'Binary Exploitation': 'from-red-500 to-pink-500',
-  'Cryptography': 'from-yellow-500 to-orange-500',
-  'Forensics': 'from-green-500 to-emerald-500',
-  'Social Engineering': 'from-indigo-500 to-blue-500',
-  'Miscellaneous': 'from-gray-500 to-zinc-500',
+  'Web Exploitation': 'text-blue-400',
+  'Reverse Engineering': 'text-purple-400',
+  'Binary Exploitation': 'text-red-400',
+  'Cryptography': 'text-yellow-400',
+  'Forensics': 'text-emerald-400',
+  'Social Engineering': 'text-indigo-400',
+  'Miscellaneous': 'text-zinc-400',
 };
 
 const CompetitionChallengeDetailPage: React.FC = () => {
@@ -172,9 +172,13 @@ const CompetitionChallengeDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-zinc-400">Loading challenge...</div>
+      <div className="min-h-screen bg-zinc-950">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-zinc-400">Loading challenge...</div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -182,13 +186,17 @@ const CompetitionChallengeDetailPage: React.FC = () => {
 
   if (!challenge) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <p className="text-zinc-400">Challenge not found</p>
-          <Button onClick={() => navigate(`/competition/${id}`)} className="mt-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Competition
-          </Button>
+      <div className="min-h-screen bg-zinc-950">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="text-center">
+              <p className="text-zinc-400">Challenge not found</p>
+              <Button onClick={() => navigate(`/competition/${id}`)} className="mt-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Competition
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -203,226 +211,242 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <button
-        onClick={() => navigate(`/competition/${id}`)}
-        className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-5 h-5" />
-        <span>Back to Competition</span>
-      </button>
+    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <button
+              onClick={() => navigate(`/competition/${id}`)}
+              className="flex items-center gap-2 text-zinc-400 hover:text-zinc-200 mb-4 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Back to Competition</span>
+            </button>
 
-      {/* Header */}
-      <Card className="p-8 mb-6">
-        <div className="flex items-start gap-6">
-          <div className={`p-4 rounded-xl bg-gradient-to-br ${categoryColor} shrink-0`}>
-            <Trophy className="w-10 h-10 text-white" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-zinc-100 mb-2">{challenge.title}</h1>
-            <div className="flex items-center gap-4 mb-4">
-              <span className="px-3 py-1 bg-zinc-800 rounded-full text-sm text-zinc-300">
-                {challenge.category}
-              </span>
-              <div className="flex items-center gap-2 text-zinc-400">
-                <Trophy className="w-4 h-4 text-yellow-400" />
-                <span className="font-semibold text-zinc-200">{(challenge as any).currentPoints || challenge.points} points</span>
-              </div>
-              <div className="flex items-center gap-2 text-zinc-400">
-                <Users className="w-4 h-4" />
-                <span>{challenge.solves} solves</span>
+            <div className="flex items-start gap-6 p-6 bg-zinc-900 rounded-lg border border-zinc-800">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <Trophy className={`w-6 h-6 ${categoryColor}`} />
+                  <h1 className="text-2xl font-bold text-zinc-100">{challenge.title}</h1>
+                  {solved && (
+                    <span className="px-2 py-1 bg-emerald-500 text-white text-xs font-bold rounded uppercase">
+                      Solved
+                    </span>
+                  )}
+                  {isCompetitionEnded() && !solved && (
+                    <span className="px-2 py-1 bg-zinc-700 text-zinc-300 text-xs font-bold rounded uppercase">
+                      Ended
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-6 text-zinc-400 text-sm">
+                  <span className={`flex items-center gap-1 ${categoryColor}`}>
+                    <Tag className="w-4 h-4" />
+                    {challenge.category}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Trophy className="w-4 h-4 text-yellow-400" />
+                    {(challenge as any).currentPoints || challenge.points} points
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    {challenge.solves} solves
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Star className="w-4 h-4" />
+                    {challenge.author}
+                  </span>
+                </div>
               </div>
             </div>
-            <p className="text-zinc-400">Author: {challenge.author}</p>
           </div>
-        </div>
-      </Card>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Main Content */}
-        <div className="md:col-span-2 space-y-6">
-          {/* Description */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-zinc-100 mb-4">Description</h2>
-            <div className="text-zinc-300 whitespace-pre-wrap">
-              {challenge.description}
-            </div>
-          </Card>
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Sidebar - Submission & Hints */}
+            <div className="space-y-6">
+              {/* Submit Flag */}
+              <Card className="p-6 bg-zinc-900 border-zinc-800">
+                <h2 className="text-lg font-bold text-zinc-100 mb-4">Submit Flag</h2>
 
-          {/* Files */}
-          {challenge.files && challenge.files.length > 0 && (
-            <Card className="p-6">
-              <h2 className="text-xl font-bold text-zinc-100 mb-4">Files</h2>
-              <div className="space-y-2">
-                {challenge.files.map((file, index) => (
-                  <a
-                    key={index}
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors"
-                  >
-                    <Download className="w-5 h-5 text-zinc-400" />
-                    <span className="text-zinc-300">{file.name}</span>
-                  </a>
-                ))}
-              </div>
-            </Card>
-          )}
-
-          {/* Challenge Link */}
-          {(challenge as any).challengeLink && (
-            <Card className="p-6">
-              <h2 className="text-xl font-bold text-zinc-100 mb-4">Challenge Link</h2>
-              <a
-                href={(challenge as any).challengeLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors"
-              >
-                <ExternalLink className="w-5 h-5 text-emerald-400" />
-                <span className="text-emerald-400">View Challenge</span>
-              </a>
-            </Card>
-          )}
-
-          {/* Point Decay Information - Only visible to admins */}
-          <div className="hidden">
-            {/* Placeholder for future admin features */}
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Flag Submission */}
-          <Card className="p-6">
-            <h2 className="text-xl font-bold text-zinc-100 mb-4">Submit Flag</h2>
-            {isCompetitionEnded() ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
-                  <Lock className="w-6 h-6 text-zinc-400" />
-                  <div>
-                    <p className="text-zinc-300 font-semibold">Competition Ended</p>
-                    <p className="text-zinc-500 text-sm">This challenge is no longer active.</p>
+                {isCompetitionEnded() ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                      <Lock className="w-6 h-6 text-zinc-400" />
+                      <div>
+                        <p className="text-zinc-300 font-semibold">Competition Ended</p>
+                        <p className="text-zinc-500 text-sm">This challenge is no longer active.</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(`/competition/${id}/leaderboard`)}
+                      className="w-full border-zinc-700 hover:border-zinc-600"
+                    >
+                      <Trophy className="w-4 h-4 mr-2" />
+                      View Leaderboard
+                    </Button>
                   </div>
-                </div>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate(`/competition/${id}/leaderboard`)}
-                  className="w-full border-zinc-600 hover:border-emerald-500/50"
-                >
-                  <Trophy className="w-4 h-4 mr-2" />
-                  View Leaderboard
-                </Button>
-              </div>
-            ) : solved ? (
-              <div className="flex items-center gap-3 p-4 bg-emerald-500/20 rounded-lg">
-                <CheckCircle className="w-6 h-6 text-emerald-400" />
-                <div>
-                  <p className="text-emerald-400 font-semibold">Solved!</p>
-                  <p className="text-emerald-400/80 text-sm">Great job!</p>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Input
-                    type="text"
-                    placeholder="flag{...}"
-                    value={flag}
-                    onChange={(e) => setFlag(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Flag'}
-                </Button>
-              </form>
-            )}
+                ) : solved ? (
+                  <div className="p-4 bg-emerald-900/20 border border-emerald-700/50 rounded-lg">
+                    <div className="flex items-center gap-2 text-emerald-400 font-semibold mb-2">
+                      <CheckCircle className="w-5 h-5" />
+                      <span>Challenge Solved!</span>
+                    </div>
+                    <p className="text-emerald-400/80 text-sm">Congratulations on solving this challenge.</p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <Input
+                        type="text"
+                        placeholder="flag{...}"
+                        value={flag}
+                        onChange={(e) => setFlag(e.target.value)}
+                        className="w-full bg-zinc-800 border-zinc-700 text-zinc-100"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="w-full"
+                    >
+                      {submitting ? 'Submitting...' : 'Submit'}
+                    </Button>
+                  </form>
+                )}
 
-            {message.text && message.type === 'error' && (
-              <div className="mt-4 p-3 rounded-lg flex items-center gap-2 bg-red-500/20 text-red-400">
-                <XCircle className="w-5 h-5" />
-                <span>{message.text}</span>
-              </div>
-            )}
-
-            {message.text && message.type === 'success' && (
-              <div className="mt-4 p-3 rounded-lg flex items-center gap-2 bg-emerald-500/20 text-emerald-400">
-                <CheckCircle className="w-5 h-5" />
-                <span>{message.text}</span>
-              </div>
-            )}
-          </Card>
-
-          {/* Hints */}
-          {challenge.hints && challenge.hints.length > 0 && (
-            <Card className="p-6">
-              <h2 className="text-xl font-bold text-zinc-100 mb-4">Hints</h2>
-              <div className="space-y-3">
-                {challenge.hints
-                  .filter((hint: any) => hint.isPublished !== false)
-                  .map((hint: any, index: number) => {
-                    const hintId = `${challenge._id}-${index}`;
-                    const isUnlocked = unlockedHints.includes(hintId);
-
-                    if (isUnlocked) {
-                      // Show unlocked hint
-                      return (
-                        <div
-                          key={index}
-                          className="p-4 bg-emerald-900/20 rounded-lg border border-emerald-700/50"
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <HelpCircle className="w-4 h-4 text-emerald-400" />
-                            <span className="text-emerald-400 text-sm font-medium">Unlocked Hint {index + 1}</span>
-                          </div>
-                          <p className="text-zinc-300">{hint.text}</p>
-                        </div>
-                      );
-                    } else {
-                      // Show locked hint with purchase button
-                      return (
-                        <div
-                          key={index}
-                          className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                              <Lock className="w-4 h-4" />
-                              <span>Hint {index + 1}</span>
-                            </div>
-                            <span className="text-yellow-400 text-sm font-medium">
-                              {hint.cost} points
-                            </span>
-                          </div>
-                          <Button
-                            onClick={() => handlePurchaseHint(index, hint.cost)}
-                            disabled={!currentUser || (currentUser.competitionPoints || 0) < hint.cost || isCompetitionEnded()}
-                            className="w-full"
-                            variant="secondary"
-                          >
-                            {currentUser && (currentUser.competitionPoints || 0) < hint.cost
-                              ? 'Not enough points'
-                              : `Purchase for ${hint.cost} points`}
-                          </Button>
-                        </div>
-                      );
-                    }
-                  })}
-                {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
-                  <div className="text-center py-8 text-zinc-500">
-                    <HelpCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No hints published yet</p>
+                {message.text && message.type === 'error' && (
+                  <div className="mt-4 p-3 rounded-lg flex items-center gap-2 bg-red-900/20 border border-red-700/50 text-red-400">
+                    <XCircle className="w-5 h-5" />
+                    <span>{message.text}</span>
                   </div>
                 )}
-              </div>
-            </Card>
-          )}
+
+                {message.text && message.type === 'success' && (
+                  <div className="mt-4 p-3 rounded-lg flex items-center gap-2 bg-emerald-900/20 border border-emerald-700/50 text-emerald-400">
+                    <CheckCircle className="w-5 h-5" />
+                    <span>{message.text}</span>
+                  </div>
+                )}
+              </Card>
+
+              {/* Hints */}
+              {challenge.hints && challenge.hints.length > 0 && (
+                <Card className="p-6 bg-zinc-900 border-zinc-800">
+                  <h2 className="text-lg font-bold text-zinc-100 mb-4">Hints</h2>
+                  <div className="space-y-3">
+                    {challenge.hints
+                      .filter((hint: any) => hint.isPublished !== false)
+                      .map((hint: any, index: number) => {
+                        const hintId = `${challenge._id}-${index}`;
+                        const isUnlocked = unlockedHints.includes(hintId);
+
+                        if (isUnlocked) {
+                          return (
+                            <div
+                              key={index}
+                              className="p-4 bg-emerald-900/20 border border-emerald-700/50 rounded-lg"
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <HelpCircle className="w-4 h-4 text-emerald-400" />
+                                <span className="text-emerald-400 text-sm font-medium">Unlocked Hint {index + 1}</span>
+                              </div>
+                              <p className="text-zinc-300 text-sm">{hint.text}</p>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div
+                              key={index}
+                              className="p-4 bg-zinc-800/50 border border-zinc-700 rounded-lg"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                                  <Lock className="w-4 h-4" />
+                                  <span>Hint {index + 1}</span>
+                                </div>
+                                <span className="text-yellow-400 text-sm font-medium">
+                                  {hint.cost} points
+                                </span>
+                              </div>
+                              <Button
+                                onClick={() => handlePurchaseHint(index, hint.cost)}
+                                disabled={!currentUser || (currentUser.competitionPoints || 0) < hint.cost || isCompetitionEnded()}
+                                className="w-full"
+                                variant="secondary"
+                              >
+                                {currentUser && (currentUser.competitionPoints || 0) < hint.cost
+                                  ? 'Not enough points'
+                                  : `Purchase for ${hint.cost} points`}
+                              </Button>
+                            </div>
+                          );
+                        }
+                      })}
+                    {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
+                      <div className="text-center py-8 text-zinc-500">
+                        <HelpCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                        <p>No hints published yet</p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
+            </div>
+
+            {/* Main Content - Description */}
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="p-6 bg-zinc-900 border-zinc-800">
+                <h2 className="text-lg font-bold text-zinc-100 mb-4">Description</h2>
+                <div className="text-zinc-300 whitespace-pre-wrap">
+                  {challenge.description}
+                </div>
+              </Card>
+
+              {/* Challenge Link */}
+              {(challenge as any).challengeLink && (
+                <Card className="p-6 bg-zinc-900 border-zinc-800">
+                  <h2 className="text-lg font-bold text-zinc-100 mb-4">Challenge Link</h2>
+                  <a
+                    href={(challenge as any).challengeLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-all"
+                  >
+                    <ExternalLink className="w-5 h-5 text-emerald-400" />
+                    <div className="flex-1">
+                      <p className="text-emerald-400 font-medium">View Challenge</p>
+                      <p className="text-zinc-500 text-sm">Opens in a new tab</p>
+                    </div>
+                  </a>
+                </Card>
+              )}
+
+              {/* Files */}
+              {challenge.files && challenge.files.length > 0 && (
+                <Card className="p-6 bg-zinc-900 border-zinc-800">
+                  <h2 className="text-lg font-bold text-zinc-100 mb-4">Files</h2>
+                  <div className="space-y-2">
+                    {challenge.files.map((file, index) => (
+                      <a
+                        key={index}
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-all"
+                      >
+                        <Download className="w-5 h-5 text-zinc-400" />
+                        <span className="text-zinc-300 flex-1">{file.name}</span>
+                        <Download className="w-4 h-4 text-zinc-500" />
+                      </a>
+                    ))}
+                  </div>
+                </Card>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -432,7 +456,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
         onClose={() => setShowSuccessModal(false)}
         className="max-w-md"
       >
-        <div className="relative p-8 text-center bg-zinc-800 border border-zinc-700 rounded-lg">
+        <div className="relative p-8 text-center bg-zinc-900 border border-zinc-800 rounded-lg">
           <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center border-2 border-emerald-500/30">
             <CheckCircle className="w-12 h-12 text-emerald-400" />
           </div>
@@ -446,7 +470,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
           </p>
 
           {challenge && (
-            <div className="mb-6 p-3 bg-zinc-700/50 rounded-lg border border-zinc-600">
+            <div className="mb-6 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
               <p className="text-zinc-300 text-sm mb-1">Challenge</p>
               <p className="text-zinc-100 font-semibold">{challenge.title}</p>
               <div className="flex items-center justify-center gap-2 mt-2 text-emerald-400">
@@ -471,7 +495,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
         onClose={() => setShowHintModal(false)}
         className="max-w-md"
       >
-        <div className="p-6">
+        <div className="p-6 bg-zinc-900 border border-zinc-800 rounded-lg">
           <h3 className="text-xl font-bold text-zinc-100 mb-4">Confirm Hint Purchase</h3>
           {selectedHint && (
             <>

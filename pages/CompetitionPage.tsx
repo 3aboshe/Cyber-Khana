@@ -51,6 +51,11 @@ const CompetitionPage: React.FC = () => {
     }
   };
 
+  // Check if current user is admin
+  const userData = localStorage.getItem('user');
+  const currentUser = userData ? JSON.parse(userData) : null;
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super-admin');
+
   const handleEnterCompetition = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!securityCode.trim()) {
@@ -148,6 +153,217 @@ const CompetitionPage: React.FC = () => {
     );
   }
 
+  // Filter competitions by status
+  const activeCompetitions = competitions.filter(c => c.status === 'active' && !isCompetitionTimeEnded(c.endTime));
+  const upcomingCompetitions = competitions.filter(c => c.status === 'pending' || (c.status === 'active' && new Date() < new Date(c.startTime)));
+  const pastCompetitions = competitions.filter(c => c.status === 'ended' || isCompetitionTimeEnded(c.endTime));
+
+  // For players (non-admin), use the old grid layout
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-zinc-100 mb-2">Competitions</h1>
+          <p className="text-zinc-400">Enter competitions using security codes or browse active ones</p>
+        </div>
+
+        {/* Enter Competition Button */}
+        <div className="mb-8">
+          <Button onClick={openJoinModal} size="lg" className="bg-emerald-600 hover:bg-emerald-700">
+            <Lock className="w-5 h-5 mr-2" />
+            Join Competition with Code
+          </Button>
+        </div>
+
+        {/* Active Competitions */}
+        {activeCompetitions.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Play className="w-6 h-6 text-emerald-400" />
+              <h2 className="text-2xl font-bold text-zinc-100">Active Competitions</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {activeCompetitions.map((competition) => (
+                <Card key={competition._id} className="p-6 border-emerald-500/50">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-emerald-500/20 rounded-lg">
+                      <Trophy className="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(competition.status)}`}>
+                      LIVE
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Clock className="w-4 h-4" />
+                      <span>Ends in: {getTimeRemaining(competition.endTime)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Users className="w-4 h-4" />
+                      <span>{competition.challenges?.length || 0} challenges</span>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => navigate(`/competition/${competition._id}`)}
+                    className="w-full"
+                  >
+                    Join Competition
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upcoming Competitions */}
+        {upcomingCompetitions.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Calendar className="w-6 h-6 text-yellow-400" />
+              <h2 className="text-2xl font-bold text-zinc-100">Upcoming Competitions</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {upcomingCompetitions.map((competition) => (
+                <Card key={competition._id} className="p-6 border-yellow-500/30 opacity-75">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-yellow-500/20 rounded-lg">
+                      <Clock className="w-8 h-8 text-yellow-400" />
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(competition.status)}`}>
+                      UPCOMING
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Clock className="w-4 h-4" />
+                      <span>Starts in: {getTimeUntilStart(competition.startTime)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Users className="w-4 h-4" />
+                      <span>{competition.challenges?.length || 0} challenges</span>
+                    </div>
+                  </div>
+                  <div className="text-zinc-500 text-sm">
+                    Will be available soon...
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Past Competitions */}
+        {pastCompetitions.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="w-6 h-6 text-zinc-400" />
+              <h2 className="text-2xl font-bold text-zinc-100">Past Competitions</h2>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              {pastCompetitions.map((competition) => (
+                <Card
+                  key={competition._id}
+                  className="p-6 border border-zinc-700 hover:border-red-500/50 transition-all duration-300 cursor-pointer"
+                  onClick={() => navigate(`/competition/${competition._id}/leaderboard`)}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="p-3 bg-zinc-700/50 rounded-lg">
+                      <Trophy className="w-8 h-8 text-zinc-400" />
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-sm bg-red-500/20 text-red-400 border border-red-500/50">
+                      ENDED
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Users className="w-4 h-4" />
+                      <span>{competition.challenges?.length || 0} challenges</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-zinc-400">
+                      <Calendar className="w-4 h-4" />
+                      <span>Ended {new Date(competition.endTime).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/competition/${competition._id}/leaderboard`);
+                    }}
+                    className="w-full border-zinc-600 hover:border-red-500/50 hover:bg-red-500/10"
+                  >
+                    View Leaderboard
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {competitions.length === 0 && (
+          <div className="text-center py-12">
+            <Trophy className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
+            <p className="text-zinc-400 text-lg">No competitions available</p>
+            <p className="text-zinc-500 text-sm mt-2">
+              Check back later for upcoming competitions
+            </p>
+          </div>
+        )}
+
+        {/* Join Competition Modal */}
+        <Modal isOpen={isJoinModalOpen} onClose={() => setIsJoinModalOpen(false)}>
+          <div className="bg-zinc-900 p-6 rounded-lg max-w-md w-full">
+            <h2 className="text-2xl font-bold text-zinc-100 mb-4">Enter Competition</h2>
+            <p className="text-zinc-400 mb-4">
+              Enter the security code provided by your instructor to join the competition:
+            </p>
+            <form onSubmit={handleEnterCompetition} className="space-y-4">
+              <div>
+                <Input
+                  type="text"
+                  placeholder="Enter security code (e.g., COMP2024)"
+                  value={securityCode}
+                  onChange={(e) => setSecurityCode(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              {message.text && (
+                <div className={`p-3 rounded-lg ${
+                  message.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                }`}>
+                  {message.text}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={enteringCode}
+                >
+                  {enteringCode ? 'Entering...' : 'Enter Competition'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsJoinModalOpen(false)}
+                  disabled={enteringCode}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </div>
+        </Modal>
+      </div>
+    );
+  }
+
+  // For admins, use the expandable layout
   const toggleExpanded = (competitionId: string) => {
     setExpandedCompetition(expandedCompetition === competitionId ? null : competitionId);
   };
