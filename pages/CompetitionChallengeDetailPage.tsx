@@ -443,7 +443,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
               </Card>
 
               {/* Challenge Link */}
-              {(challenge as any).challengeLink && (
+              {(challenge as any).challengeLink && (challenge as any).challengeLink.trim() !== '' && (
                 <Card className="p-6 bg-zinc-900 border-zinc-800">
                   <h2 className="text-lg font-bold text-zinc-100 mb-4">Challenge Link</h2>
                   <a
@@ -455,7 +455,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                     <ExternalLink className="w-5 h-5 text-emerald-400" />
                     <div className="flex-1">
                       <p className="text-emerald-400 font-medium">View Challenge</p>
-                      <p className="text-zinc-500 text-sm">Opens in a new tab</p>
+                      <p className="text-zinc-500 text-sm">{(challenge as any).challengeLink}</p>
                     </div>
                   </a>
                 </Card>

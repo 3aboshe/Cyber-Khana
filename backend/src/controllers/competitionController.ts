@@ -32,27 +32,50 @@ export const getCompetitions = async (req: AuthRequest, res: Response) => {
 
     // Calculate dynamic points for each competition's challenges
     const { calculateDynamicScore } = require('../models/Challenge');
-    const competitionsWithDynamicPoints = competitions.map((competition: any) => {
-      const challengesWithDynamicPoints = competition.challenges.map((challenge: any) => {
-        const dynamicPoints = calculateDynamicScore(
-          challenge.initialPoints || 1000,
-          challenge.minimumPoints || 100,
-          challenge.decay || 200,
-          challenge.solves
+    const competitionsWithDynamicPoints = await Promise.all(
+      competitions.map(async (competition: any) => {
+        const challengesWithDynamicPoints = await Promise.all(
+          competition.challenges.map(async (challenge: any) => {
+            const dynamicPoints = calculateDynamicScore(
+              challenge.initialPoints || 1000,
+              challenge.minimumPoints || 100,
+              challenge.decay || 200,
+              challenge.solves
+            );
+
+            // Fetch original challenge to get challengeLink if missing
+            let challengeLink = challenge.challengeLink;
+            if (!challengeLink) {
+              try {
+                const Challenge = require('../models/Challenge').default;
+                const originalChallenge = await Challenge.findOne({
+                  title: challenge.title,
+                  author: challenge.author,
+                  category: challenge.category
+                });
+                if (originalChallenge && originalChallenge.challengeLink) {
+                  challengeLink = originalChallenge.challengeLink;
+                }
+              } catch (err) {
+                console.error('Error fetching original challenge:', err);
+              }
+            }
+
+            return {
+              ...challenge.toObject ? challenge.toObject() : challenge,
+              points: dynamicPoints,
+              currentPoints: dynamicPoints,
+              challengeLink
+            };
+          })
         );
 
         return {
-          ...challenge.toObject ? challenge.toObject() : challenge,
-          points: dynamicPoints,
-          currentPoints: dynamicPoints
+          ...competition.toObject ? competition.toObject() : competition,
+          challenges: challengesWithDynamicPoints
         };
-      });
-
-      return {
-        ...competition.toObject ? competition.toObject() : competition,
-        challenges: challengesWithDynamicPoints
-      };
-    });
+      })
+    );
 
     res.json(competitionsWithDynamicPoints);
   } catch (error) {
@@ -107,20 +130,41 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
 
     // Calculate dynamic points for each challenge
     const { calculateDynamicScore } = require('../models/Challenge');
-    const challengesWithDynamicPoints = competition.challenges.map((challenge: any) => {
-      const dynamicPoints = calculateDynamicScore(
-        challenge.initialPoints || 1000,
-        challenge.minimumPoints || 100,
-        challenge.decay || 200,
-        challenge.solves
-      );
+    const challengesWithDynamicPoints = await Promise.all(
+      competition.challenges.map(async (challenge: any) => {
+        const dynamicPoints = calculateDynamicScore(
+          challenge.initialPoints || 1000,
+          challenge.minimumPoints || 100,
+          challenge.decay || 200,
+          challenge.solves
+        );
 
-      return {
-        ...challenge.toObject ? challenge.toObject() : challenge,
-        points: dynamicPoints,
-        currentPoints: dynamicPoints
-      };
-    });
+        // Fetch original challenge to get challengeLink if missing
+        let challengeLink = challenge.challengeLink;
+        if (!challengeLink) {
+          try {
+            const Challenge = require('../models/Challenge').default;
+            const originalChallenge = await Challenge.findOne({
+              title: challenge.title,
+              author: challenge.author,
+              category: challenge.category
+            });
+            if (originalChallenge && originalChallenge.challengeLink) {
+              challengeLink = originalChallenge.challengeLink;
+            }
+          } catch (err) {
+            console.error('Error fetching original challenge:', err);
+          }
+        }
+
+        return {
+          ...challenge.toObject ? challenge.toObject() : challenge,
+          points: dynamicPoints,
+          currentPoints: dynamicPoints,
+          challengeLink
+        };
+      })
+    );
 
     const competitionWithDynamicPoints = {
       ...competition.toObject ? competition.toObject() : competition,
