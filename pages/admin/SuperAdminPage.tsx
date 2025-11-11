@@ -50,6 +50,7 @@ const SuperAdminPage: React.FC = () => {
   const [copiedChallenges, setCopiedChallenges] = useState<Set<string>>(new Set());
   const [copyProgress, setCopyProgress] = useState(0);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastCopiedCount, setLastCopiedCount] = useState(0);
 
   useEffect(() => {
     fetchUniversities();
@@ -120,6 +121,7 @@ const SuperAdminPage: React.FC = () => {
       }
 
       setCopiedCount(prev => prev + completed);
+      setLastCopiedCount(completed);  // Track how many were copied
       setShowCopyModal(false);
       setShowSuccessModal(true);
       setSelectedChallenges(new Set());
@@ -541,10 +543,13 @@ const SuperAdminPage: React.FC = () => {
                 </div>
                 <h3 className="text-xl font-bold text-zinc-100 mb-2">Challenges Copied!</h3>
                 <p className="text-zinc-400 mb-6">
-                  Successfully copied {selectedChallenges.size} challenge{selectedChallenges.size !== 1 ? 's' : ''} to {universities.find(u => u.code === targetUniversityCode)?.name}
+                  Successfully copied {lastCopiedCount} challenge{lastCopiedCount !== 1 ? 's' : ''} to {universities.find(u => u.code === targetUniversityCode)?.name}
                 </p>
                 <Button
-                  onClick={() => setShowSuccessModal(false)}
+                  onClick={() => {
+                    setShowSuccessModal(false);
+                    setLastCopiedCount(0);  // Reset for next time
+                  }}
                   className="w-full bg-emerald-600 hover:bg-emerald-700"
                 >
                   Done
