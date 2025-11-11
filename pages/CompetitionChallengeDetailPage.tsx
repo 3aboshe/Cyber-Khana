@@ -49,6 +49,11 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   const [selectedHint, setSelectedHint] = useState<{ index: number; cost: number; title: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
+  // Check if current user is admin
+  const userData = localStorage.getItem('user');
+  const currentUserData = userData ? JSON.parse(userData) : null;
+  const isAdmin = currentUserData && (currentUserData.role === 'admin' || currentUserData.role === 'super-admin');
+
   useEffect(() => {
     if (id && challengeId) {
       fetchData();
@@ -252,6 +257,24 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                     <span className="px-2 py-1 bg-zinc-700 text-zinc-300 text-xs font-bold rounded uppercase">
                       Ended
                     </span>
+                  )}
+                  {isAdmin && !isCompetitionEnded() && (
+                    <button
+                      onClick={async () => {
+                        if (confirm(`Are you sure you want to remove "${challenge.title}" from this competition?`)) {
+                          try {
+                            await competitionService.removeChallengeFromCompetition(id!, challenge._id);
+                            alert('Challenge removed successfully');
+                            navigate(`/competition/${id}`);
+                          } catch (err: any) {
+                            alert(err.message || 'Failed to remove challenge');
+                          }
+                        }
+                      }}
+                      className="px-3 py-1 bg-red-500/20 text-red-400 text-xs font-bold rounded border border-red-500/50 hover:bg-red-500/30 transition-colors"
+                    >
+                      Remove from Competition
+                    </button>
                   )}
                 </div>
                 <div className="flex items-center gap-6 text-zinc-400 text-sm">
