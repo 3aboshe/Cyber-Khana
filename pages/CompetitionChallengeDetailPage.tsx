@@ -34,8 +34,16 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isSolved, setIsSolved] = useState(false);
   const [solvedChallenges, setSolvedChallenges] = useState<string[]>([]);
+  const [userData, setUserData] = useState<any>(null);
+  const [purchasedHints, setPurchasedHints] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // Get user data from localStorage
+    const userDataStr = localStorage.getItem('user');
+    if (userDataStr) {
+      setUserData(JSON.parse(userDataStr));
+    }
+
     fetchChallenge();
   }, [id, challengeId]);
 
@@ -111,6 +119,42 @@ const CompetitionChallengeDetailPage: React.FC = () => {
       });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const buyHint = async (hintIndex: number, cost: number) => {
+    if (!userData || !challenge) return;
+
+    const hintId = `${challenge._id}-${hintIndex}`;
+    setPurchasedHints(prev => new Set([...prev, hintId]));
+
+    try {
+      await competitionService.buyCompetitionHint(id!, challenge._id, hintIndex, cost);
+
+      // Update user data
+      const updatedUserData = {
+        ...userData,
+        competitionPoints: userData.competitionPoints - cost,
+        unlockedHints: [...(userData.unlockedHints || []), hintId]
+      };
+      setUserData(updatedUserData);
+      localStorage.setItem('user', JSON.stringify(updatedUserData));
+
+      setMessage({
+        type: 'success',
+        text: `Hint purchased successfully!`
+      });
+    } catch (err: any) {
+      setMessage({
+        type: 'error',
+        text: err.message || 'Failed to purchase hint'
+      });
+    } finally {
+      setPurchasedHints(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(hintId);
+        return newSet;
+      });
     }
   };
 
@@ -228,21 +272,20 @@ const CompetitionChallengeDetailPage: React.FC = () => {
           {/* Hints */}
           {challenge.hints && challenge.hints.length > 0 && (
             <Card className="p-6">
-              <button
-                onClick={() => setShowHints(!showHints)}
-                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
-              >
-                <Lightbulb className="w-5 h-5" />
-                <span className="text-lg font-semibold">
-                  {showHints ? 'Hide Hints' : 'Show Hints'}
-                </span>
-              </button>
+              <h2 className="text-2xl font-bold text-zinc-100 mb-4 flex items-center gap-2">
+                <Lightbulb className="w-6 h-6 text-yellow-400" />
+                <span>Hints Available</span>
+              </h2>
 
-              {showHints && (
-                <div className="mt-4 space-y-3">
-                  {challenge.hints
-                    .filter((hint: any) => hint.isPublished !== false)
-                    .map((hint: any, index: number) => (
+              <div className="space-y-3">
+                {challenge.hints
+                  .filter((hint: any) => hint.isPublished !== false)
+                  .map((hint: any, index: number) => {
+                    const hintId = `${challenge._id}-${index}`;
+                    const isUnlocked = userData?.unlockedHints?.includes(hintId);
+                    const isPurchasing = purchasedHints.has(hintId);
+
+                    return (
                       <div key={index} className="p-4 bg-zinc-800 rounded-lg">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-zinc-400 text-sm">Hint {index + 1}</span>
@@ -250,17 +293,37 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                             -{hint.cost} points
                           </span>
                         </div>
-                        <p className="text-zinc-300">{hint.text}</p>
+                        {isUnlocked ? (
+                          <p className="text-zinc-300">{hint.text}</p>
+                        ) : (
+                          <div>
+                            <p className="text-zinc-500 italic text-sm mb-2">This hint is locked</p>
+                            <Button
+                              onClick={() => buyHint(index, hint.cost)}
+                              disabled={isPurchasing || userData?.competitionPoints < hint.cost || isCompetitionEnded()}
+                              variant="outline"
+                              className="w-full border-zinc-600 hover:border-yellow-500/50"
+                            >
+                              {isPurchasing ? (
+                                'Purchasing...'
+                              ) : userData?.competitionPoints < hint.cost ? (
+                                `Need ${hint.cost} points`
+                              ) : (
+                                `Buy for ${hint.cost} points`
+                              )}
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
-                    <div className="text-center py-8 text-zinc-500">
-                      <Lightbulb className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>No hints published yet</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                    );
+                  })}
+                {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
+                  <div className="text-center py-8 text-zinc-500">
+                    <Lightbulb className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No hints published yet</p>
+                  </div>
+                )}
+              </div>
             </Card>
           )}
 

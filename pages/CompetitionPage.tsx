@@ -260,7 +260,7 @@ const CompetitionPage: React.FC = () => {
                   <div className="p-3 bg-zinc-700/50 rounded-lg">
                     <Trophy className="w-8 h-8 text-zinc-400" />
                   </div>
-                  <span className="px-3 py-1 rounded-full text-sm bg-zinc-700 text-zinc-300 border border-zinc-600">
+                  <span className="px-3 py-1 rounded-full text-sm bg-red-500/20 text-red-400 border border-red-500/50">
                     ENDED
                   </span>
                 </div>

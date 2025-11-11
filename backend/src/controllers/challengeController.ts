@@ -156,7 +156,14 @@ export const updateChallenge = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    Object.assign(challenge, req.body);
+    // If flag is empty, don't update it
+    if (!req.body.flag) {
+      const { flag, ...updateData } = req.body;
+      Object.assign(challenge, updateData);
+    } else {
+      Object.assign(challenge, req.body);
+    }
+
     await challenge.save();
     res.json(challenge);
   } catch (error) {
@@ -290,6 +297,7 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       flag: challenge.flag,
       hints: challenge.hints || [],
       files: challenge.files || [],
+      challengeLink: challenge.challengeLink || '',
       universityCode: targetUniversityCode.toUpperCase(),
       initialPoints: challenge.initialPoints,
       minimumPoints: challenge.minimumPoints,

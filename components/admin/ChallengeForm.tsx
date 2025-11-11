@@ -155,7 +155,14 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
 
        <div>
           <label className="text-sm font-medium text-zinc-300 mb-1 block">Flag</label>
-          <Input name="flag" value={formData.flag} onChange={handleChange} placeholder="flag{...}" required />
+          <Input
+            name="flag"
+            value={formData.flag}
+            onChange={handleChange}
+            placeholder="flag{...}"
+            required={!challenge}
+          />
+          {challenge && <p className="text-zinc-500 text-xs mt-1">Leave empty to keep current flag</p>}
       </div>
       <div>
         <label className="text-sm font-medium text-zinc-300 mb-1 block">Description</label>
