@@ -5,6 +5,7 @@ import Button from '../../components/ui/EnhancedButton';
 import Breadcrumbs from '../../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton';
 import EmptyState from '../../components/ui/EmptyState';
+import ProfileSlidePanel from '../../components/ui/ProfileSlidePanel';
 import { Trophy, Clock, Target, TrendingUp, Award, Crown, Medal, Star, Search } from 'lucide-react';
 import Input from '../../components/ui/EnhancedInput';
 
@@ -15,6 +16,8 @@ const EnhancedLeaderboardPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [timeframe, setTimeframe] = useState<'all' | 'week' | 'month'>('all');
   const [userRank, setUserRank] = useState<number | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -222,7 +225,11 @@ const EnhancedLeaderboardPage: React.FC = () => {
               return (
                 <Card
                   key={user.username}
-                  className={`relative overflow-hidden transform hover:scale-105 transition-all duration-300 ${
+                  onClick={() => {
+                    setSelectedUser(user);
+                    setShowProfilePanel(true);
+                  }}
+                  className={`relative overflow-hidden transform hover:scale-105 transition-all duration-300 cursor-pointer ${
                     isCurrentUser ? 'ring-2 ring-emerald-500' : ''
                   }`}
                 >
@@ -322,7 +329,11 @@ const EnhancedLeaderboardPage: React.FC = () => {
                   return (
                     <tr
                       key={user.username}
-                      className={`hover:bg-zinc-800/50 transition-colors ${
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowProfilePanel(true);
+                      }}
+                      className={`hover:bg-zinc-800/50 transition-colors cursor-pointer ${
                         isCurrentUser ? 'bg-emerald-500/5' : ''
                       }`}
                     >
@@ -377,6 +388,14 @@ const EnhancedLeaderboardPage: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Profile Slide Panel */}
+      <ProfileSlidePanel
+        isOpen={showProfilePanel}
+        onClose={() => setShowProfilePanel(false)}
+        user={selectedUser}
+        rank={selectedUser ? leaderboard.findIndex((u: any) => u.username === selectedUser.username) + 1 : undefined}
+      />
     </div>
   );
 };

@@ -81,6 +81,11 @@ const CompetitionDashboardPage: React.FC = () => {
   const [showAnnouncements, setShowAnnouncements] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Check if current user is admin
+  const userData = localStorage.getItem('user');
+  const currentUser = userData ? JSON.parse(userData) : null;
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.role === 'super-admin');
+
   // Mock data for leaderboard and activity (in real app, these would come from APIs)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
@@ -488,8 +493,31 @@ const CompetitionDashboardPage: React.FC = () => {
                             <span className="text-emerald-400 font-semibold">Completed</span>
                           )}
                         </div>
-                        <div className="text-xs text-zinc-600">
-                          By: {challenge.author}
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-zinc-600">
+                            By: {challenge.author}
+                          </div>
+                          {isAdmin && !ended && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (confirm(`Are you sure you want to remove "${challenge.title}" from this competition?`)) {
+                                  try {
+                                    await competitionService.removeChallengeFromCompetition(id!, challenge._id);
+                                    alert('Challenge removed successfully');
+                                    window.location.reload();
+                                  } catch (err: any) {
+                                    alert(err.message || 'Failed to remove challenge');
+                                  }
+                                }
+                              }}
+                              className="border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-400 h-8 px-3"
+                            >
+                              Remove
+                            </Button>
+                          )}
                         </div>
                       </div>
                       <div className="mt-3 text-right">

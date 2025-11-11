@@ -6,6 +6,7 @@ import Button from '../components/ui/button';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/ui/EmptyState';
+import ProfileSlidePanel from '../components/ui/ProfileSlidePanel';
 import { Trophy, Crown, Medal, Search, ArrowLeft, Users } from 'lucide-react';
 import Input from '../components/ui/input';
 
@@ -18,6 +19,8 @@ const CompetitionLeaderboardPage: React.FC = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -152,12 +155,16 @@ const CompetitionLeaderboardPage: React.FC = () => {
               {topThree[1] && (
                 <div className="order-1 flex justify-center">
                   <div
+                    onClick={() => {
+                      setSelectedUser(topThree[1]);
+                      setShowProfilePanel(true);
+                    }}
                     className={`
                       relative w-56 h-72
                       bg-gradient-to-b ${getRankGradient(2)}
                       border-2 border-zinc-400/30
                       transform hover:scale-105 hover:-translate-y-2
-                      transition-all duration-300 ease-out
+                      transition-all duration-300 ease-out cursor-pointer
                     `}
                     style={{
                       clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
@@ -213,12 +220,16 @@ const CompetitionLeaderboardPage: React.FC = () => {
               {topThree[0] && (
                 <div className="order-2 flex justify-center">
                   <div
+                    onClick={() => {
+                      setSelectedUser(topThree[0]);
+                      setShowProfilePanel(true);
+                    }}
                     className={`
                       relative w-64 h-80
                       bg-gradient-to-b ${getRankGradient(1)}
                       border-2 border-yellow-400/50
                       transform hover:scale-105 hover:-translate-y-2
-                      transition-all duration-300 ease-out
+                      transition-all duration-300 ease-out cursor-pointer
                     `}
                     style={{
                       clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
@@ -274,12 +285,16 @@ const CompetitionLeaderboardPage: React.FC = () => {
               {topThree[2] && (
                 <div className="order-3 flex justify-center">
                   <div
+                    onClick={() => {
+                      setSelectedUser(topThree[2]);
+                      setShowProfilePanel(true);
+                    }}
                     className={`
                       relative w-56 h-72
                       bg-gradient-to-b ${getRankGradient(3)}
                       border-2 border-amber-600/30
                       transform hover:scale-105 hover:-translate-y-2
-                      transition-all duration-300 ease-out
+                      transition-all duration-300 ease-out cursor-pointer
                     `}
                     style={{
                       clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
@@ -378,9 +393,14 @@ const CompetitionLeaderboardPage: React.FC = () => {
                   return (
                     <tr
                       key={user._id}
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setShowProfilePanel(true);
+                      }}
                       className={`
                         border-b border-zinc-800/50
                         hover:bg-zinc-800/50
+                        cursor-pointer
                         group
                         ${isTopThree ? 'bg-zinc-800/20' : ''}
                         ${isCurrentUser ? 'bg-emerald-500/5' : ''}
@@ -453,6 +473,14 @@ const CompetitionLeaderboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Profile Slide Panel */}
+      <ProfileSlidePanel
+        isOpen={showProfilePanel}
+        onClose={() => setShowProfilePanel(false)}
+        user={selectedUser}
+        rank={selectedUser ? leaderboardData.findIndex(u => u._id === selectedUser._id) + 1 : undefined}
+      />
     </div>
   );
 };
