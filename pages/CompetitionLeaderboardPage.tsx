@@ -58,11 +58,10 @@ const CompetitionLeaderboardPage: React.FC = () => {
       const data = await competitionService.getCompetitionById(id!);
       setCompetition(data);
 
-      if (data.leaderboard) {
-        setLeaderboardData(data.leaderboard);
-      } else {
-        setLeaderboardData([]);
-      }
+      // Fetch the leaderboard separately
+      const leaderboardData = await competitionService.getCompetitionLeaderboard(id!);
+      setLeaderboardData(leaderboardData);
+
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch competition');

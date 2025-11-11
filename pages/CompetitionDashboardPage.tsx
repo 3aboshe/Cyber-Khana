@@ -85,6 +85,14 @@ const CompetitionDashboardPage: React.FC = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [recentActivity, setRecentActivity] = useState<ActivityEntry[]>([]);
 
+  // Check if competition has ended
+  const isCompetitionEnded = () => {
+    if (!competition) return false;
+    const now = new Date();
+    const endTime = new Date(competition.endTime);
+    return now > endTime || competition.status === 'ended';
+  };
+
   useEffect(() => {
     // Get user data
     const userData = localStorage.getItem('user');
@@ -288,14 +296,24 @@ const CompetitionDashboardPage: React.FC = () => {
           </div>
           <div className="text-right">
             <div className="flex items-center gap-2 text-zinc-300 mb-2">
-              <Clock className="w-5 h-5 text-emerald-400" />
-              <span>Ends in: {getTimeRemaining(competition.endTime)}</span>
+              <Clock className={`w-5 h-5 ${isCompetitionEnded() ? 'text-zinc-400' : 'text-emerald-400'}`} />
+              <span>
+                {isCompetitionEnded() ? 'Competition Ended' : `Ends in: ${getTimeRemaining(competition.endTime)}`}
+              </span>
             </div>
             <div className="flex items-center gap-2 text-zinc-300 mb-2">
               <Users className="w-5 h-5 text-emerald-400" />
               <span>{competition.challenges?.length || 0} challenges</span>
             </div>
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/competition/${id}/leaderboard`)}
+                className="relative"
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span className="ml-2">Leaderboard</span>
+              </Button>
               <Button
                 variant="outline"
                 onClick={() => {
@@ -411,6 +429,7 @@ const CompetitionDashboardPage: React.FC = () => {
             <div className="space-y-4">
               {filteredChallenges.map((challenge: CompetitionChallenge) => {
               const isSolved = solvedChallenges.has(challenge._id);
+              const ended = isCompetitionEnded();
 
               return (
                 <Card
@@ -419,19 +438,19 @@ const CompetitionDashboardPage: React.FC = () => {
                     e.stopPropagation();
                     navigate(`/competition/${id}/challenge/${challenge._id}`);
                   }}
-                  className={`p-5 transition-all duration-300 ease-in-out cursor-pointer hover:border-emerald-500 hover:scale-[1.02] hover:bg-zinc-700/50 hover:shadow-lg hover:shadow-emerald-500/10 group ${
-                    isSolved ? 'bg-emerald-500/5 border-emerald-500/50' : ''
-                  }`}
+                  className={`p-5 transition-all duration-300 ease-in-out cursor-pointer hover:border-zinc-500 hover:scale-[1.01] group ${
+                    isSolved && !ended ? 'bg-emerald-500/5 border-emerald-500/50' : 'border-zinc-700 hover:bg-zinc-800/30'
+                  } ${ended ? 'opacity-90' : ''}`}
                 >
                   <div className="flex items-start gap-5">
                     {/* Trophy Icon */}
                     <div className={`p-3 rounded-lg ${
-                      isSolved ? 'bg-emerald-500/30' : 'bg-emerald-500/20'
+                      isSolved && !ended ? 'bg-emerald-500/30' : 'bg-zinc-700/50'
                     }`}>
-                      {isSolved ? (
+                      {isSolved && !ended ? (
                         <CheckCircle className="w-7 h-7 text-emerald-300" />
                       ) : (
-                        <Trophy className="w-7 h-7 text-emerald-400" />
+                        <Trophy className={`w-7 h-7 ${ended ? 'text-zinc-400' : 'text-emerald-400'}`} />
                       )}
                     </div>
 
@@ -441,17 +460,22 @@ const CompetitionDashboardPage: React.FC = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-1">
                             <h3 className="text-xl font-bold text-zinc-100">{challenge.title}</h3>
-                            {isSolved && (
+                            {isSolved && !ended && (
                               <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/30 text-emerald-300 border border-emerald-500/50">
                                 SOLVED
                               </span>
                             )}
+                            {ended && (
+                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-700 text-zinc-300 border border-zinc-600">
+                                COMPLETED
+                              </span>
+                            )}
                           </div>
-                          <p className="text-zinc-400 text-sm mb-3">
+                          <p className="text-zinc-400 text-sm mb-3 line-clamp-2">
                             {challenge.description}
                           </p>
                         </div>
-                        <span className="px-4 py-2 rounded-full text-sm font-semibold bg-emerald-500/20 text-emerald-400 whitespace-nowrap ml-4">
+                        <span className="px-4 py-2 rounded-full text-sm font-semibold bg-zinc-700/50 text-zinc-300 whitespace-nowrap ml-4">
                           {(challenge as any).currentPoints || challenge.points} pts
                         </span>
                       </div>
@@ -460,7 +484,7 @@ const CompetitionDashboardPage: React.FC = () => {
                         <div className="flex items-center gap-4 text-sm text-zinc-500">
                           <CategoryBadge category={challenge.category} />
                           <span>{challenge.solves} solves</span>
-                          {isSolved && (
+                          {isSolved && !ended && (
                             <span className="text-emerald-400 font-semibold">Completed</span>
                           )}
                         </div>
@@ -469,8 +493,8 @@ const CompetitionDashboardPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="mt-3 text-right">
-                        <span className="text-xs text-zinc-500 group-hover:text-emerald-400 transition-all duration-300 group-hover:translate-x-1 inline-flex items-center gap-1">
-                          Click to view details <ArrowRight className="w-3 h-3 transition-transform duration-300 group-hover:translate-x-1" />
+                        <span className="text-xs text-zinc-500 group-hover:text-zinc-300 transition-all duration-300 inline-flex items-center gap-1">
+                          {ended ? 'View Statistics' : 'Click to view details'} <ArrowRight className="w-3 h-3 transition-transform duration-300 group-hover:translate-x-1" />
                         </span>
                       </div>
                     </div>

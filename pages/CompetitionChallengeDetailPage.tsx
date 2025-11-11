@@ -6,7 +6,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
-import { ArrowLeft, Trophy, Clock, Users, CheckCircle, AlertCircle, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Trophy, Clock, Users, CheckCircle, AlertCircle, Lightbulb, Download, Lock, ExternalLink } from 'lucide-react';
 
 interface CompetitionChallenge {
   _id: string;
@@ -188,6 +188,43 @@ const CompetitionChallengeDetailPage: React.FC = () => {
             </div>
           </Card>
 
+          {/* Files */}
+          {challenge.files && challenge.files.length > 0 && (
+            <Card className="p-6">
+              <h2 className="text-2xl font-bold text-zinc-100 mb-4">Challenge Files</h2>
+              <ul className="space-y-2">
+                {challenge.files.map((file: any, index: number) => (
+                  <li key={index}>
+                    <a
+                      href={file.url}
+                      download
+                      className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors"
+                    >
+                      <Download size={16} />
+                      {file.name}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {/* Challenge Link */}
+          {(challenge as any).challengeLink && (
+            <Card className="p-6">
+              <h2 className="text-2xl font-bold text-zinc-100 mb-4">Challenge Link</h2>
+              <a
+                href={(challenge as any).challengeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 text-emerald-400 hover:text-emerald-300 transition-colors text-lg"
+              >
+                <ExternalLink size={20} />
+                <span>View Challenge</span>
+              </a>
+            </Card>
+          )}
+
           {/* Hints */}
           {challenge.hints && challenge.hints.length > 0 && (
             <Card className="p-6">
@@ -232,12 +269,22 @@ const CompetitionChallengeDetailPage: React.FC = () => {
             <h2 className="text-2xl font-bold text-zinc-100 mb-4">Submit Flag</h2>
 
             {isCompetitionEnded() ? (
-              <div className="flex items-center gap-3 p-4 bg-red-500/20 rounded-lg border border-red-500/50">
-                <Lock className="w-6 h-6 text-red-400" />
-                <div>
-                  <p className="text-red-400 font-semibold">Competition Ended</p>
-                  <p className="text-red-400/80 text-sm">This challenge is no longer active</p>
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-4 bg-zinc-800/50 rounded-lg border border-zinc-700">
+                  <Lock className="w-6 h-6 text-zinc-400" />
+                  <div>
+                    <p className="text-zinc-300 font-semibold">Competition Ended</p>
+                    <p className="text-zinc-500 text-sm">This challenge is no longer active. View the leaderboard to see final results.</p>
+                  </div>
                 </div>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate(`/competition/${id}/leaderboard`)}
+                  className="w-full border-zinc-600 hover:border-emerald-500/50"
+                >
+                  <Trophy className="w-4 h-4 mr-2" />
+                  View Leaderboard
+                </Button>
               </div>
             ) : isSolved ? (
               <div className="flex items-center gap-3 p-4 bg-emerald-500/20 rounded-lg">

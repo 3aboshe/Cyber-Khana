@@ -246,17 +246,21 @@ const CompetitionPage: React.FC = () => {
       {pastCompetitions.length > 0 && (
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <Lock className="w-6 h-6 text-red-400" />
+            <Trophy className="w-6 h-6 text-zinc-400" />
             <h2 className="text-2xl font-bold text-zinc-100">Past Competitions</h2>
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             {pastCompetitions.map((competition) => (
-              <Card key={competition._id} className="p-6 border-2 border-red-500/70 bg-red-950/20 shadow-lg shadow-red-500/10">
+              <Card
+                key={competition._id}
+                className="p-6 border border-zinc-700 hover:border-red-500/50 transition-all duration-300 cursor-pointer"
+                onClick={() => navigate(`/competition/${competition._id}/leaderboard`)}
+              >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="p-3 bg-red-500/30 rounded-lg">
-                    <Lock className="w-8 h-8 text-red-300" />
+                  <div className="p-3 bg-zinc-700/50 rounded-lg">
+                    <Trophy className="w-8 h-8 text-zinc-400" />
                   </div>
-                  <span className="px-3 py-1 rounded-full text-sm bg-red-500/30 text-red-200 border border-red-500/50">
+                  <span className="px-3 py-1 rounded-full text-sm bg-zinc-700 text-zinc-300 border border-zinc-600">
                     ENDED
                   </span>
                 </div>
@@ -266,10 +270,22 @@ const CompetitionPage: React.FC = () => {
                     <Users className="w-4 h-4" />
                     <span>{competition.challenges?.length || 0} challenges</span>
                   </div>
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <Calendar className="w-4 h-4" />
+                    <span>Ended {new Date(competition.endTime).toLocaleDateString()}</span>
+                  </div>
                 </div>
-                <div className="text-red-300/80 text-sm font-medium">
-                  Competition has ended
-                </div>
+                <Button
+                  variant="outline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/competition/${competition._id}/leaderboard`);
+                  }}
+                  className="w-full border-zinc-600 hover:border-red-500/50 hover:bg-red-500/10"
+                >
+                  View Leaderboard
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
               </Card>
             ))}
           </div>

@@ -7,7 +7,7 @@ import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
 import PointDecayInfo from '../src/components/PointDecayInfo';
-import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink } from 'lucide-react';
 
 interface Challenge {
   _id: string;
@@ -267,6 +267,22 @@ const NewChallengeDetailPage: React.FC = () => {
                   </a>
                 ))}
               </div>
+            </Card>
+          )}
+
+          {/* Challenge Link */}
+          {(challenge as any).challengeLink && (
+            <Card className="p-6">
+              <h2 className="text-xl font-bold text-zinc-100 mb-4">Challenge Link</h2>
+              <a
+                href={(challenge as any).challengeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-700/50 transition-colors"
+              >
+                <ExternalLink className="w-5 h-5 text-emerald-400" />
+                <span className="text-emerald-400">View Challenge</span>
+              </a>
             </Card>
           )}
 

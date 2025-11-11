@@ -158,9 +158,19 @@ export const getSolvedChallenges = async (req: AuthRequest, res: Response) => {
     // Get IDs of challenges in this competition
     const competitionChallengeIds = competition.challenges.map((c: any) => c._id.toString());
 
+    // Get integrated challenges for this competition
+    const Challenge = require('../models/Challenge').default;
+    const integratedChallenges = await Challenge.find({
+      fromCompetition: true,
+      competitionId: id
+    });
+
+    const integratedChallengeIds = integratedChallenges.map((c: any) => c._id.toString());
+
     // Filter user's solved challenges to only include those from this competition
+    // Check both competition challenge IDs and integrated challenge IDs
     const solvedChallengeIds = user.solvedChallenges.filter((challengeId: string) =>
-      competitionChallengeIds.includes(challengeId)
+      competitionChallengeIds.includes(challengeId) || integratedChallengeIds.includes(challengeId)
     );
 
     res.json(solvedChallengeIds);
@@ -273,7 +283,8 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
           solvedAt: new Date(),
           points: totalAwardedPoints
         });
-        user.points += totalAwardedPoints;
+        // Add points to competitionPoints for competition challenges
+        user.competitionPoints += totalAwardedPoints;
         await user.save();
 
         // Update challenge solve count in competition
@@ -281,6 +292,22 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
         // Mark the challenges array as modified so Mongoose saves the nested document
         competition.markModified('challenges');
         await competition.save();
+
+        // Check if this challenge has been integrated to main challenges
+        const Challenge = require('../models/Challenge').default;
+        const integratedChallenge = await Challenge.findOne({
+          fromCompetition: true,
+          competitionId: id,
+          // Match by title and author to identify the same challenge
+          title: challenge.title,
+          author: challenge.author
+        });
+
+        if (integratedChallenge) {
+          // Update the integrated challenge solve count
+          integratedChallenge.solves += 1;
+          await integratedChallenge.save();
+        }
 
         res.json({
           success: true,
@@ -359,25 +386,41 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
       isBanned: { $ne: true }
     }).select('username points solvedChallenges solvedChallengesDetails');
 
+    // Get integrated challenges for this competition
+    const Challenge = require('../models/Challenge').default;
+    const integratedChallenges = await Challenge.find({
+      fromCompetition: true,
+      competitionId: id
+    });
+
+    // Create a map of integrated challenge IDs to their details
+    const integratedChallengeMap = new Map();
+    integratedChallenges.forEach((c: any) => {
+      integratedChallengeMap.set(c._id.toString(), c);
+    });
+
     // Filter users who have solved at least one competition challenge
     const leaderboard = users
       .filter((user: any) => {
-        // Check if user has solved any competition challenge
+        // Check if user has solved any competition challenge or integrated challenge
         return user.solvedChallengesDetails?.some((solve: any) =>
-          competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+          competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString()) ||
+          integratedChallengeMap.has(solve.challengeId?.toString())
         );
       })
       .map((user: any) => {
-        // Calculate points from competition challenges
+        // Calculate points from competition challenges and integrated challenges
         const competitionPoints = user.solvedChallengesDetails
           ?.filter((solve: any) =>
-            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString()) ||
+            integratedChallengeMap.has(solve.challengeId?.toString())
           )
           .reduce((total: number, solve: any) => total + (solve.points || 0), 0) || 0;
 
         const competitionSolvedCount = user.solvedChallengesDetails
           ?.filter((solve: any) =>
-            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString())
+            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString()) ||
+            integratedChallengeMap.has(solve.challengeId?.toString())
           ).length || 0;
 
         return {
@@ -551,20 +594,20 @@ export const buyCompetitionHint = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'You have already unlocked this hint' });
     }
 
-    // Check if user has enough points
-    if (user.points < hint.cost) {
-      return res.status(400).json({ error: 'Insufficient points' });
+    // Check if user has enough competition points
+    if (user.competitionPoints < hint.cost) {
+      return res.status(400).json({ error: 'Insufficient competition points' });
     }
 
-    // Deduct points and add hint to unlocked hints
-    user.points -= hint.cost;
+    // Deduct competition points and add hint to unlocked hints
+    user.competitionPoints -= hint.cost;
     user.unlockedHints.push(hintKey);
     await user.save();
 
     res.json({
       success: true,
       hint: hint.text,
-      remainingPoints: user.points
+      remainingPoints: user.competitionPoints
     });
   } catch (error) {
     res.status(500).json({ error: 'Error buying hint' });

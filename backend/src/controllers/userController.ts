@@ -82,17 +82,63 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     const University = require('../models/University').default;
     const university = await University.findOne({ code: universityCode });
 
-    users.sort((a, b) => {
-      if (b.points !== a.points) {
-        return b.points - a.points;
+    // Get all competitions in the university to identify competition challenges
+    const Competition = require('../models/Competition').default;
+    const competitions = await Competition.find({ universityCode });
+
+    // Get all competition challenge IDs
+    const competitionChallengeIds = new Set<string>();
+    competitions.forEach((comp: any) => {
+      comp.challenges.forEach((challenge: any) => {
+        competitionChallengeIds.add(challenge._id.toString());
+      });
+    });
+
+    // Get all integrated challenges (from competitions)
+    const Challenge = require('../models/Challenge').default;
+    const integratedChallenges = await Challenge.find({
+      universityCode,
+      fromCompetition: true
+    });
+    const integratedChallengeIds = new Set<string>();
+    integratedChallenges.forEach((challenge: any) => {
+      integratedChallengeIds.add(challenge._id.toString());
+    });
+
+    // Filter out competition challenges from user stats
+    const usersWithNonCompetitionStats = users.map((user: any) => {
+      // Filter solved challenges to exclude competition challenges
+      const nonCompetitionSolvedDetails = user.solvedChallengesDetails.filter((solve: any) => {
+        return !competitionChallengeIds.has(solve.challengeId) && !integratedChallengeIds.has(solve.challengeId);
+      });
+
+      // Calculate points from non-competition challenges only
+      const nonCompetitionPoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
+        return total + (solve.points || 0);
+      }, 0);
+
+      // Calculate solve count for non-competition challenges
+      const nonCompetitionSolvedCount = nonCompetitionSolvedDetails.length;
+
+      return {
+        ...user.toObject(),
+        nonCompetitionPoints,
+        nonCompetitionSolvedCount,
+        nonCompetitionSolvedDetails
+      };
+    });
+
+    usersWithNonCompetitionStats.sort((a, b) => {
+      if (b.nonCompetitionPoints !== a.nonCompetitionPoints) {
+        return b.nonCompetitionPoints - a.nonCompetitionPoints;
       }
 
-      const aFirstSolve = a.solvedChallengesDetails.length > 0
-        ? new Date(Math.min(...a.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+      const aFirstSolve = a.nonCompetitionSolvedDetails.length > 0
+        ? new Date(Math.min(...a.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
 
-      const bFirstSolve = b.solvedChallengesDetails.length > 0
-        ? new Date(Math.min(...b.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+      const bFirstSolve = b.nonCompetitionSolvedDetails.length > 0
+        ? new Date(Math.min(...b.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
 
       if (aFirstSolve && bFirstSolve) {
@@ -106,21 +152,21 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       return 0;
     });
 
-    const topUsers = users.slice(0, 10).map((user, index) => {
-      const firstSolve = user.solvedChallengesDetails.length > 0
-        ? new Date(Math.min(...user.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+    const topUsers = usersWithNonCompetitionStats.slice(0, 10).map((user, index) => {
+      const firstSolve = user.nonCompetitionSolvedDetails.length > 0
+        ? new Date(Math.min(...user.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
 
-      const lastSolve = user.solvedChallengesDetails.length > 0
-        ? new Date(Math.max(...user.solvedChallengesDetails.map(d => new Date(d.solvedAt).getTime())))
+      const lastSolve = user.nonCompetitionSolvedDetails.length > 0
+        ? new Date(Math.max(...user.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
 
       const totalTime = firstSolve && lastSolve
         ? Math.floor((lastSolve.getTime() - firstSolve.getTime()) / 1000 / 60 / 60)
         : 0;
 
-      const averageSolveTime = user.solvedChallengesDetails.length > 0 && firstSolve && lastSolve
-        ? Math.floor(totalTime / user.solvedChallengesDetails.length)
+      const averageSolveTime = user.nonCompetitionSolvedDetails.length > 0 && firstSolve && lastSolve
+        ? Math.floor(totalTime / user.nonCompetitionSolvedDetails.length)
         : 0;
 
       return {
@@ -128,9 +174,9 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         username: user.username,
         fullName: user.fullName,
         displayName: user.displayName || user.username,
-        points: user.points,
-        solvedChallenges: user.solvedChallenges.length,
-        solvedDetails: user.solvedChallengesDetails,
+        points: user.nonCompetitionPoints,
+        solvedChallenges: user.nonCompetitionSolvedCount,
+        solvedDetails: user.nonCompetitionSolvedDetails,
         firstSolveTime: firstSolve,
         lastSolveTime: lastSolve,
         totalTimeHours: totalTime,
@@ -142,9 +188,11 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     });
 
     const analysis = {
-      totalParticipants: users.length,
-      totalPoints: users.reduce((sum, u) => sum + u.points, 0),
-      averagePoints: users.length > 0 ? Math.floor(users.reduce((sum, u) => sum + u.points, 0) / users.length) : 0,
+      totalParticipants: usersWithNonCompetitionStats.length,
+      totalPoints: usersWithNonCompetitionStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0),
+      averagePoints: usersWithNonCompetitionStats.length > 0
+        ? Math.floor(usersWithNonCompetitionStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0) / usersWithNonCompetitionStats.length)
+        : 0,
       topSolver: topUsers[0] || null,
       fastestAverageSolver: topUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null
     };

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Challenge } from '../types';
 import Card from './ui/EnhancedCard';
-import { Users, ArrowRight, Award, Clock, Bookmark, BookmarkCheck } from 'lucide-react';
+import { Users, ArrowRight, Award, Clock, Bookmark, BookmarkCheck, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 
 interface EnhancedChallengeCardProps {
@@ -104,6 +104,22 @@ const EnhancedChallengeCard: React.FC<EnhancedChallengeCardProps> = ({
               </span>
             </div>
           </div>
+
+          {/* Challenge Link (when available) */}
+          {(challenge as any).challengeLink && (
+            <div className="mb-4">
+              <a
+                href={(challenge as any).challengeLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 text-sm transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink size={14} />
+                <span>View Challenge</span>
+              </a>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="flex items-center justify-center pt-4 border-t border-zinc-700">
