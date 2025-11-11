@@ -427,7 +427,8 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
           _id: user._id,
           username: user.username,
           points: competitionPoints,
-          solvedChallenges: competitionSolvedCount
+          solvedChallenges: competitionSolvedCount,
+          universityCode: user.universityCode
         };
       })
       .sort((a: any, b: any) => {

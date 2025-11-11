@@ -177,11 +177,11 @@ const CompetitionLeaderboardPage: React.FC = () => {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/competition/${id}`)}
+            onClick={() => navigate('/competition')}
             className="mb-4"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Competition
+            Back to Competitions
           </Button>
         </div>
 
