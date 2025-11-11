@@ -6,7 +6,7 @@ import Button from '../components/ui/button';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { Trophy, Crown, Medal, Search, ArrowLeft, Users } from 'lucide-react';
+import { Trophy, Crown, Medal, Search, ArrowLeft, Users, XCircle } from 'lucide-react';
 import Input from '../components/ui/input';
 
 const CompetitionLeaderboardPage: React.FC = () => {
@@ -17,6 +17,9 @@ const CompetitionLeaderboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     fetchLeaderboard();
@@ -45,12 +48,18 @@ const CompetitionLeaderboardPage: React.FC = () => {
 
       setCompetition(competitionData);
       setLeaderboardData(leaderboard);
+      setCurrentUser(JSON.parse(localStorage.getItem('user') || '{}'));
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch leaderboard');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleUserClick = (user: any) => {
+    setSelectedUser(user);
+    setShowProfileModal(true);
   };
 
   if (loading) {
@@ -98,7 +107,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
       case 3:
         return <Medal className="w-8 h-8 text-amber-600" />;
       default:
-        return <span className="text-xl font-bold text-zinc-400">#{rank}</span>;
+        return <span className="text-xl font-bold text-zinc-400">{rank}</span>;
     }
   };
 
@@ -160,8 +169,16 @@ const CompetitionLeaderboardPage: React.FC = () => {
                     style={{
                       clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
                     }}
-                    onClick={() => {/* TODO: Show profile modal */}}
+                    onClick={() => handleUserClick(topThree[1])}
                   >
+                    {currentUser && currentUser.username === topThree[1].username && (
+                      <div className="absolute top-4 left-4">
+                        <span className="px-2 py-1 bg-emerald-500 text-white text-xs font-semibold rounded-full">
+                          You
+                        </span>
+                      </div>
+                    )}
+
                     <div className="absolute top-4 right-4">
                       <Medal className="w-6 h-6 text-zinc-200" />
                     </div>
@@ -214,8 +231,16 @@ const CompetitionLeaderboardPage: React.FC = () => {
                     style={{
                       clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
                     }}
-                    onClick={() => {/* TODO: Show profile modal */}}
+                    onClick={() => handleUserClick(topThree[0])}
                   >
+                    {currentUser && currentUser.username === topThree[0].username && (
+                      <div className="absolute top-4 left-4">
+                        <span className="px-2 py-1 bg-emerald-500 text-white text-xs font-semibold rounded-full">
+                          You
+                        </span>
+                      </div>
+                    )}
+
                     <div className="absolute top-4 right-4">
                       <Crown className="w-6 h-6 text-yellow-200" />
                     </div>
@@ -268,8 +293,16 @@ const CompetitionLeaderboardPage: React.FC = () => {
                     style={{
                       clipPath: 'polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%)',
                     }}
-                    onClick={() => {/* TODO: Show profile modal */}}
+                    onClick={() => handleUserClick(topThree[2])}
                   >
+                    {currentUser && currentUser.username === topThree[2].username && (
+                      <div className="absolute top-4 left-4">
+                        <span className="px-2 py-1 bg-emerald-500 text-white text-xs font-semibold rounded-full">
+                          You
+                        </span>
+                      </div>
+                    )}
+
                     <div className="absolute top-4 right-4">
                       <Medal className="w-6 h-6 text-amber-300" />
                     </div>
@@ -350,17 +383,19 @@ const CompetitionLeaderboardPage: React.FC = () => {
                 {filteredLeaderboard.map((user: any, index: number) => {
                   const globalRank = index + 1;
                   const isTopThree = globalRank <= 3;
+                  const isCurrentUser = currentUser && currentUser.username === user.username;
 
                   return (
                     <tr
                       key={user._id}
-                      onClick={() => {/* TODO: Show profile modal */}}
+                      onClick={() => handleUserClick(user)}
                       className={`
                         border-b border-zinc-800/50
                         hover:bg-zinc-800/50
                         cursor-pointer
                         group
                         ${isTopThree ? 'bg-zinc-800/20' : ''}
+                        ${isCurrentUser ? 'bg-emerald-500/5' : ''}
                       `}
                     >
                       <td className="py-4 px-6">
@@ -370,9 +405,6 @@ const CompetitionLeaderboardPage: React.FC = () => {
                             <span className="text-sm font-bold text-yellow-400">
                               {globalRank === 1 ? 'Champion' : globalRank === 2 ? 'Runner-up' : 'Third'}
                             </span>
-                          )}
-                          {!isTopThree && (
-                            <span className="text-zinc-400 font-semibold">#{globalRank}</span>
                           )}
                         </div>
                       </td>
@@ -393,8 +425,15 @@ const CompetitionLeaderboardPage: React.FC = () => {
                             {user.username.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
-                              {user.username}
+                            <div className="flex items-center gap-2">
+                              <span className={`font-semibold ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-100 group-hover:text-white'} transition-colors`}>
+                                {user.username}
+                              </span>
+                              {isCurrentUser && (
+                                <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
+                                  You
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-zinc-500">{user.universityCode}</div>
                           </div>
@@ -426,6 +465,81 @@ const CompetitionLeaderboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* User Profile Modal */}
+      {showProfileModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-zinc-100">User Profile</h2>
+                <button
+                  onClick={() => setShowProfileModal(false)}
+                  className="text-zinc-400 hover:text-zinc-200 transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`
+                      w-20 h-20 rounded-full
+                      bg-gradient-to-br ${getAvatarColor(leaderboardData.indexOf(selectedUser))}
+                      flex items-center justify-center
+                      text-3xl font-bold text-white
+                      ring-4 ring-zinc-700
+                    `}
+                  >
+                    {selectedUser.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-bold text-zinc-100">{selectedUser.username}</h3>
+                    <p className="text-zinc-400 mt-1">{selectedUser.universityCode}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                    <div className="text-zinc-400 text-sm mb-1">Rank</div>
+                    <div className="text-2xl font-bold text-zinc-100">
+                      #{leaderboardData.findIndex(u => u._id === selectedUser._id) + 1}
+                    </div>
+                  </div>
+                  <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                    <div className="text-zinc-400 text-sm mb-1">Points</div>
+                    <div className="text-2xl font-bold text-emerald-400">{selectedUser.points}</div>
+                  </div>
+                  <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                    <div className="text-zinc-400 text-sm mb-1">Solved</div>
+                    <div className="text-2xl font-bold text-zinc-100">{selectedUser.solvedChallenges}</div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => {
+                      setShowProfileModal(false);
+                      navigate(`/profile/${selectedUser._id}`);
+                    }}
+                    className="flex-1"
+                  >
+                    View Full Profile
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowProfileModal(false)}
+                    className="flex-1"
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

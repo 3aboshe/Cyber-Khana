@@ -293,6 +293,15 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
         competition.markModified('challenges');
         await competition.save();
 
+        // Apply retroactive decay to all solvers of this challenge
+        try {
+          const { applyRetroactiveDecay } = require('../services/retroactiveDecayService');
+          await applyRetroactiveDecay(challengeId);
+        } catch (decayError) {
+          console.error('Failed to apply retroactive decay:', decayError);
+          // Don't fail the request if decay fails
+        }
+
         // Check if this challenge has been integrated to main challenges
         const Challenge = require('../models/Challenge').default;
         const integratedChallenge = await Challenge.findOne({
@@ -355,6 +364,7 @@ export const addChallengeToCompetition = async (req: AuthRequest, res: Response)
       flag: challenge.flag,
       hints: challenge.hints || [],
       files: challenge.files || [],
+      challengeLink: challenge.challengeLink || '',
       initialPoints: challenge.initialPoints || 1000,
       minimumPoints: challenge.minimumPoints || 100,
       decay: challenge.decay || 200,
@@ -632,5 +642,37 @@ export const deleteCompetition = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'Competition deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error deleting competition' });
+  }
+};
+
+export const removeChallengeFromCompetition = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, challengeId } = req.params;
+
+    const competition = await Competition.findById(id);
+
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Find the challenge index
+    const challengeIndex = competition.challenges.findIndex((c: any) => c._id.toString() === challengeId);
+
+    if (challengeIndex === -1) {
+      return res.status(404).json({ error: 'Challenge not found in competition' });
+    }
+
+    // Remove the challenge
+    competition.challenges.splice(challengeIndex, 1);
+    competition.markModified('challenges');
+    await competition.save();
+
+    res.json({ message: 'Challenge removed from competition successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error removing challenge from competition' });
   }
 };

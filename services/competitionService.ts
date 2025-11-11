@@ -37,6 +37,9 @@ export const competitionService = {
   addChallengeToCompetition: (id: string, challengeId: string) =>
     apiService.post(`/competitions/${id}/challenges`, { challengeId }),
 
+  removeChallengeFromCompetition: (id: string, challengeId: string) =>
+    apiService.delete(`/competitions/${id}/challenges/${challengeId}`),
+
   publishCompetitionHint: (id: string, challengeId: string, hintIndex: number) =>
     apiService.post(`/competitions/${id}/challenges/${challengeId}/publish-hint`, { hintIndex }),
 

@@ -55,12 +55,26 @@ const CompetitionChallengeDetailPage: React.FC = () => {
     }
   }, [id, challengeId]);
 
+  useEffect(() => {
+    // Listen for user updates
+    const handleUserUpdate = (event: any) => {
+      if (event.detail) {
+        setCurrentUser(event.detail);
+      }
+    };
+
+    window.addEventListener('userUpdate', handleUserUpdate);
+    return () => {
+      window.removeEventListener('userUpdate', handleUserUpdate);
+    };
+  }, []);
+
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [competitionData, profileData] = await Promise.all([
-        competitionService.getCompetitionById(id!),
-        JSON.parse(localStorage.getItem('user') || '{}')
+      const profileData = JSON.parse(localStorage.getItem('user') || '{}');
+      const [competitionData] = await Promise.all([
+        competitionService.getCompetitionById(id!)
       ]);
 
       setCompetition(competitionData);
@@ -147,15 +161,15 @@ const CompetitionChallengeDetailPage: React.FC = () => {
     if (!selectedHint || !currentUser) return;
 
     try {
-      await competitionService.buyCompetitionHint(id!, challenge!._id, selectedHint.index, selectedHint.cost);
+      const result = await competitionService.buyCompetitionHint(id!, challenge!._id, selectedHint.index, selectedHint.cost);
 
       // Add the hint to unlocked hints
       const hintId = `${challenge!._id}-${selectedHint.index}`;
       setUnlockedHints([...unlockedHints, hintId]);
 
-      // Update user points
-      const newPoints = (currentUser.competitionPoints || 0) - selectedHint.cost;
-      const updatedUser = { ...currentUser, competitionPoints: newPoints };
+      // Update user points from the response
+      const newPoints = result.remainingPoints;
+      const updatedUser = { ...currentUser, competitionPoints: newPoints, unlockedHints: [...(currentUser.unlockedHints || []), hintId] };
       setCurrentUser(updatedUser);
 
       // Update localStorage and dispatch event
@@ -172,7 +186,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-screen bg-zinc-900">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto">
             <div className="flex items-center justify-center h-64">
@@ -186,7 +200,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
 
   if (!challenge) {
     return (
-      <div className="min-h-screen bg-zinc-950">
+      <div className="min-h-screen bg-zinc-900">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-6xl mx-auto">
             <div className="text-center">
@@ -211,7 +225,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-zinc-900 text-zinc-100">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}

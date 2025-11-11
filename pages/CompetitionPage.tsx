@@ -442,16 +442,37 @@ const CompetitionPage: React.FC = () => {
                                 <h5 className="text-zinc-200 font-medium">{challenge.title}</h5>
                                 <p className="text-zinc-500 text-sm">{challenge.category} • {(challenge as any).currentPoints || challenge.points} pts</p>
                               </div>
-                              <div className="flex items-center gap-4 text-zinc-400 text-sm">
+                              <div className="flex items-center gap-2 text-zinc-400 text-sm">
                                 <span>{challenge.solves} solves</span>
                                 <Button
                                   size="sm"
+                                  variant="secondary"
                                   onClick={() => navigate(`/competition/${competition._id}/challenge/${challenge._id}`)}
                                   disabled={ended}
                                 >
                                   {ended ? 'View' : 'Solve'}
                                   <ArrowRight className="w-4 h-4 ml-1" />
                                 </Button>
+                                {!ended && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={async () => {
+                                      if (confirm(`Are you sure you want to remove "${challenge.title}" from this competition?`)) {
+                                        try {
+                                          await competitionService.removeChallengeFromCompetition(competition._id, challenge._id);
+                                          alert('Challenge removed successfully');
+                                          fetchCompetitions();
+                                        } catch (err: any) {
+                                          alert(err.message || 'Failed to remove challenge');
+                                        }
+                                      }
+                                    }}
+                                    className="border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-400"
+                                  >
+                                    Remove
+                                  </Button>
+                                )}
                               </div>
                             </div>
                           ))}

@@ -13,7 +13,8 @@ import {
   addChallengeToCompetition,
   publishCompetitionHint,
   buyCompetitionHint,
-  deleteCompetition
+  deleteCompetition,
+  removeChallengeFromCompetition
 } from '../controllers/competitionController';
 import { authenticate, requireAdmin } from '../middleware/auth';
 
@@ -29,6 +30,7 @@ router.get('/:id/activity', authenticate, getCompetitionActivity);
 router.patch('/:id/status', authenticate, requireAdmin, updateCompetitionStatus);
 router.patch('/:id/start', authenticate, requireAdmin, updateCompetitionStartTime);
 router.post('/:id/challenges', authenticate, requireAdmin, addChallengeToCompetition);
+router.delete('/:id/challenges/:challengeId', authenticate, requireAdmin, removeChallengeFromCompetition);
 router.delete('/:id', authenticate, requireAdmin, deleteCompetition);
 router.post('/:id/submit', authenticate, submitCompetitionFlag);
 router.post('/:id/challenges/:challengeId/publish-hint', authenticate, requireAdmin, publishCompetitionHint);
