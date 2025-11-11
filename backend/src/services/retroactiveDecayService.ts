@@ -12,17 +12,44 @@ import User from '../models/User';
  */
 export const applyRetroactiveDecay = async (challengeId: string) => {
   try {
-    // Get the challenge with current solve count
-    const challenge = await Challenge.findById(challengeId);
+    // Check if this is a regular challenge (in Challenge collection)
+    let challenge = await Challenge.findById(challengeId);
+    let isFromCompetition = false;
+    let competitionId: string | null = null;
+
+    // If not found in Challenge collection, check if it's from a competition
     if (!challenge) {
-      throw new Error('Challenge not found');
+      const Competition = require('../models/Competition').default;
+      const competition = await Competition.findOne({
+        'challenges._id': challengeId
+      });
+
+      if (competition) {
+        const compChallenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
+        if (compChallenge) {
+          // Create a challenge-like object for decay calculation
+          challenge = {
+            title: compChallenge.title,
+            initialPoints: compChallenge.initialPoints || 1000,
+            minimumPoints: compChallenge.minimumPoints || 100,
+            decay: compChallenge.decay || 38,
+            solves: compChallenge.solves
+          };
+          isFromCompetition = true;
+          competitionId = (competition as any)._id.toString();
+        }
+      }
+    }
+
+    if (!challenge) {
+      throw new Error('Challenge not found in any collection');
     }
 
     // Calculate what the current points should be
-    const initialPoints = challenge.initialPoints || challenge.points || 1000;
-    const minimumPoints = challenge.minimumPoints || 100;
-    const decay = challenge.decay || 38;
-    const currentSolveCount = challenge.solves;
+    const initialPoints = (challenge as any).initialPoints || (challenge as any).points || 1000;
+    const minimumPoints = (challenge as any).minimumPoints || 100;
+    const decay = (challenge as any).decay || 38;
+    const currentSolveCount = (challenge as any).solves;
 
     const correctPoints = calculateDynamicScore(
       initialPoints,
@@ -31,8 +58,9 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       currentSolveCount
     );
 
-    console.log(`Applying retroactive decay for challenge: ${challenge.title}`);
+    console.log(`Applying retroactive decay for challenge: ${(challenge as any).title}`);
     console.log(`Total solves: ${currentSolveCount}, Correct points: ${correctPoints}`);
+    console.log(`From competition: ${isFromCompetition}`);
 
     // Find all users who solved this challenge
     const users = await User.find({
@@ -56,8 +84,14 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
         if (pointsDifference !== 0) {
           console.log(`  User: ${user.username} - Old: ${oldPoints}, New: ${correctPoints}, Diff: ${pointsDifference}`);
 
-          // Update the user's points
-          user.points += pointsDifference;
+          // Update the appropriate points field
+          if (isFromCompetition) {
+            // For competition challenges, adjust competitionPoints
+            user.competitionPoints += pointsDifference;
+          } else {
+            // For regular challenges, adjust regular points
+            user.points += pointsDifference;
+          }
 
           // Update the points in their solvedChallengesDetails
           details[challengeDetailIndex].points = correctPoints;
@@ -69,9 +103,12 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       }
     }
 
-    // Update the challenge's currentPoints field
-    challenge.currentPoints = correctPoints;
-    await challenge.save();
+    // For regular challenges, update the challenge's currentPoints field
+    if (!isFromCompetition && (challenge as any)._id) {
+      const challengeDoc = challenge as any;
+      challengeDoc.currentPoints = correctPoints;
+      await challengeDoc.save();
+    }
 
     console.log(`✓ Retroactive decay applied successfully`);
     console.log(`  Updated ${userCount} users`);
@@ -80,6 +117,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
     return {
       success: true,
       challengeId,
+      fromCompetition: isFromCompetition,
       totalSolves: currentSolveCount,
       correctPoints,
       usersUpdated: userCount,
@@ -93,21 +131,22 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
 };
 
 /**
- * Apply retroactive decay to ALL challenges
+ * Apply retroactive decay to ALL challenges (both regular and competition)
  * This should be run once to fix all existing challenges
  */
 export const applyRetroactiveDecayToAllChallenges = async (universityCode?: string) => {
   try {
     console.log('\n=== Starting Retroactive Decay for All Challenges ===\n');
 
-    const query = universityCode ? { universityCode } : {};
-    const challenges = await Challenge.find(query);
-
-    console.log(`Found ${challenges.length} challenges to process\n`);
-
     const results = [];
     let totalUsersUpdated = 0;
     let totalPointsAdjusted = 0;
+
+    // Process regular challenges
+    const query = universityCode ? { universityCode } : {};
+    const challenges = await Challenge.find(query);
+
+    console.log(`Found ${challenges.length} regular challenges to process\n`);
 
     for (const challenge of challenges) {
       try {
@@ -116,24 +155,57 @@ export const applyRetroactiveDecayToAllChallenges = async (universityCode?: stri
         totalUsersUpdated += result.usersUpdated;
         totalPointsAdjusted += result.totalPointsAdjusted;
 
-        console.log(`\n--- Challenge: ${challenge.title} (${challenge.universityCode}) ---\n`);
+        console.log(`\n--- Regular Challenge: ${challenge.title} (${challenge.universityCode}) ---\n`);
       } catch (error) {
         console.error(`Failed to process challenge ${challenge.title}:`, error);
         results.push({
           success: false,
           challengeId: (challenge as any)._id.toString(),
+          fromCompetition: false,
           error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
 
+    // Process competition challenges
+    const Competition = require('../models/Competition').default;
+    const compQuery = universityCode ? { universityCode } : {};
+    const competitions = await Competition.find(compQuery);
+
+    let totalCompetitionChallenges = 0;
+    for (const competition of competitions) {
+      for (const compChallenge of competition.challenges) {
+        totalCompetitionChallenges++;
+        try {
+          const result = await applyRetroactiveDecay(compChallenge._id.toString());
+          results.push(result);
+          totalUsersUpdated += result.usersUpdated;
+          totalPointsAdjusted += result.totalPointsAdjusted;
+
+          console.log(`\n--- Competition Challenge: ${compChallenge.title} (${competition.name}) ---\n`);
+        } catch (error) {
+          console.error(`Failed to process competition challenge ${compChallenge.title}:`, error);
+          results.push({
+            success: false,
+            challengeId: compChallenge._id.toString(),
+            fromCompetition: true,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+      }
+    }
+
     console.log('\n=== Retroactive Decay Complete ===\n');
     console.log(`Total challenges processed: ${results.length}`);
+    console.log(`  - Regular challenges: ${challenges.length}`);
+    console.log(`  - Competition challenges: ${totalCompetitionChallenges}`);
     console.log(`Total users updated: ${totalUsersUpdated}`);
     console.log(`Total points adjusted: ${totalPointsAdjusted}`);
 
     return {
       totalChallenges: results.length,
+      regularChallenges: challenges.length,
+      competitionChallenges: totalCompetitionChallenges,
       successful: results.filter(r => r.success).length,
       failed: results.filter(r => !r.success).length,
       totalUsersUpdated,
