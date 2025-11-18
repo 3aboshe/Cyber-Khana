@@ -244,7 +244,7 @@ const NewChallengeDetailPage: React.FC = () => {
           {/* Description */}
           <Card className="p-6">
             <h2 className="text-xl font-bold text-zinc-100 mb-4">Description</h2>
-            <div className="text-zinc-300 whitespace-pre-wrap">
+            <div className="text-zinc-200 text-lg font-semibold whitespace-pre-wrap">
               {challenge.description}
             </div>
           </Card>

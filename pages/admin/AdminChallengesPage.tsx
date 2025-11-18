@@ -276,7 +276,7 @@ const AdminChallengesPage: React.FC = () => {
         flag: '',
         initialPoints: (challenge as any).initialPoints || 1000,
         minimumPoints: (challenge as any).minimumPoints || 100,
-        decay: (challenge as any).decay || 38,
+        decay: typeof (challenge as any).decay === 'number' ? (challenge as any).decay : 38,
         difficulty: (challenge as any).difficulty || 'Medium',
         estimatedTime: (challenge as any).estimatedTime || 30,
         challengeLink: (challenge as any).challengeLink || '',
