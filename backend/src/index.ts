@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
+import { basename } from 'path';
 import { connectDatabase } from './config/database';
 
 import authRoutes from './routes/auth';
@@ -44,12 +45,23 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads'), {
-  setHeaders: (res) => {
-    // Force download instead of viewing in browser
-    res.setHeader('Content-Disposition', 'attachment');
-  }
-}));
+// Dedicated download route that forces downloads
+app.get('/api/download/*', (req, res) => {
+  const filename = (req.params as any)[0];
+  const filePath = path.join(process.cwd(), 'uploads', filename);
+  
+  res.download(filePath, filename, (err) => {
+    if (err) {
+      console.error('Download error:', err);
+      if (!res.headersSent) {
+        res.status(404).json({ error: 'File not found' });
+      }
+    }
+  });
+});
+
+// Configure file serving for direct access
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // Apply strict rate limiting to auth routes
 app.use('/api/auth/login', authLimiter);
