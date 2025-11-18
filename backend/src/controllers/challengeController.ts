@@ -294,10 +294,12 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       points: challenge.points,
       description: challenge.description,
       author: challenge.author,
-      flag: challenge.flag,
+      flag: challenge.flag, // Ensure flag is copied
       hints: challenge.hints || [],
       files: challenge.files || [],
       challengeLink: challenge.challengeLink || '',
+      difficulty: challenge.difficulty || 'Medium',
+      estimatedTime: challenge.estimatedTime || 30,
       universityCode: targetUniversityCode.toUpperCase(),
       initialPoints: challenge.initialPoints,
       minimumPoints: challenge.minimumPoints,
