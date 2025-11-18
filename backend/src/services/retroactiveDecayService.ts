@@ -1,5 +1,6 @@
 import Challenge, { calculateDynamicScore } from '../models/Challenge';
 import User from '../models/User';
+import Competition from '../models/Competition';
 
 /**
  * Service to handle retroactive point decay for challenges
@@ -20,7 +21,6 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
 
     // If not found in Challenge collection, check if it's from a competition
     if (!challenge) {
-      const Competition = require('../models/Competition').default;
       const competition = await Competition.findOne({
         'challenges._id': challengeId
       });
