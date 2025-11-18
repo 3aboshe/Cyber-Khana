@@ -16,6 +16,7 @@ interface Challenge {
   points: number;
   description: string;
   author: string;
+  flag: string; // Add flag field for admin access
   universityCode: string;
   solves: number;
   isPublished: boolean;
@@ -273,7 +274,7 @@ const AdminChallengesPage: React.FC = () => {
         points: challenge.points,
         description: challenge.description,
         author: challenge.author,
-        flag: '',
+        flag: challenge.flag || '', // Include the flag value when editing
         initialPoints: (challenge as any).initialPoints || 1000,
         minimumPoints: (challenge as any).minimumPoints || 100,
         decay: typeof (challenge as any).decay === 'number' ? (challenge as any).decay : 38,
@@ -758,7 +759,6 @@ const AdminChallengesPage: React.FC = () => {
                     </div>
                     {!hint.isPublished && (
                       <Button
-                        size="sm"
                         onClick={() => {
                           if (selectedChallengeForHints) {
                             handlePublishHint(selectedChallengeForHints._id, index);
