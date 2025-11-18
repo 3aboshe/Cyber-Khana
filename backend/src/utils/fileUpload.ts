@@ -53,7 +53,7 @@ export const uploadChallengeFiles = multer({
   storage: challengeFileStorage,
   fileFilter: challengeFileFilter,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB per file
+    fileSize: 100 * 1024 * 1024, // 100MB per file
     files: 10 // Maximum 10 files per challenge
   }
 });
