@@ -60,8 +60,13 @@ app.get('/api/download/*', (req, res) => {
   });
 });
 
-// Configure file serving for direct access
-app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Configure file serving for downloads (both /api/uploads and /api/download work)
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  setHeaders: (res) => {
+    // Force download instead of viewing in browser
+    res.setHeader('Content-Disposition', 'attachment');
+  }
+}));
 
 // Apply strict rate limiting to auth routes
 app.use('/api/auth/login', authLimiter);
