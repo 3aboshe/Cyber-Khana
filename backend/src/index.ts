@@ -18,10 +18,10 @@ dotenv.config();
 
 const app = express();
 
-// Security: Rate limiting for authentication only
+// No rate limiting on authentication to allow unlimited user registrations
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // 20 attempts per window per IP
+  windowMs: 1 * 60 * 1000, // 1 minute window
+  max: 999999, // Very high limit for unlimited access
   message: { error: 'Too many authentication attempts, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -41,10 +41,15 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads'), {
+  setHeaders: (res) => {
+    // Force download instead of viewing in browser
+    res.setHeader('Content-Disposition', 'attachment');
+  }
+}));
 
 // Apply strict rate limiting to auth routes
 app.use('/api/auth/login', authLimiter);
