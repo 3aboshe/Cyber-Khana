@@ -13,8 +13,8 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'writeup-' + uniqueSuffix + path.extname(file.originalname));
+    // Preserve original filename
+    cb(null, file.originalname);
   }
 });
 
@@ -31,8 +31,8 @@ const challengeFileStorage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'challenge-' + uniqueSuffix + path.extname(file.originalname));
+    // Preserve original filename
+    cb(null, file.originalname);
   }
 });
 
