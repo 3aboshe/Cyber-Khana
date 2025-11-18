@@ -218,7 +218,22 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ error: 'Challenge already solved' });
       }
 
-      if (flag === challenge.flag) {
+      // Normalize flags for comparison (trim whitespace)
+      const normalizedSubmittedFlag = flag.trim();
+      const normalizedStoredFlag = challenge.flag.trim();
+      
+      // Debug logging for flag comparison
+      console.log('Flag comparison debug:', {
+        challengeId: id,
+        challengeTitle: challenge.title,
+        submittedFlag: JSON.stringify(normalizedSubmittedFlag),
+        storedFlag: JSON.stringify(normalizedStoredFlag),
+        submittedLength: normalizedSubmittedFlag.length,
+        storedLength: normalizedStoredFlag.length,
+        isEqual: normalizedSubmittedFlag === normalizedStoredFlag
+      });
+
+      if (normalizedSubmittedFlag === normalizedStoredFlag) {
         // Calculate points based on current solve count (before incrementing)
         const awardedPoints = calculateDynamicScore(
           challenge.initialPoints,
@@ -265,7 +280,15 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
           message: 'Correct flag! Points updated for all solvers.'
         });
       } else {
-        res.status(400).json({ error: 'Incorrect flag' });
+        res.status(400).json({
+          error: 'Incorrect flag',
+          debug: {
+            submittedLength: normalizedSubmittedFlag.length,
+            storedLength: normalizedStoredFlag.length,
+            submittedPreview: normalizedSubmittedFlag.substring(0, 20) + (normalizedSubmittedFlag.length > 20 ? '...' : ''),
+            storedPreview: normalizedStoredFlag.substring(0, 20) + (normalizedStoredFlag.length > 20 ? '...' : '')
+          }
+        });
       }
     }
   } catch (error) {
