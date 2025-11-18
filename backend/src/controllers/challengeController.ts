@@ -202,6 +202,15 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
+    // Check if user belongs to the same university as the challenge
+    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({
+        error: 'Access denied. This challenge belongs to a different university.',
+        expectedUniversity: challenge.universityCode,
+        userUniversity: req.user?.universityCode
+      });
+    }
+
     if (req.user?.role === 'user') {
       const user = await User.findById(req.user.userId);
       if (!user) {
