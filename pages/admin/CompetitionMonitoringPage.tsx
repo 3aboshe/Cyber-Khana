@@ -1247,7 +1247,7 @@ const CompetitionMonitoringPage: React.FC = () => {
                   <div>
                     <h5 className="text-sm font-semibold text-zinc-400 mb-2">DESCRIPTION</h5>
                     <div className="bg-zinc-700/30 p-4 rounded-xl">
-                      <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap">
+                      <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap break-words">
                         {selectedChallenge.description}
                       </p>
                     </div>

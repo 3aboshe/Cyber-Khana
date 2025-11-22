@@ -171,7 +171,7 @@ const AdminAnnouncementsPage: React.FC = () => {
                   </Button>
                 </div>
               </div>
-              <p className="text-zinc-300 whitespace-pre-wrap">
+              <p className="text-zinc-300 whitespace-pre-wrap break-words">
                 {announcement.content}
               </p>
             </Card>

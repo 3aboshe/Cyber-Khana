@@ -437,7 +437,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
             <div className="lg:col-span-2 space-y-6">
               <Card className="p-6 bg-zinc-900 border-zinc-800">
                 <h2 className="text-lg font-bold text-zinc-100 mb-4">Description</h2>
-                <div className="text-zinc-300 whitespace-pre-wrap">
+                <div className="text-zinc-300 whitespace-pre-wrap break-words">
                   {challenge.description}
                 </div>
               </Card>

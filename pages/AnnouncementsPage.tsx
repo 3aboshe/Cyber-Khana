@@ -101,7 +101,7 @@ const AnnouncementsPage: React.FC = () => {
                       <span>by {announcement.author}</span>
                     </div>
                   </div>
-                  <p className="text-zinc-300 whitespace-pre-wrap">{announcement.content}</p>
+                  <p className="text-zinc-300 whitespace-pre-wrap break-words">{announcement.content}</p>
                 </div>
               </div>
             </Card>
