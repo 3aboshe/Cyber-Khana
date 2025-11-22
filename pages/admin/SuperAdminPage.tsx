@@ -424,7 +424,7 @@ const SuperAdminPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="text-zinc-400 text-sm mb-3 line-clamp-2">{challenge.description}</p>
+                    <p className="text-zinc-400 text-sm mb-3 line-clamp-2 break-words overflow-hidden">{challenge.description}</p>
                     <div className="flex flex-wrap gap-3 text-xs">
                       <span className="px-2 py-1 bg-zinc-700/50 rounded text-zinc-300">
                         {challenge.category}

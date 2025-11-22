@@ -48,7 +48,7 @@ const ChallengeCard: React.FC<ChallengeCardProps> = ({ challenge }) => {
             </div>
           </div>
           <h3 className="text-xl font-bold text-zinc-100 mt-4">{challenge.title}</h3>
-          <p className="text-zinc-400 text-sm mt-2 line-clamp-2">{challenge.description}</p>
+          <p className="text-zinc-400 text-sm mt-2 line-clamp-2 break-words overflow-hidden">{challenge.description}</p>
         </div>
         <div className="flex justify-center items-center mt-6 pt-4 border-t border-zinc-700">
            <div className="flex items-center gap-2 text-sm text-zinc-400">

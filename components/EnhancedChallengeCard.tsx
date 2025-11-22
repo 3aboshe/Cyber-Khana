@@ -84,7 +84,7 @@ const EnhancedChallengeCard: React.FC<EnhancedChallengeCardProps> = ({
           </h3>
 
           {/* Description */}
-          <p className="text-zinc-400 text-sm mb-4 line-clamp-2">
+          <p className="text-zinc-400 text-sm mb-4 line-clamp-2 break-words overflow-hidden">
             {challenge.description}
           </p>
 

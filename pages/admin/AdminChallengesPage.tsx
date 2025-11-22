@@ -481,7 +481,9 @@ const AdminChallengesPage: React.FC = () => {
                     {challenge.isPublished ? 'Published' : 'Unpublished'}
                   </span>
                 </div>
-                <p className="text-zinc-400 mb-2">{challenge.description.substring(0, 100)}...</p>
+                <p className="text-zinc-400 mb-2 break-words overflow-hidden line-clamp-2">
+                  {challenge.description}
+                </p>
                 <div className="flex gap-4 text-sm text-zinc-500">
                   <span>Category: {challenge.category}</span>
                   <span>Points: {(challenge as any).currentPoints || challenge.points}</span>
