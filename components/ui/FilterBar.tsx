@@ -1,6 +1,7 @@
 import React from 'react';
 import Button from './EnhancedButton';
 import Input from './EnhancedInput';
+import Card from './EnhancedCard';
 import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 
 interface FilterOption {

@@ -4,7 +4,7 @@ import { userService } from '../services/userService';
 import { Challenge } from '../types';
 import EnhancedChallengeCard from '../components/EnhancedChallengeCard';
 import FilterBar from '../components/ui/FilterBar';
-import Card from '../components/ui/EnhancedCard';
+import Button from '../components/ui/EnhancedButton';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/ui/EmptyState';
