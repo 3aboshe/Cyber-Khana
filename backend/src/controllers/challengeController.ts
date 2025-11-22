@@ -385,9 +385,9 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       difficulty: challenge.difficulty || 'Medium',
       estimatedTime: challenge.estimatedTime || 30,
       universityCode: targetUniversityCode.toUpperCase(),
-      initialPoints: challenge.initialPoints,
-      minimumPoints: challenge.minimumPoints,
-      decay: challenge.decay,
+      initialPoints: challenge.initialPoints || 1000,
+      minimumPoints: challenge.minimumPoints || 100,
+      decay: challenge.decay || 200,
       currentPoints: challenge.initialPoints || challenge.currentPoints || 1000,
       isPublished: false,
       solves: 0

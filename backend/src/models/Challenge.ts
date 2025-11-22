@@ -7,6 +7,19 @@ export const calculateDynamicScore = (
   decay: number,
   solveCount: number
 ): number => {
+  // Safeguard against invalid decay values
+  if (!decay || decay <= 0 || !isFinite(decay)) {
+    decay = 200; // Default decay value
+  }
+  
+  // Safeguard against invalid points
+  if (!isFinite(initialPoints) || initialPoints <= 0) {
+    initialPoints = 1000;
+  }
+  if (!isFinite(minimumPoints) || minimumPoints <= 0) {
+    minimumPoints = 100;
+  }
+  
   // Calculate the percentage decrease based on solves
   const solvePercentage = (solveCount * solveCount) / (decay * decay);
   const totalDecrease = initialPoints - minimumPoints;
