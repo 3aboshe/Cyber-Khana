@@ -26,6 +26,11 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
     const allUniversityCodes = await Challenge.distinct('universityCode');
     console.log('All university codes in DB:', allUniversityCodes);
 
+    // Debug: Check how many challenges exist for this university (published and unpublished)
+    const totalForUniversity = await Challenge.countDocuments({ universityCode });
+    const publishedForUniversity = await Challenge.countDocuments({ universityCode, isPublished: true });
+    console.log(`Challenges for ${universityCode}: Total=${totalForUniversity}, Published=${publishedForUniversity}`);
+
     // If includeUnpublished is true, fetch all challenges (for admin)
     // Otherwise, only fetch published challenges (for users)
     const query = includeUnpublished === 'true'
