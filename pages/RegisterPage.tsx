@@ -34,6 +34,10 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
       setError('Please enter your full name');
       return;
     }
+    if (fullName.length > 50) {
+      setError('Full name must be 50 characters or less');
+      return;
+    }
     if (!password) {
       setError('Please enter a password');
       return;
@@ -157,7 +161,12 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Full Name</label>
+                  <label className="text-sm font-medium text-zinc-300">
+                    Full Name 
+                    <span className="text-zinc-500 text-xs ml-2">
+                      ({fullName.length}/50)
+                    </span>
+                  </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <UserPlus className="h-5 w-5 text-zinc-500" />
@@ -169,6 +178,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
                       onChange={(e) => setFullName(e.target.value)}
                       className="pl-10 h-12"
                       autoComplete="name"
+                      maxLength={50}
                       required
                     />
                   </div>

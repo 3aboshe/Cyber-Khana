@@ -77,6 +77,9 @@ const AdminChallengesPage: React.FC = () => {
   });
   const [challengeFiles, setChallengeFiles] = useState<FileList | null>(null);
   const [filter, setFilter] = useState<'all' | 'published' | 'unpublished'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'points-high' | 'points-low'>('newest');
 
   useEffect(() => {
     fetchChallenges();
@@ -345,6 +348,26 @@ const AdminChallengesPage: React.FC = () => {
     if (filter === 'published') return challenge.isPublished;
     if (filter === 'unpublished') return !challenge.isPublished;
     return true;
+  }).filter(challenge => {
+    // Category filter
+    if (categoryFilter !== 'all' && challenge.category !== categoryFilter) return false;
+    // Difficulty filter
+    if (difficultyFilter !== 'all' && challenge.difficulty !== difficultyFilter) return false;
+    return true;
+  }).sort((a, b) => {
+    // Sort logic
+    switch (sortBy) {
+      case 'newest':
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      case 'oldest':
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      case 'points-high':
+        return b.points - a.points;
+      case 'points-low':
+        return a.points - b.points;
+      default:
+        return 0;
+    }
   });
 
   return (
@@ -381,6 +404,61 @@ const AdminChallengesPage: React.FC = () => {
           Unpublished
         </button>
       </div>
+
+      {/* Advanced Filters */}
+      <Card className="p-6 mb-6">
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* Category Filter */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">All Categories</option>
+              <option value="Web Exploitation">Web Exploitation</option>
+              <option value="Cryptography">Cryptography</option>
+              <option value="Reverse Engineering">Reverse Engineering</option>
+              <option value="Pwn">Pwn</option>
+              <option value="Forensics">Forensics</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+            </select>
+          </div>
+
+          {/* Difficulty Filter */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Difficulty</label>
+            <select
+              value={difficultyFilter}
+              onChange={(e) => setDifficultyFilter(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">All Difficulties</option>
+              <option value="Very Easy">Very Easy</option>
+              <option value="Easy">Easy</option>
+              <option value="Medium">Medium</option>
+              <option value="Hard">Hard</option>
+              <option value="Expert">Expert</option>
+            </select>
+          </div>
+
+          {/* Sort By */}
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="points-high">Points (High to Low)</option>
+              <option value="points-low">Points (Low to High)</option>
+            </select>
+          </div>
+        </div>
+      </Card>
 
       {error && (
         <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded mb-4">

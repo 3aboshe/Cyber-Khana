@@ -43,6 +43,7 @@ const AdminUsersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBanned, setFilterBanned] = useState(false);
+  const [universityFilter, setUniversityFilter] = useState<string>('all');
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -273,10 +274,23 @@ const AdminUsersPage: React.FC = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase());
+    // Search by username or full name
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      user.username.toLowerCase().includes(searchLower) ||
+      (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
+      (user.displayName && user.displayName.toLowerCase().includes(searchLower));
+    
     const matchesBanned = !filterBanned || user.isBanned;
-    return matchesSearch && matchesBanned;
+    
+    // University filter (super-admin only)
+    const matchesUniversity = universityFilter === 'all' || user.universityCode === universityFilter;
+    
+    return matchesSearch && matchesBanned && matchesUniversity;
   });
+
+  // Get unique universities for filter dropdown
+  const universities = Array.from(new Set(users.map(u => u.universityCode))).sort();
 
   const getAvatarInfo = (profileIcon?: string) => {
     return AVATAR_MAP[profileIcon || 'hacker'] || AVATAR_MAP['hacker'];
@@ -301,17 +315,31 @@ const AdminUsersPage: React.FC = () => {
 
       {/* Filters */}
       <Card className="p-6 mb-6">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="relative">
+        <div className="grid md:grid-cols-3 gap-4">
+          <div className="relative md:col-span-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
             <Input
               type="text"
-              placeholder="Search users..."
+              placeholder="Search by username or full name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
+          {currentUser?.role === 'super-admin' && (
+            <div>
+              <select
+                value={universityFilter}
+                onChange={(e) => setUniversityFilter(e.target.value)}
+                className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-md px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="all">All Universities</option>
+                {universities.map(uni => (
+                  <option key={uni} value={uni}>{uni}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button
             onClick={() => setFilterBanned(!filterBanned)}
             className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
@@ -364,7 +392,11 @@ const AdminUsersPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-semibold text-zinc-100 truncate">
-                        {user.fullName || user.displayName || user.username}
+                        {user.fullName 
+                          ? (user.fullName.length > 30 
+                              ? user.fullName.substring(0, 30) + '...' 
+                              : user.fullName)
+                          : user.displayName || user.username}
                       </h3>
                       {user.role === 'admin' && (
                         <Shield className="w-4 h-4 text-emerald-400" />
