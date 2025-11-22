@@ -18,7 +18,13 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       universityCode = universityCode.toUpperCase();
     }
 
+    console.log('getChallenges - Query universityCode:', universityCode);
+
     const { includeUnpublished } = req.query;
+
+    // Debug: Check all unique university codes in database
+    const allUniversityCodes = await Challenge.distinct('universityCode');
+    console.log('All university codes in DB:', allUniversityCodes);
 
     // If includeUnpublished is true, fetch all challenges (for admin)
     // Otherwise, only fetch published challenges (for users)
@@ -26,7 +32,11 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       ? { universityCode }
       : { universityCode, isPublished: true };
 
+    console.log('getChallenges - MongoDB query:', JSON.stringify(query));
+
     const challenges = await Challenge.find(query);
+
+    console.log('getChallenges - Found challenges:', challenges.length);
 
     const challengesWithCurrentPoints = challenges.map(challenge => {
       const challengeObj = challenge.toObject();
