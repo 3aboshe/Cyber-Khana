@@ -24,6 +24,7 @@ interface Challenge {
   author: string;
   universityCode: string;
   solves: number;
+  isPublished: boolean;
 }
 
 const SuperAdminPage: React.FC = () => {
@@ -68,7 +69,8 @@ const SuperAdminPage: React.FC = () => {
   const fetchChallenges = async (universityCode: string) => {
     try {
       setLoading(true);
-      const data = await challengeService.getChallenges(universityCode);
+      // Include unpublished challenges for super admin
+      const data = await challengeService.getChallenges(universityCode, true);
       setChallenges(data);
       setError('');
     } catch (err: any) {
@@ -414,7 +416,14 @@ const SuperAdminPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold text-zinc-100 mb-1">{challenge.title}</h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-lg font-semibold text-zinc-100">{challenge.title}</h3>
+                      {!challenge.isPublished && (
+                        <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 rounded text-xs font-medium">
+                          Unpublished
+                        </span>
+                      )}
+                    </div>
                     <p className="text-zinc-400 text-sm mb-3 line-clamp-2">{challenge.description}</p>
                     <div className="flex flex-wrap gap-3 text-xs">
                       <span className="px-2 py-1 bg-zinc-700/50 rounded text-zinc-300">

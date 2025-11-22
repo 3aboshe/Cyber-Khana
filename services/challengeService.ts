@@ -1,8 +1,12 @@
 import { apiService } from './api';
 
 export const challengeService = {
-  getChallenges: (universityCode?: string) =>
-    apiService.get('/challenges', universityCode ? { universityCode } : undefined),
+  getChallenges: (universityCode?: string, includeUnpublished?: boolean) => {
+    const params: any = {};
+    if (universityCode) params.universityCode = universityCode;
+    if (includeUnpublished) params.includeUnpublished = 'true';
+    return apiService.get('/challenges', Object.keys(params).length > 0 ? params : undefined);
+  },
 
   getAllChallenges: (universityCode?: string) =>
     apiService.get('/challenges/all', universityCode ? { universityCode } : undefined),
