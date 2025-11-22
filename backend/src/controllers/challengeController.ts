@@ -9,9 +9,14 @@ import path from 'path';
 
 export const getChallenges = async (req: AuthRequest, res: Response) => {
   try {
-    const universityCode = req.user?.role === 'super-admin'
+    let universityCode = req.user?.role === 'super-admin'
       ? req.query.universityCode as string
       : req.user?.universityCode;
+
+    // Ensure universityCode is uppercase for consistent querying
+    if (universityCode) {
+      universityCode = universityCode.toUpperCase();
+    }
 
     const { includeUnpublished } = req.query;
 
@@ -56,9 +61,14 @@ export const getAllChallenges = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Only admins can access all challenges' });
     }
 
-    const universityCode = req.user?.role === 'super-admin'
+    let universityCode = req.user?.role === 'super-admin'
       ? req.query.universityCode as string
       : req.user?.universityCode;
+
+    // Ensure universityCode is uppercase for consistent querying
+    if (universityCode) {
+      universityCode = universityCode.toUpperCase();
+    }
 
     const challenges = await Challenge.find({ universityCode });
 
@@ -93,7 +103,11 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
-    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+    // Ensure case-insensitive comparison for universityCode
+    const userUniversityCode = req.user?.universityCode?.toUpperCase();
+    const challengeUniversityCode = challenge.universityCode?.toUpperCase();
+
+    if (req.user?.role !== 'super-admin' && challengeUniversityCode !== userUniversityCode) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -152,7 +166,10 @@ export const updateChallenge = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
-    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+    const userUniversityCode = req.user?.universityCode?.toUpperCase();
+    const challengeUniversityCode = challenge.universityCode?.toUpperCase();
+
+    if (req.user?.role !== 'super-admin' && challengeUniversityCode !== userUniversityCode) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -180,7 +197,10 @@ export const deleteChallenge = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
-    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+    const userUniversityCode = req.user?.universityCode?.toUpperCase();
+    const challengeUniversityCode = challenge.universityCode?.toUpperCase();
+
+    if (req.user?.role !== 'super-admin' && challengeUniversityCode !== userUniversityCode) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
@@ -208,7 +228,10 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user belongs to the same university as the challenge
-    if (req.user?.role !== 'super-admin' && challenge.universityCode !== req.user?.universityCode) {
+    const userUniversityCode = req.user?.universityCode?.toUpperCase();
+    const challengeUniversityCode = challenge.universityCode?.toUpperCase();
+
+    if (req.user?.role !== 'super-admin' && challengeUniversityCode !== userUniversityCode) {
       return res.status(403).json({
         error: 'Access denied. This challenge belongs to a different university.',
         expectedUniversity: challenge.universityCode,
