@@ -196,6 +196,11 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { flag } = req.body;
 
+    // Basic validation for request body
+    if (typeof flag !== 'string') {
+      return res.status(400).json({ error: 'Flag must be provided as a string' });
+    }
+
     const challenge = await Challenge.findById(id);
 
     if (!challenge) {
@@ -227,10 +232,17 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ error: 'Challenge already solved' });
       }
 
-      // Normalize flags for comparison (trim whitespace)
-      const normalizedSubmittedFlag = flag.trim();
-      const normalizedStoredFlag = challenge.flag.trim();
-      
+      // Normalize flags for comparison safely and more robustly
+      const normalize = (s: string) =>
+        s
+          .replace(/\u200B|\u200C|\u200D|\uFEFF/g, '') // remove zero-width chars
+          .replace(/\s+/g, ' ') // collapse multiple spaces
+          .trim()
+          .normalize('NFKC'); // unicode normalization
+
+      const normalizedSubmittedFlag = normalize(flag);
+      const normalizedStoredFlag = normalize(String(challenge.flag || ''));
+
       // Debug logging for flag comparison
       console.log('Flag comparison debug:', {
         challengeId: id,
@@ -320,6 +332,8 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       return res.status(404).json({ error: 'Challenge not found' });
     }
 
+    // Create an independent copy of the challenge for the target university.
+    // Do NOT publish it automatically and reset runtime fields like solves.
     const newChallenge = new Challenge({
       title: challenge.title,
       category: challenge.category,
@@ -336,8 +350,9 @@ export const copyChallengeToUniversity = async (req: AuthRequest, res: Response)
       initialPoints: challenge.initialPoints,
       minimumPoints: challenge.minimumPoints,
       decay: challenge.decay,
-      currentPoints: challenge.currentPoints,
-      isPublished: true
+      currentPoints: challenge.initialPoints || challenge.currentPoints || 1000,
+      isPublished: false,
+      solves: 0
     });
 
     await newChallenge.save();
