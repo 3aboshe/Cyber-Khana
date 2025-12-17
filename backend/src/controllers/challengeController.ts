@@ -61,6 +61,11 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
         };
       }
 
+      // SECURITY: Never expose the flag to regular users
+      if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+        delete challengeObj.flag;
+      }
+
       return challengeObj;
     });
 
@@ -146,6 +151,11 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
         images: [],
         isUnlocked: false
       };
+    }
+
+    // SECURITY: Never expose the flag to regular users
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      delete challengeObj.flag;
     }
 
     res.json(challengeObj);
