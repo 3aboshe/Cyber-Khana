@@ -18,18 +18,7 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       universityCode = universityCode.toUpperCase();
     }
 
-    console.log('getChallenges - Query universityCode:', universityCode);
-
     const { includeUnpublished } = req.query;
-
-    // Debug: Check all unique university codes in database
-    const allUniversityCodes = await Challenge.distinct('universityCode');
-    console.log('All university codes in DB:', allUniversityCodes);
-
-    // Debug: Check how many challenges exist for this university (published and unpublished)
-    const totalForUniversity = await Challenge.countDocuments({ universityCode });
-    const publishedForUniversity = await Challenge.countDocuments({ universityCode, isPublished: true });
-    console.log(`Challenges for ${universityCode}: Total=${totalForUniversity}, Published=${publishedForUniversity}`);
 
     // If includeUnpublished is true, fetch all challenges (for admin)
     // Otherwise, only fetch published challenges (for users)
@@ -37,11 +26,7 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
       ? { universityCode }
       : { universityCode, isPublished: true };
 
-    console.log('getChallenges - MongoDB query:', JSON.stringify(query));
-
     const challenges = await Challenge.find(query);
-
-    console.log('getChallenges - Found challenges:', challenges.length);
 
     const challengesWithCurrentPoints = challenges.map(challenge => {
       const challengeObj = challenge.toObject();
@@ -293,17 +278,7 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       const normalizedSubmittedFlag = normalize(flag);
       const normalizedStoredFlag = normalize(String(challenge.flag || ''));
 
-      // Debug logging for flag comparison
-      console.log('Flag comparison debug:', {
-        challengeId: id,
-        challengeTitle: challenge.title,
-        submittedFlag: JSON.stringify(normalizedSubmittedFlag),
-        storedFlag: JSON.stringify(normalizedStoredFlag),
-        submittedLength: normalizedSubmittedFlag.length,
-        storedLength: normalizedStoredFlag.length,
-        isEqual: normalizedSubmittedFlag === normalizedStoredFlag
-      });
-
+  
       if (normalizedSubmittedFlag === normalizedStoredFlag) {
         // Calculate points based on current solve count (before incrementing)
         const awardedPoints = calculateDynamicScore(
@@ -336,9 +311,7 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         // Apply retroactive decay to update ALL solvers (including this new one)
         try {
           await applyRetroactiveDecay(challengeIdStr);
-          console.log(`✓ Retroactive decay applied for challenge: ${challenge.title}`);
         } catch (error) {
-          console.error('Failed to apply retroactive decay:', error);
           // Don't fail the request if retroactive decay fails
           // The points are still correct for the new solver
         }
@@ -352,13 +325,7 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         });
       } else {
         res.status(400).json({
-          error: 'Incorrect flag',
-          debug: {
-            submittedLength: normalizedSubmittedFlag.length,
-            storedLength: normalizedStoredFlag.length,
-            submittedPreview: normalizedSubmittedFlag.substring(0, 20) + (normalizedSubmittedFlag.length > 20 ? '...' : ''),
-            storedPreview: normalizedStoredFlag.substring(0, 20) + (normalizedStoredFlag.length > 20 ? '...' : '')
-          }
+          error: 'Incorrect flag'
         });
       }
     }
