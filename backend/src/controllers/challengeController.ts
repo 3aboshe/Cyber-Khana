@@ -63,7 +63,8 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
 
       // SECURITY: Never expose the flag to regular users
       if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
-        delete challengeObj.flag;
+        const { flag, ...challengeWithoutFlag } = challengeObj;
+        return challengeWithoutFlag;
       }
 
       return challengeObj;
@@ -155,7 +156,8 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
 
     // SECURITY: Never expose the flag to regular users
     if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
-      delete challengeObj.flag;
+      const { flag, ...challengeWithoutFlag } = challengeObj;
+      return res.json(challengeWithoutFlag);
     }
 
     res.json(challengeObj);
