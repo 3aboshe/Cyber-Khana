@@ -100,7 +100,11 @@ const CompetitionMonitoringPage: React.FC = () => {
       setCompetition(competitionData);
 
       // Fetch leaderboard
-      const leaderboardData = await competitionService.getCompetitionLeaderboard(id!);
+      const leaderboardResponse = await competitionService.getCompetitionLeaderboard(id!);
+      // Handle both old format (array) and new format ({ leaderboard, totalChallenges })
+      const leaderboardData = Array.isArray(leaderboardResponse) 
+        ? leaderboardResponse 
+        : leaderboardResponse.leaderboard || [];
       setLeaderboard(leaderboardData);
 
       // Fetch recent activity
