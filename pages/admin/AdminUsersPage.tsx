@@ -665,13 +665,15 @@ const AdminUsersPage: React.FC = () => {
                 <label className="block text-zinc-300 text-sm font-medium mb-2">
                   New Password
                 </label>
-                <Input
+                <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="Enter new password (min 6 characters)"
-                  className="w-full"
+                  className="w-full px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md placeholder-zinc-500 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   disabled={changingPassword}
+                  autoComplete="new-password"
+                  name="new-password-field"
                 />
                 <p className="text-zinc-500 text-xs mt-1">Password must be at least 6 characters long</p>
               </div>

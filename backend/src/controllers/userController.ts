@@ -92,11 +92,19 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
     const allUsers = await User.find({ 
       universityCode: user.universityCode, 
       isBanned: { $ne: true } 
-    }).select('points').sort({ points: -1 });
+    }).select('points penalties').sort({ points: -1 });
     const rank = allUsers.findIndex(u => (u as any)._id.toString() === userId) + 1;
 
     // Calculate non-competition points for accurate ranking
     const nonCompetitionPoints = regularSolvedDetails.reduce((sum, s) => sum + (s.points || 0), 0);
+
+    // Calculate penalties
+    const generalPenalties = (user.penalties || [])
+      .filter((penalty: any) => penalty.type === 'general')
+      .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
+    
+    // Points after penalties
+    const adjustedPoints = Math.max(0, nonCompetitionPoints - generalPenalties);
 
     res.json({
       _id: user._id,
@@ -106,9 +114,10 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
       profileIcon: user.profileIcon,
       universityCode: user.universityCode,
       universityName: university?.name || user.universityCode,
-      totalPoints: user.points,
+      totalPoints: adjustedPoints,
       competitionPoints: user.competitionPoints,
-      regularPoints: nonCompetitionPoints,
+      regularPoints: adjustedPoints,
+      penaltyPoints: generalPenalties,
       rank,
       totalUsers: allUsers.length,
       totalSolved: user.solvedChallenges.length,
@@ -177,13 +186,22 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
     const university = await University.findOne({ code: user.universityCode });
 
     const allUsers = await User.find({ universityCode: user.universityCode, isBanned: { $ne: true } })
-      .select('points')
+      .select('points penalties')
       .sort({ points: -1 });
 
     const rank = allUsers.findIndex(u => (u as any)._id.toString() === (user as any)._id.toString()) + 1;
 
+    // Calculate penalties for general leaderboard
+    const generalPenalties = (user.penalties || [])
+      .filter((penalty: any) => penalty.type === 'general')
+      .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
+    
+    const adjustedPoints = Math.max(0, user.points - generalPenalties);
+
     res.json({
       ...user.toJSON(),
+      points: adjustedPoints,
+      penaltyPoints: generalPenalties,
       rank,
       totalUsers: allUsers.length,
       solvedChallengesCount: user.solvedChallenges.length,
