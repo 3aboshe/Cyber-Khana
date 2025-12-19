@@ -527,7 +527,7 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
     const users = await User.find({
       universityCode: competition.universityCode,
       isBanned: { $ne: true }
-    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon');
+    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon competitionPenalties');
 
     // Get integrated challenges for this competition
     const Challenge = require('../models/Challenge').default;
@@ -560,8 +560,15 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
           ) || [];
 
         // Calculate points from competition challenges and integrated challenges
-        const competitionPoints = competitionSolves
+        let competitionPoints = competitionSolves
           .reduce((total: number, solve: any) => total + (solve.points || 0), 0) || 0;
+
+        // Deduct penalties for this specific competition
+        const competitionPenalties = (user.competitionPenalties || [])
+          .filter((penalty: any) => penalty.competitionId === id)
+          .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
+        
+        competitionPoints = Math.max(0, competitionPoints - competitionPenalties);
 
         const competitionSolvedCount = competitionSolves.length || 0;
 
@@ -580,7 +587,8 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
           solvedChallenges: competitionSolvedCount,
           universityCode: user.universityCode,
           lastSolveTime,
-          solvedDetails: competitionSolves
+          solvedDetails: competitionSolves,
+          penaltyPoints: competitionPenalties
         };
       })
       .sort((a: any, b: any) => {

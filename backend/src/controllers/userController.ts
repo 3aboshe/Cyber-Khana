@@ -201,7 +201,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
-      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode');
+      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode penalties');
 
     // Get university name
     const University = require('../models/University').default;
@@ -238,9 +238,16 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       });
 
       // Calculate points from non-competition challenges only
-      const nonCompetitionPoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
+      let nonCompetitionPoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
         return total + (solve.points || 0);
       }, 0);
+
+      // Deduct penalties for general leaderboard
+      const generalPenalties = (user.penalties || [])
+        .filter((penalty: any) => penalty.type === 'general')
+        .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
+      
+      nonCompetitionPoints = Math.max(0, nonCompetitionPoints - generalPenalties);
 
       // Calculate solve count for non-competition challenges
       const nonCompetitionSolvedCount = nonCompetitionSolvedDetails.length;
@@ -249,7 +256,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         ...user.toObject(),
         nonCompetitionPoints,
         nonCompetitionSolvedCount,
-        nonCompetitionSolvedDetails
+        nonCompetitionSolvedDetails,
+        penaltyPoints: generalPenalties
       };
     });
 
@@ -574,6 +582,158 @@ export const deleteUser = async (req: AuthRequest, res: Response) => {
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error deleting user' });
+  }
+};
+
+// Deduct points from a user (admin function)
+export const deductPoints = async (req: AuthRequest, res: Response) => {
+  try {
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only admins can deduct points' });
+    }
+
+    const { userId } = req.params;
+    const { points, reason, type, competitionId } = req.body;
+
+    if (!points || points <= 0) {
+      return res.status(400).json({ error: 'Points must be a positive number' });
+    }
+
+    if (!type || !['general', 'competition'].includes(type)) {
+      return res.status(400).json({ error: 'Type must be "general" or "competition"' });
+    }
+
+    const targetUser = await User.findById(userId);
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if user is in the same university as admin (unless super-admin)
+    if (req.user?.role === 'admin' && targetUser.universityCode !== req.user?.universityCode) {
+      return res.status(403).json({ error: 'You can only deduct points from users in your university' });
+    }
+
+    // Prevent deducting points from admins/super-admins
+    if (targetUser.role === 'admin' || targetUser.role === 'super-admin') {
+      return res.status(403).json({ error: 'Cannot deduct points from administrators' });
+    }
+
+    if (type === 'general') {
+      // Deduct from general points
+      const pointsToDeduct = Math.min(points, targetUser.points);
+      targetUser.points = Math.max(0, targetUser.points - points);
+      
+      // Store the penalty record
+      if (!targetUser.penalties) {
+        targetUser.penalties = [];
+      }
+      targetUser.penalties.push({
+        amount: pointsToDeduct,
+        reason: reason || 'Points deduction by admin',
+        type: 'general',
+        adminId: req.user?.userId,
+        createdAt: new Date()
+      });
+      
+      await targetUser.save();
+
+      res.json({
+        message: `Successfully deducted ${pointsToDeduct} points from general leaderboard`,
+        newPoints: targetUser.points,
+        deductedPoints: pointsToDeduct
+      });
+    } else if (type === 'competition') {
+      if (!competitionId) {
+        return res.status(400).json({ error: 'Competition ID is required for competition point deduction' });
+      }
+
+      // Get the competition
+      const Competition = require('../models/Competition').default;
+      const competition = await Competition.findById(competitionId);
+
+      if (!competition) {
+        return res.status(404).json({ error: 'Competition not found' });
+      }
+
+      // Verify competition belongs to same university
+      if (req.user?.role === 'admin' && competition.universityCode !== req.user?.universityCode) {
+        return res.status(403).json({ error: 'You can only manage competitions in your university' });
+      }
+
+      // Find user's solves in this competition and deduct points
+      const competitionChallengeIds = competition.challenges.map((c: any) => c._id.toString());
+      
+      // Get integrated challenges for this competition
+      const Challenge = require('../models/Challenge').default;
+      const integratedChallenges = await Challenge.find({
+        fromCompetition: true,
+        competitionId: competitionId
+      });
+      const integratedChallengeIds = integratedChallenges.map((c: any) => c._id.toString());
+
+      // Calculate current competition points for this user
+      const competitionSolves = (targetUser.solvedChallengesDetails || []).filter((solve: any) =>
+        competitionChallengeIds.includes(solve.challengeId) || 
+        integratedChallengeIds.includes(solve.challengeId)
+      );
+      
+      const currentCompPoints = competitionSolves.reduce((total: number, solve: any) => total + (solve.points || 0), 0);
+
+      // Store the penalty in user's record
+      if (!targetUser.competitionPenalties) {
+        targetUser.competitionPenalties = [];
+      }
+      
+      targetUser.competitionPenalties.push({
+        competitionId: competitionId,
+        amount: points,
+        reason: reason || 'Points deduction by admin',
+        adminId: req.user?.userId,
+        createdAt: new Date()
+      });
+      
+      await targetUser.save();
+
+      res.json({
+        message: `Successfully deducted ${points} points from competition "${competition.name}"`,
+        competitionName: competition.name,
+        deductedPoints: points,
+        previousCompetitionPoints: currentCompPoints,
+        newCompetitionPoints: Math.max(0, currentCompPoints - points)
+      });
+    }
+  } catch (error) {
+    console.error('Error deducting points:', error);
+    res.status(500).json({ error: 'Error deducting points' });
+  }
+};
+
+// Get user penalties
+export const getUserPenalties = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select('penalties competitionPenalties username fullName');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify admin access
+    if (req.user?.role === 'admin') {
+      const targetUser = await User.findById(userId);
+      if (targetUser?.universityCode !== req.user?.universityCode) {
+        return res.status(403).json({ error: 'You can only view penalties for users in your university' });
+      }
+    }
+
+    res.json({
+      penalties: user.penalties || [],
+      competitionPenalties: user.competitionPenalties || []
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching user penalties' });
   }
 };
 

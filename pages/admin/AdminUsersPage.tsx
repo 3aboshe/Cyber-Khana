@@ -3,7 +3,7 @@ import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X, Trophy } from 'lucide-react';
+import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X, Trophy, MinusCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfirmation } from '../../src/contexts/ConfirmationContext';
 import { useToast } from '../../src/hooks/useToast';
@@ -21,6 +21,12 @@ interface User {
   profileIcon?: string;
   solvedChallengesCount: number;
   createdAt: string;
+}
+
+interface Competition {
+  _id: string;
+  name: string;
+  status: string;
 }
 
 const AVATAR_MAP: Record<string, { image: string; color: string }> = {
@@ -57,6 +63,17 @@ const AdminUsersPage: React.FC = () => {
   const [targetUsername, setTargetUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [changingPassword, setChangingPassword] = useState(false);
+
+  // Deduct points state
+  const [showDeductModal, setShowDeductModal] = useState(false);
+  const [deductUserId, setDeductUserId] = useState('');
+  const [deductUsername, setDeductUsername] = useState('');
+  const [deductPoints, setDeductPoints] = useState('');
+  const [deductReason, setDeductReason] = useState('');
+  const [deductType, setDeductType] = useState<'general' | 'competition'>('general');
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState('');
+  const [competitions, setCompetitions] = useState<Competition[]>([]);
+  const [deducting, setDeducting] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -273,6 +290,87 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  // Fetch competitions for the deduct modal
+  const fetchCompetitions = async () => {
+    try {
+      const API_URL = '/api';
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/competitions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCompetitions(data);
+      }
+    } catch (err) {
+      console.error('Error fetching competitions:', err);
+    }
+  };
+
+  const handleOpenDeductModal = async (userId: string, username: string) => {
+    setDeductUserId(userId);
+    setDeductUsername(username);
+    setDeductPoints('');
+    setDeductReason('');
+    setDeductType('general');
+    setSelectedCompetitionId('');
+    setShowDeductModal(true);
+    setActionMenuOpen(null);
+    await fetchCompetitions();
+  };
+
+  const handleDeductPoints = async () => {
+    const points = parseInt(deductPoints);
+    if (!points || points <= 0) {
+      toast('warning', 'Please enter a valid positive number of points');
+      return;
+    }
+
+    if (deductType === 'competition' && !selectedCompetitionId) {
+      toast('warning', 'Please select a competition');
+      return;
+    }
+
+    setDeducting(true);
+    try {
+      const API_URL = '/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/users/${deductUserId}/deduct-points`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          points,
+          reason: deductReason || 'Points deduction by admin',
+          type: deductType,
+          competitionId: deductType === 'competition' ? selectedCompetitionId : undefined
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to deduct points');
+      }
+
+      const result = await response.json();
+      toast('success', result.message);
+      setShowDeductModal(false);
+      
+      // Refresh users list to update points
+      await fetchUsers();
+    } catch (err: any) {
+      console.error('Error deducting points:', err);
+      toast('error', err.message || 'Failed to deduct points');
+    } finally {
+      setDeducting(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     // Search by username or full name
     const searchLower = searchTerm.toLowerCase();
@@ -465,6 +563,15 @@ const AdminUsersPage: React.FC = () => {
                             Change Password
                           </button>
                         )}
+                        {user.role === 'user' && (
+                          <button
+                            onClick={() => handleOpenDeductModal(user._id, user.username)}
+                            className="w-full px-4 py-2 text-left text-amber-400 hover:bg-zinc-700/50 flex items-center gap-2"
+                          >
+                            <MinusCircle className="w-4 h-4" />
+                            Deduct Points
+                          </button>
+                        )}
                         {!user.isBanned ? (
                           <button
                             onClick={() => handleBan(user._id)}
@@ -584,6 +691,134 @@ const AdminUsersPage: React.FC = () => {
                   disabled={!newPassword || newPassword.length < 6 || changingPassword}
                 >
                   {changingPassword ? 'Changing...' : 'Change Password'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Deduct Points Modal */}
+      <AnimatePresence>
+        {showDeductModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md w-full"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-zinc-100">Deduct Points</h3>
+                <button
+                  onClick={() => setShowDeductModal(false)}
+                  className="text-zinc-400 hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-zinc-400 mb-4">
+                Deducting points from: <span className="text-zinc-200 font-semibold">{deductUsername}</span>
+              </p>
+
+              {/* Deduct Type Selection */}
+              <div className="mb-4">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Deduct From
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setDeductType('general')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      deductType === 'general'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    }`}
+                  >
+                    General Leaderboard
+                  </button>
+                  <button
+                    onClick={() => setDeductType('competition')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                      deductType === 'competition'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                    }`}
+                  >
+                    Competition
+                  </button>
+                </div>
+              </div>
+
+              {/* Competition Selection (if competition type) */}
+              {deductType === 'competition' && (
+                <div className="mb-4">
+                  <label className="block text-zinc-300 text-sm font-medium mb-2">
+                    Select Competition
+                  </label>
+                  <select
+                    value={selectedCompetitionId}
+                    onChange={(e) => setSelectedCompetitionId(e.target.value)}
+                    className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-3 py-2 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Select a competition --</option>
+                    {competitions.map((comp) => (
+                      <option key={comp._id} value={comp._id}>
+                        {comp.name} ({comp.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Points to Deduct */}
+              <div className="mb-4">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Points to Deduct
+                </label>
+                <Input
+                  type="number"
+                  value={deductPoints}
+                  onChange={(e) => setDeductPoints(e.target.value)}
+                  placeholder="Enter points (e.g., 500)"
+                  className="w-full"
+                  min="1"
+                  disabled={deducting}
+                />
+              </div>
+
+              {/* Reason */}
+              <div className="mb-6">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Reason (Optional)
+                </label>
+                <Input
+                  type="text"
+                  value={deductReason}
+                  onChange={(e) => setDeductReason(e.target.value)}
+                  placeholder="e.g., Rule violation, Cheating, etc."
+                  className="w-full"
+                  disabled={deducting}
+                />
+                <p className="text-zinc-500 text-xs mt-1">This will be recorded in the user's penalty history</p>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowDeductModal(false)}
+                  variant="ghost"
+                  className="flex-1"
+                  disabled={deducting}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleDeductPoints}
+                  className="flex-1 bg-amber-600 hover:bg-amber-700"
+                  disabled={!deductPoints || parseInt(deductPoints) <= 0 || (deductType === 'competition' && !selectedCompetitionId) || deducting}
+                >
+                  {deducting ? 'Deducting...' : 'Deduct Points'}
                 </Button>
               </div>
             </motion.div>

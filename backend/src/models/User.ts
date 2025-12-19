@@ -1,5 +1,21 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+export interface IPenalty {
+  amount: number;
+  reason: string;
+  type: string;
+  adminId: string;
+  createdAt: Date;
+}
+
+export interface ICompetitionPenalty {
+  competitionId: string;
+  amount: number;
+  reason: string;
+  adminId: string;
+  createdAt: Date;
+}
+
 export interface IUser extends Document {
   username: string;
   displayName?: string;
@@ -18,9 +34,27 @@ export interface IUser extends Document {
   unlockedHints: string[];
   profileIcon?: string;
   isBanned?: boolean;
+  penalties?: IPenalty[];
+  competitionPenalties?: ICompetitionPenalty[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const PenaltySchema = new Schema({
+  amount: { type: Number, required: true },
+  reason: { type: String, default: 'Points deduction by admin' },
+  type: { type: String, default: 'general' },
+  adminId: { type: String },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const CompetitionPenaltySchema = new Schema({
+  competitionId: { type: String, required: true },
+  amount: { type: Number, required: true },
+  reason: { type: String, default: 'Points deduction by admin' },
+  adminId: { type: String },
+  createdAt: { type: Date, default: Date.now }
+});
 
 const UserSchema: Schema = new Schema({
   username: {
@@ -83,7 +117,9 @@ const UserSchema: Schema = new Schema({
   },
   unlockedHints: [{
     type: String
-  }]
+  }],
+  penalties: [PenaltySchema],
+  competitionPenalties: [CompetitionPenaltySchema]
 }, {
   timestamps: true
 });
