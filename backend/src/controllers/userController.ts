@@ -285,7 +285,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       fromCompetition: { $ne: true } // Exclude competition challenges
     });
 
-    const topUsers = usersWithNonCompetitionStats.slice(0, 10).map((user, index) => {
+    // Return ALL users, not just top 10
+    const allUsers = usersWithNonCompetitionStats.map((user, index) => {
       const firstSolve = user.nonCompetitionSolvedDetails.length > 0
         ? new Date(Math.min(...user.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
@@ -327,13 +328,13 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       averagePoints: usersWithNonCompetitionStats.length > 0
         ? Math.floor(usersWithNonCompetitionStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0) / usersWithNonCompetitionStats.length)
         : 0,
-      topSolver: topUsers[0] || null,
-      fastestAverageSolver: topUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null,
+      topSolver: allUsers[0] || null,
+      fastestAverageSolver: allUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null,
       totalChallenges: publishedChallengesCount
     };
 
     res.json({
-      leaderboard: topUsers,
+      leaderboard: allUsers,
       analysis
     });
   } catch (error) {
