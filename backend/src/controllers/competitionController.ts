@@ -415,9 +415,9 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
           competition.challenges[challengeIndex].solvers = [];
         }
         competition.challenges[challengeIndex].solvers.push({
-          odId: user._id.toString(),
-          username: user.username,
-          fullName: user.fullName || '',
+          odId: (user as any)._id.toString(),
+          username: (user as any).username,
+          fullName: (user as any).fullName || '',
           solvedAt: new Date(),
           isFirstBlood
         });

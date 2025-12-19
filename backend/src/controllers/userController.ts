@@ -278,8 +278,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     });
 
     // Get all published challenges count for the university
-    const Challenge = require('../models/Challenge').default;
-    const publishedChallengesCount = await Challenge.countDocuments({ 
+    const ChallengeModel = require('../models/Challenge').default;
+    const publishedChallengesCount = await ChallengeModel.countDocuments({ 
       universityCode, 
       isPublished: true,
       fromCompetition: { $ne: true } // Exclude competition challenges
