@@ -614,8 +614,8 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'You can only deduct points from users in your university' });
     }
 
-    // Prevent deducting points from admins/super-admins
-    if (targetUser.role === 'admin' || targetUser.role === 'super-admin') {
+    // Prevent deducting points from admins
+    if (targetUser.role === 'admin') {
       return res.status(403).json({ error: 'Cannot deduct points from administrators' });
     }
 
