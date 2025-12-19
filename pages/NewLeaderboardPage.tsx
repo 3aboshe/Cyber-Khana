@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Trophy, Award, Medal, ChevronRight, Users } from 'lucide-react';
+import { Search, Trophy, Award, Medal, ChevronRight, Users, Flag, Clock, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userService } from '../services/userService';
 
@@ -18,6 +18,31 @@ interface LeaderboardUser {
   solvedDetails?: any[];
 }
 
+interface SolvedChallenge {
+  _id: string;
+  title: string;
+  category: string;
+  points: number;
+  solvedAt: string;
+  competitionName?: string;
+}
+
+interface UserProfile {
+  _id: string;
+  username: string;
+  fullName?: string;
+  displayName?: string;
+  universityName?: string;
+  totalPoints: number;
+  rank: number;
+  totalUsers: number;
+  totalSolved: number;
+  regularSolvedCount: number;
+  competitionSolvedCount: number;
+  regularSolvedChallenges: SolvedChallenge[];
+  competitionSolvedChallenges: SolvedChallenge[];
+}
+
 interface LeaderboardAnalysis {
   totalParticipants: number;
   totalPoints: number;
@@ -34,6 +59,8 @@ const NewLeaderboardPage: React.FC = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<LeaderboardUser | null>(null);
+  const [selectedUserProfile, setSelectedUserProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUniversity, setSelectedUniversity] = useState<string | undefined>(undefined);
   const itemsPerPage = 10;
@@ -78,6 +105,42 @@ const NewLeaderboardPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectTeam = async (user: LeaderboardUser) => {
+    setSelectedTeam(user);
+    setSelectedUserProfile(null);
+    setLoadingProfile(true);
+    try {
+      const profile = await userService.getPublicProfile(user._id);
+      setSelectedUserProfile(profile);
+    } catch (err) {
+      console.error('Error fetching user profile:', err);
+    } finally {
+      setLoadingProfile(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors: Record<string, string> = {
+      'Web': 'bg-blue-500/20 text-blue-400',
+      'Crypto': 'bg-purple-500/20 text-purple-400',
+      'Pwn': 'bg-red-500/20 text-red-400',
+      'Reverse': 'bg-orange-500/20 text-orange-400',
+      'Forensics': 'bg-green-500/20 text-green-400',
+      'Misc': 'bg-zinc-500/20 text-zinc-400',
+      'OSINT': 'bg-cyan-500/20 text-cyan-400',
+    };
+    return colors[category] || 'bg-zinc-500/20 text-zinc-400';
   };
 
   const filteredUsers = useMemo(() => {
@@ -415,7 +478,7 @@ const NewLeaderboardPage: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         transition={{ duration: 0.3 }}
-                        onClick={() => setSelectedTeam(user)}
+                        onClick={() => handleSelectTeam(user)}
                         className={`
                           border-b border-zinc-800/50
                           hover:bg-zinc-800/50
@@ -562,7 +625,7 @@ const NewLeaderboardPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-zinc-100">Team Details</h2>
                   <button
-                    onClick={() => setSelectedTeam(null)}
+                    onClick={() => { setSelectedTeam(null); setSelectedUserProfile(null); }}
                     className="text-zinc-400 hover:text-white transition-colors"
                   >
                     <ChevronRight className="w-6 h-6" />
@@ -616,8 +679,8 @@ const NewLeaderboardPage: React.FC = () => {
 
                 <div className="space-y-4">
                   <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                    <div className="text-zinc-400 text-sm mb-1">University Code</div>
-                    <div className="text-zinc-100 font-semibold">{selectedTeam.universityCode}</div>
+                    <div className="text-zinc-400 text-sm mb-1">University</div>
+                    <div className="text-zinc-100 font-semibold">{selectedUserProfile?.universityName || selectedTeam.universityName || selectedTeam.universityCode}</div>
                   </div>
 
                   <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
@@ -632,18 +695,105 @@ const NewLeaderboardPage: React.FC = () => {
                     <div className="text-zinc-400 text-sm mb-1">Total Points</div>
                     <div className="text-zinc-100 font-semibold text-2xl">{selectedTeam.points}</div>
                   </div>
+                </div>
 
-                  {selectedTeam.totalTimeHours && (
-                    <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                      <div className="text-zinc-400 text-sm mb-1">Total Time</div>
-                      <div className="text-zinc-100 font-semibold">{selectedTeam.totalTimeHours} hours</div>
+                {/* Solved Challenges Section */}
+                <div className="mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Flag className="w-5 h-5 text-emerald-400" />
+                    <h3 className="text-lg font-semibold text-zinc-100">Challenges Solved</h3>
+                  </div>
+
+                  {loadingProfile ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="w-8 h-8 border-2 border-zinc-600 border-t-emerald-400 rounded-full animate-spin"></div>
                     </div>
-                  )}
+                  ) : selectedUserProfile ? (
+                    <div className="space-y-4">
+                      {/* Regular Challenges */}
+                      {selectedUserProfile.regularSolvedChallenges.length > 0 && (
+                        <div>
+                          <div className="text-sm text-zinc-400 mb-2 flex items-center gap-2">
+                            <Zap className="w-4 h-4" />
+                            Practice Challenges ({selectedUserProfile.regularSolvedCount})
+                          </div>
+                          <div className="space-y-2">
+                            {selectedUserProfile.regularSolvedChallenges.map((challenge) => (
+                              <div
+                                key={challenge._id}
+                                className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 hover:border-zinc-600 transition-colors"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-zinc-100">{challenge.title}</div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className={`text-xs px-2 py-0.5 rounded ${getCategoryColor(challenge.category)}`}>
+                                        {challenge.category}
+                                      </span>
+                                      <span className="text-xs text-zinc-500 flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatDate(challenge.solvedAt)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-emerald-400 font-bold">+{challenge.points}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
-                  {selectedTeam.averageSolveTimeHours && (
-                    <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                      <div className="text-zinc-400 text-sm mb-1">Average Time</div>
-                      <div className="text-zinc-100 font-semibold">{selectedTeam.averageSolveTimeHours} hours/challenge</div>
+                      {/* Competition Challenges */}
+                      {selectedUserProfile.competitionSolvedChallenges.length > 0 && (
+                        <div>
+                          <div className="text-sm text-zinc-400 mb-2 flex items-center gap-2">
+                            <Trophy className="w-4 h-4" />
+                            Competition Challenges ({selectedUserProfile.competitionSolvedCount})
+                          </div>
+                          <div className="space-y-2">
+                            {selectedUserProfile.competitionSolvedChallenges.map((challenge) => (
+                              <div
+                                key={challenge._id}
+                                className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 hover:border-zinc-600 transition-colors"
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-zinc-100">{challenge.title}</div>
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                      <span className={`text-xs px-2 py-0.5 rounded ${getCategoryColor(challenge.category)}`}>
+                                        {challenge.category}
+                                      </span>
+                                      {challenge.competitionName && (
+                                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                                          {challenge.competitionName}
+                                        </span>
+                                      )}
+                                      <span className="text-xs text-zinc-500 flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatDate(challenge.solvedAt)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-emerald-400 font-bold">+{challenge.points}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedUserProfile.regularSolvedChallenges.length === 0 && 
+                       selectedUserProfile.competitionSolvedChallenges.length === 0 && (
+                        <div className="text-center py-8 text-zinc-500">
+                          <Flag className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>No challenges solved yet</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-zinc-500">
+                      <p>Unable to load challenge details</p>
                     </div>
                   )}
                 </div>

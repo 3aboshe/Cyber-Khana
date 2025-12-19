@@ -490,6 +490,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
         onClose={() => setShowProfilePanel(false)}
         user={selectedUser}
         rank={selectedUser ? leaderboardData.findIndex(u => u._id === selectedUser._id) + 1 : undefined}
+        totalChallenges={totalChallenges}
       />
     </div>
   );

@@ -128,13 +128,13 @@ const CompetitionDashboardPage: React.FC = () => {
       setCompetition(data);
 
       // Check if user has already entered security code for this competition
+      // Only show modal if competition requires security code
       const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
+      if (userData && data.requiresSecurityCode !== false) {
         const hasEnteredKey = `competition_${id}_security_code_entered`;
         const hasEntered = localStorage.getItem(hasEnteredKey);
 
-        if (!hasEntered) {
+        if (!hasEntered && data.securityCode) {
           setShowSecurityCodeModal(true);
         }
       }
@@ -168,7 +168,11 @@ const CompetitionDashboardPage: React.FC = () => {
     if (!id) return;
     try {
       // Fetch leaderboard for this competition
-      const leaderboardData = await competitionService.getCompetitionLeaderboard(id);
+      const leaderboardResponse = await competitionService.getCompetitionLeaderboard(id);
+      // Handle both old format (array) and new format (object with leaderboard and totalChallenges)
+      const leaderboardData = Array.isArray(leaderboardResponse) 
+        ? leaderboardResponse 
+        : leaderboardResponse.leaderboard || [];
       setLeaderboard(leaderboardData);
 
       // Fetch recent activity for this competition

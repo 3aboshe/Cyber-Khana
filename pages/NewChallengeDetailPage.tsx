@@ -90,7 +90,8 @@ const NewChallengeDetailPage: React.FC = () => {
       // Fetch solvers
       try {
         const solversData = await challengeService.getChallengeSolvers(id!);
-        setSolvers(solversData || []);
+        // The API returns { challengeId, challengeTitle, totalSolves, solvers }
+        setSolvers(solversData?.solvers || []);
       } catch (err) {
         console.error('Error fetching solvers:', err);
       }
