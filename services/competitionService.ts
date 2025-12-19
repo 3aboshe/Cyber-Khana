@@ -19,6 +19,9 @@ export const competitionService = {
   getCompetitionActivity: (id: string) =>
     apiService.get(`/competitions/${id}/activity`),
 
+  getCompetitionChallengeSolvers: (competitionId: string, challengeId: string) =>
+    apiService.get(`/competitions/${competitionId}/challenges/${challengeId}/solvers`),
+
   createCompetition: (competitionData: any) =>
     apiService.post('/competitions', competitionData),
 

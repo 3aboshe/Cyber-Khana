@@ -3,6 +3,131 @@ import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { hashPassword } from '../utils/auth';
 
+// Get public profile by user ID (for leaderboard profile views)
+export const getPublicProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get university info
+    const University = require('../models/University').default;
+    const university = await University.findOne({ code: user.universityCode });
+
+    // Get competitions for this university
+    const Competition = require('../models/Competition').default;
+    const competitions = await Competition.find({ universityCode: user.universityCode });
+
+    // Get competition challenge IDs
+    const competitionChallengeIds = new Set<string>();
+    competitions.forEach((comp: any) => {
+      comp.challenges.forEach((challenge: any) => {
+        competitionChallengeIds.add(challenge._id.toString());
+      });
+    });
+
+    // Get integrated challenges
+    const Challenge = require('../models/Challenge').default;
+    const integratedChallenges = await Challenge.find({
+      universityCode: user.universityCode,
+      fromCompetition: true
+    });
+    const integratedChallengeIds = new Set<string>();
+    integratedChallenges.forEach((challenge: any) => {
+      integratedChallengeIds.add(challenge._id.toString());
+    });
+
+    // Separate solved challenges into regular and competition
+    const regularSolvedDetails: any[] = [];
+    const competitionSolvedDetails: any[] = [];
+
+    for (const solve of user.solvedChallengesDetails || []) {
+      const isCompetitionChallenge = competitionChallengeIds.has(solve.challengeId) || 
+                                     integratedChallengeIds.has(solve.challengeId);
+      
+      // Try to get challenge info
+      let challengeInfo = null;
+      
+      // First check in regular challenges
+      const regularChallenge = await Challenge.findById(solve.challengeId);
+      if (regularChallenge) {
+        challengeInfo = {
+          _id: regularChallenge._id,
+          title: regularChallenge.title,
+          category: regularChallenge.category,
+          points: solve.points,
+          solvedAt: solve.solvedAt
+        };
+      } else {
+        // Check in competition challenges
+        for (const comp of competitions) {
+          const compChallenge = comp.challenges.find((c: any) => c._id.toString() === solve.challengeId);
+          if (compChallenge) {
+            challengeInfo = {
+              _id: compChallenge._id,
+              title: compChallenge.title,
+              category: compChallenge.category,
+              points: solve.points,
+              solvedAt: solve.solvedAt,
+              competitionName: comp.name
+            };
+            break;
+          }
+        }
+      }
+
+      if (challengeInfo) {
+        if (isCompetitionChallenge) {
+          competitionSolvedDetails.push(challengeInfo);
+        } else {
+          regularSolvedDetails.push(challengeInfo);
+        }
+      }
+    }
+
+    // Calculate rank among all users
+    const allUsers = await User.find({ 
+      universityCode: user.universityCode, 
+      isBanned: { $ne: true } 
+    }).select('points').sort({ points: -1 });
+    const rank = allUsers.findIndex(u => (u as any)._id.toString() === userId) + 1;
+
+    // Calculate non-competition points for accurate ranking
+    const nonCompetitionPoints = regularSolvedDetails.reduce((sum, s) => sum + (s.points || 0), 0);
+
+    res.json({
+      _id: user._id,
+      username: user.username,
+      fullName: user.fullName,
+      displayName: user.displayName,
+      profileIcon: user.profileIcon,
+      universityCode: user.universityCode,
+      universityName: university?.name || user.universityCode,
+      totalPoints: user.points,
+      competitionPoints: user.competitionPoints,
+      regularPoints: nonCompetitionPoints,
+      rank,
+      totalUsers: allUsers.length,
+      totalSolved: user.solvedChallenges.length,
+      regularSolvedCount: regularSolvedDetails.length,
+      competitionSolvedCount: competitionSolvedDetails.length,
+      regularSolvedChallenges: regularSolvedDetails.sort((a, b) => 
+        new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
+      ),
+      competitionSolvedChallenges: competitionSolvedDetails.sort((a, b) => 
+        new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
+      ),
+      createdAt: user.createdAt
+    });
+  } catch (error) {
+    console.error('Error fetching public profile:', error);
+    res.status(500).json({ error: 'Error fetching user profile' });
+  }
+};
+
 export const getUsers = async (req: AuthRequest, res: Response) => {
   try {
     const universityCode = req.user?.role === 'super-admin'
@@ -152,6 +277,14 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       return 0;
     });
 
+    // Get all published challenges count for the university
+    const Challenge = require('../models/Challenge').default;
+    const publishedChallengesCount = await Challenge.countDocuments({ 
+      universityCode, 
+      isPublished: true,
+      fromCompetition: { $ne: true } // Exclude competition challenges
+    });
+
     const topUsers = usersWithNonCompetitionStats.slice(0, 10).map((user, index) => {
       const firstSolve = user.nonCompetitionSolvedDetails.length > 0
         ? new Date(Math.min(...user.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
@@ -171,6 +304,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
 
       return {
         rank: index + 1,
+        _id: user._id,
         username: user.username,
         fullName: user.fullName,
         displayName: user.displayName || user.username,
@@ -194,7 +328,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         ? Math.floor(usersWithNonCompetitionStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0) / usersWithNonCompetitionStats.length)
         : 0,
       topSolver: topUsers[0] || null,
-      fastestAverageSolver: topUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null
+      fastestAverageSolver: topUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null,
+      totalChallenges: publishedChallengesCount
     };
 
     res.json({

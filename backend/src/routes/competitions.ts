@@ -7,6 +7,7 @@ import {
   getSolvedChallenges,
   getCompetitionLeaderboard,
   getCompetitionActivity,
+  getCompetitionChallengeSolvers,
   updateCompetitionStatus,
   updateCompetitionStartTime,
   submitCompetitionFlag,
@@ -27,6 +28,7 @@ router.get('/:id/details', authenticate, getCompetitionDetails);
 router.get('/:id/solved-challenges', authenticate, getSolvedChallenges);
 router.get('/:id/leaderboard', authenticate, getCompetitionLeaderboard);
 router.get('/:id/activity', authenticate, getCompetitionActivity);
+router.get('/:id/challenges/:challengeId/solvers', authenticate, getCompetitionChallengeSolvers);
 router.patch('/:id/status', authenticate, requireAdmin, updateCompetitionStatus);
 router.patch('/:id/start', authenticate, requireAdmin, updateCompetitionStartTime);
 router.post('/:id/challenges', authenticate, requireAdmin, addChallengeToCompetition);

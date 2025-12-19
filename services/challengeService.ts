@@ -14,6 +14,9 @@ export const challengeService = {
   getChallenge: (id: string) =>
     apiService.get(`/challenges/${id}`),
 
+  getChallengeSolvers: (id: string) =>
+    apiService.get(`/challenges/${id}/solvers`),
+
   createChallenge: (challengeData: any) =>
     apiService.post('/challenges', challengeData),
 

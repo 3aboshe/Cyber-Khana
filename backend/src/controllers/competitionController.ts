@@ -4,6 +4,44 @@ import Challenge from '../models/Challenge';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 
+// Get solvers for a competition challenge
+export const getCompetitionChallengeSolvers = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id, challengeId } = req.params;
+
+    const competition = await Competition.findById(id);
+    if (!competition) {
+      return res.status(404).json({ error: 'Competition not found' });
+    }
+
+    const challenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found in competition' });
+    }
+
+    // Return solvers sorted by solve time (first blood first)
+    const solvers = (challenge.solvers || []).sort((a: any, b: any) => 
+      new Date(a.solvedAt).getTime() - new Date(b.solvedAt).getTime()
+    );
+
+    res.json({
+      challengeId: challenge._id,
+      challengeTitle: challenge.title,
+      totalSolves: challenge.solves,
+      solvers: solvers.map((solver: any, index: number) => ({
+        odId: solver.odId,
+        username: solver.username,
+        fullName: solver.fullName,
+        solvedAt: solver.solvedAt,
+        isFirstBlood: solver.isFirstBlood || index === 0,
+        rank: index + 1
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching challenge solvers' });
+  }
+};
+
 export const createCompetition = async (req: AuthRequest, res: Response) => {
   try {
     if (req.user?.role === 'user') {
@@ -94,7 +132,8 @@ export const getCompetition = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'Competition not found' });
     }
 
-    if (securityCode !== competition.securityCode) {
+    // Check security code if required
+    if (competition.requiresSecurityCode !== false && securityCode !== competition.securityCode) {
       return res.status(401).json({ error: 'Invalid competition security code' });
     }
 
@@ -103,7 +142,8 @@ export const getCompetition = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Competition has not started yet' });
     }
 
-    if (now > competition.endTime) {
+    // Only check end time if competition has a time limit
+    if (competition.hasTimeLimit !== false && competition.endTime && now > competition.endTime) {
       return res.status(400).json({ error: 'Competition has ended' });
     }
 
@@ -284,6 +324,21 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
       return res.status(404).json({ error: 'Competition not found' });
     }
 
+    // Check if competition is still active
+    const now = new Date();
+    if (competition.status !== 'active') {
+      return res.status(400).json({ error: 'Competition is not active' });
+    }
+    
+    if (now < competition.startTime) {
+      return res.status(400).json({ error: 'Competition has not started yet' });
+    }
+    
+    // Only check end time if competition has a time limit
+    if (competition.hasTimeLimit !== false && competition.endTime && now > competition.endTime) {
+      return res.status(400).json({ error: 'Competition has ended' });
+    }
+
     const challengeIndex = competition.challenges.findIndex((c: any) => c._id.toString() === challengeId);
     const challenge = competition.challenges[challengeIndex];
 
@@ -302,8 +357,29 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
         return res.status(400).json({ error: 'Challenge already solved' });
       }
 
+      // Normalize flags for comparison
+      const normalize = (s: string) =>
+        s
+          .replace(/\u200B|\u200C|\u200D|\uFEFF/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .normalize('NFKC');
+
+      const normalizedSubmittedFlag = normalize(flag);
+      const normalizedStoredFlag = normalize(String(challenge.flag || ''));
+
+      // Check against primary flag and additional flags array
+      const allFlags = [normalizedStoredFlag];
+      if (challenge.flags && Array.isArray(challenge.flags)) {
+        challenge.flags.forEach((f: string) => {
+          if (f) allFlags.push(normalize(String(f)));
+        });
+      }
+
+      const isCorrectFlag = allFlags.some(f => normalizedSubmittedFlag === f);
+
       // Check if flag is correct
-      if (flag === challenge.flag) {
+      if (isCorrectFlag) {
         // Calculate dynamic points
         const { calculateDynamicScore } = require('../models/Challenge');
         const awardedPoints = calculateDynamicScore(
@@ -314,10 +390,12 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
         );
 
         let totalAwardedPoints = awardedPoints;
+        const isFirstBlood = challenge.solves === 0;
 
-        // Add first blood bonus
-        if (challenge.solves === 0) {
-          totalAwardedPoints += 20;
+        // Add configurable first blood bonus
+        if (isFirstBlood) {
+          const firstBloodBonus = challenge.firstBloodBonus || 20;
+          totalAwardedPoints += firstBloodBonus;
         }
 
         // Update user's solved challenges
@@ -331,8 +409,18 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
         user.competitionPoints += totalAwardedPoints;
         await user.save();
 
-        // Update challenge solve count in competition
+        // Update challenge solve count and track solver
         competition.challenges[challengeIndex].solves += 1;
+        if (!competition.challenges[challengeIndex].solvers) {
+          competition.challenges[challengeIndex].solvers = [];
+        }
+        competition.challenges[challengeIndex].solvers.push({
+          odId: user._id.toString(),
+          username: user.username,
+          fullName: user.fullName || '',
+          solvedAt: new Date(),
+          isFirstBlood
+        });
         // Mark the challenges array as modified so Mongoose saves the nested document
         competition.markModified('challenges');
         await competition.save();
@@ -366,7 +454,8 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
           success: true,
           points: totalAwardedPoints,
           basePoints: awardedPoints,
-          firstBlood: challenge.solves === 0,
+          firstBlood: isFirstBlood,
+          firstBloodBonus: isFirstBlood ? (challenge.firstBloodBonus || 20) : 0,
           message: 'Correct flag!'
         });
       } else {
@@ -438,7 +527,7 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
     const users = await User.find({
       universityCode: competition.universityCode,
       isBanned: { $ne: true }
-    }).select('username points solvedChallenges solvedChallengesDetails');
+    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon');
 
     // Get integrated challenges for this competition
     const Challenge = require('../models/Challenge').default;
@@ -463,36 +552,57 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
         );
       })
       .map((user: any) => {
-        // Calculate points from competition challenges and integrated challenges
-        const competitionPoints = user.solvedChallengesDetails
+        // Get competition-related solves with timestamps
+        const competitionSolves = user.solvedChallengesDetails
           ?.filter((solve: any) =>
             competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString()) ||
             integratedChallengeMap.has(solve.challengeId?.toString())
-          )
+          ) || [];
+
+        // Calculate points from competition challenges and integrated challenges
+        const competitionPoints = competitionSolves
           .reduce((total: number, solve: any) => total + (solve.points || 0), 0) || 0;
 
-        const competitionSolvedCount = user.solvedChallengesDetails
-          ?.filter((solve: any) =>
-            competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString()) ||
-            integratedChallengeMap.has(solve.challengeId?.toString())
-          ).length || 0;
+        const competitionSolvedCount = competitionSolves.length || 0;
+
+        // Get the last solve timestamp for tiebreaker
+        const lastSolveTime = competitionSolves.length > 0
+          ? new Date(Math.max(...competitionSolves.map((s: any) => new Date(s.solvedAt).getTime())))
+          : null;
 
         return {
           _id: user._id,
           username: user.username,
+          fullName: user.fullName,
+          displayName: user.displayName,
+          profileIcon: user.profileIcon,
           points: competitionPoints,
           solvedChallenges: competitionSolvedCount,
-          universityCode: user.universityCode
+          universityCode: user.universityCode,
+          lastSolveTime,
+          solvedDetails: competitionSolves
         };
       })
       .sort((a: any, b: any) => {
+        // Primary sort by points (descending)
         if (b.points !== a.points) {
           return b.points - a.points;
         }
-        return a.solvedChallenges - b.solvedChallenges;
+        // Secondary sort by last solve time (earlier is better) - tiebreaker
+        if (a.lastSolveTime && b.lastSolveTime) {
+          return new Date(a.lastSolveTime).getTime() - new Date(b.lastSolveTime).getTime();
+        }
+        // If only one has solved, they come first
+        if (a.lastSolveTime) return -1;
+        if (b.lastSolveTime) return 1;
+        return 0;
       });
 
-    res.json(leaderboard);
+    // Include total challenges count in the response
+    res.json({
+      leaderboard,
+      totalChallenges: competition.challenges.length
+    });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching competition leaderboard' });
   }
@@ -613,7 +723,8 @@ export const buyCompetitionHint = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Competition has not started yet' });
     }
 
-    if (now > competition.endTime) {
+    // Only check end time if competition has a time limit
+    if (competition.hasTimeLimit !== false && competition.endTime && now > competition.endTime) {
       return res.status(400).json({ error: 'Competition has ended' });
     }
 

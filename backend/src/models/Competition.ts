@@ -19,25 +19,36 @@ export interface ICompetitionChallenge extends Document {
   description: string;
   author: string;
   flag: string;
+  flags?: string[]; // Support multiple flags
   hints?: ICompetitionHint[];
   files?: ICompetitionFile[];
   solves: number;
+  solvers?: Array<{
+    odId: string;
+    username: string;
+    fullName?: string;
+    solvedAt: Date;
+    isFirstBlood: boolean;
+  }>;
   initialPoints?: number;
   minimumPoints?: number;
   decay?: number;
   currentPoints?: number;
   difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
   estimatedTime?: number;
+  firstBloodBonus?: number;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ICompetition extends Document {
   name: string;
-  securityCode: string;
+  securityCode?: string; // Made optional
+  requiresSecurityCode: boolean; // New field
   universityCode: string;
   startTime: Date;
-  endTime: Date;
+  endTime?: Date; // Made optional for unlimited time
+  hasTimeLimit: boolean; // New field
   status: 'pending' | 'active' | 'ended';
   challenges: ICompetitionChallenge[];
   duration?: number;
@@ -85,11 +96,25 @@ const CompetitionChallengeSchema: Schema = new Schema({
     type: String,
     required: true
   },
+  flags: [{
+    type: String
+  }],
   hints: [CompetitionHintSchema],
   files: [CompetitionFileSchema],
   solves: {
     type: Number,
     default: 0
+  },
+  solvers: [{
+    odId: String,
+    username: String,
+    fullName: String,
+    solvedAt: Date,
+    isFirstBlood: { type: Boolean, default: false }
+  }],
+  firstBloodBonus: {
+    type: Number,
+    default: 20
   },
   initialPoints: {
     type: Number,
@@ -127,7 +152,11 @@ const CompetitionSchema: Schema = new Schema({
   },
   securityCode: {
     type: String,
-    required: true
+    required: false // Made optional
+  },
+  requiresSecurityCode: {
+    type: Boolean,
+    default: true
   },
   universityCode: {
     type: String,
@@ -135,12 +164,14 @@ const CompetitionSchema: Schema = new Schema({
     uppercase: true
   },
   startTime: {
-    type: Date,
-    required: true
+    type: Date
   },
   endTime: {
-    type: Date,
-    required: true
+    type: Date
+  },
+  hasTimeLimit: {
+    type: Boolean,
+    default: true
   },
   status: {
     type: String,

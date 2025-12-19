@@ -3,6 +3,7 @@ import {
   getChallenges,
   getAllChallenges,
   getChallenge,
+  getChallengeSolvers,
   createChallenge,
   updateChallenge,
   deleteChallenge,
@@ -25,6 +26,7 @@ const router = express.Router();
 router.get('/', authenticate, getChallenges);
 router.get('/all', authenticate, requireAdmin, getAllChallenges);
 router.get('/:id', authenticate, getChallenge);
+router.get('/:id/solvers', authenticate, getChallengeSolvers);
 router.post('/', authenticate, requireAdmin, createChallenge);
 router.put('/:id', authenticate, requireAdmin, updateChallenge);
 router.delete('/:id', authenticate, requireAdmin, deleteChallenge);

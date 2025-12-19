@@ -13,10 +13,12 @@ import { useToast } from '../../src/hooks/useToast';
 interface Competition {
   _id: string;
   name: string;
-  securityCode: string;
+  securityCode?: string;
+  requiresSecurityCode?: boolean;
+  hasTimeLimit?: boolean;
   universityCode: string;
   startTime: string;
-  endTime: string;
+  endTime?: string;
   status: 'pending' | 'active' | 'ended';
   challenges: any[];
   duration?: number;
@@ -40,6 +42,8 @@ const AdminCompetitionsPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     securityCode: '',
+    requiresSecurityCode: true,
+    hasTimeLimit: true,
     startTime: '',
     endTime: '',
     duration: 120, // default 2 hours in minutes
@@ -81,10 +85,14 @@ const AdminCompetitionsPage: React.FC = () => {
         toast('info', 'Competition updates are limited. Please delete and recreate for major changes.');
       } else {
         let startTimeISO: string;
-        let endTimeISO: string;
+        let endTimeISO: string | undefined;
         let timerDuration = 0;
 
-        if (timeMode === 'timer') {
+        if (!formData.hasTimeLimit) {
+          // No time limit - just set start time, no end time
+          startTimeISO = new Date().toISOString(); // Will be updated when started
+          endTimeISO = undefined;
+        } else if (timeMode === 'timer') {
           // Timer mode - set a future start time placeholder, actual start happens when button is clicked
           const now = new Date();
           endTimeISO = new Date(now.getTime() + formData.duration * 60000).toISOString();
@@ -98,7 +106,9 @@ const AdminCompetitionsPage: React.FC = () => {
 
         await competitionService.createCompetition({
           name: formData.name,
-          securityCode: formData.securityCode,
+          securityCode: formData.requiresSecurityCode ? formData.securityCode : undefined,
+          requiresSecurityCode: formData.requiresSecurityCode,
+          hasTimeLimit: formData.hasTimeLimit,
           startTime: startTimeISO,
           endTime: endTimeISO,
           timerDuration: timerDuration,
@@ -241,9 +251,11 @@ const AdminCompetitionsPage: React.FC = () => {
       setTimeMode('datetime');
       setFormData({
         name: competition.name,
-        securityCode: competition.securityCode,
+        securityCode: competition.securityCode || '',
+        requiresSecurityCode: competition.requiresSecurityCode !== false,
+        hasTimeLimit: competition.hasTimeLimit !== false,
         startTime: new Date(competition.startTime).toISOString().slice(0, 16),
-        endTime: new Date(competition.endTime).toISOString().slice(0, 16),
+        endTime: competition.endTime ? new Date(competition.endTime).toISOString().slice(0, 16) : '',
         duration: 120,
       });
     } else {
@@ -252,6 +264,8 @@ const AdminCompetitionsPage: React.FC = () => {
       setFormData({
         name: '',
         securityCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        requiresSecurityCode: true,
+        hasTimeLimit: true,
         startTime: '',
         endTime: '',
         duration: 120,
@@ -304,7 +318,11 @@ const AdminCompetitionsPage: React.FC = () => {
               <div>
                 <h3 className="text-xl font-bold text-zinc-100 mb-2">{competition.name}</h3>
                 <div className="flex gap-4 text-sm text-zinc-500 flex-wrap">
-                  <span>Security Code: <span className="text-emerald-400 font-mono">{competition.securityCode}</span></span>
+                  {competition.requiresSecurityCode !== false ? (
+                    <span>Security Code: <span className="text-emerald-400 font-mono">{competition.securityCode}</span></span>
+                  ) : (
+                    <span className="text-yellow-400">Open (No Code Required)</span>
+                  )}
                   <span>Status: <span className={getStatusColor(competition.status)}>{competition.status.toUpperCase()}</span></span>
                   <span>Challenges: {competition.challenges.length}</span>
                   {competition.duration && (
@@ -314,7 +332,11 @@ const AdminCompetitionsPage: React.FC = () => {
                 <div className="text-sm text-zinc-500 mt-1">
                   <span>Start: {new Date(competition.startTime).toLocaleString()}</span>
                   <span className="mx-2">|</span>
-                  <span>End: {new Date(competition.endTime).toLocaleString()}</span>
+                  {competition.hasTimeLimit !== false ? (
+                    <span>End: {competition.endTime ? new Date(competition.endTime).toLocaleString() : 'Manual'}</span>
+                  ) : (
+                    <span className="text-yellow-400">No Time Limit</span>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
@@ -410,36 +432,86 @@ const AdminCompetitionsPage: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-zinc-200 mb-2">Security Code</label>
-              <Input
-                value={formData.securityCode}
-                onChange={(e) => setFormData({ ...formData, securityCode: e.target.value.toUpperCase() })}
-                required
-              />
-              <p className="text-xs text-zinc-500 mt-1">Share this code with participants to join</p>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-zinc-200">Security Code</label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-sm text-zinc-400">Require code to join</span>
+                  <div 
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      formData.requiresSecurityCode ? 'bg-emerald-500' : 'bg-zinc-600'
+                    }`}
+                    onClick={() => setFormData({ ...formData, requiresSecurityCode: !formData.requiresSecurityCode })}
+                  >
+                    <div 
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                        formData.requiresSecurityCode ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </div>
+                </label>
+              </div>
+              {formData.requiresSecurityCode && (
+                <>
+                  <Input
+                    value={formData.securityCode}
+                    onChange={(e) => setFormData({ ...formData, securityCode: e.target.value.toUpperCase() })}
+                    required={formData.requiresSecurityCode}
+                  />
+                  <p className="text-xs text-zinc-500 mt-1">Share this code with participants to join</p>
+                </>
+              )}
+              {!formData.requiresSecurityCode && (
+                <p className="text-xs text-zinc-400 mt-1 p-2 bg-zinc-800 rounded">Competition will be open to all users without a code</p>
+              )}
             </div>
 
             {/* Time Mode Selection */}
             <div>
-              <label className="block text-zinc-200 mb-3">Time Configuration</label>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setTimeMode('datetime')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    timeMode === 'datetime'
-                      ? 'border-emerald-500 bg-emerald-500/10'
-                      : 'border-zinc-700 hover:border-zinc-600'
-                  }`}
-                >
-                  <div className="text-left">
-                    <div className="text-zinc-200 font-semibold mb-1">Date & Time</div>
-                    <div className="text-zinc-400 text-sm">Set specific start and end times</div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-zinc-200">Time Configuration</label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-sm text-zinc-400">Has time limit</span>
+                  <div 
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      formData.hasTimeLimit ? 'bg-emerald-500' : 'bg-zinc-600'
+                    }`}
+                    onClick={() => setFormData({ ...formData, hasTimeLimit: !formData.hasTimeLimit })}
+                  >
+                    <div 
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                        formData.hasTimeLimit ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
                   </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeMode('timer')}
+                </label>
+              </div>
+              
+              {!formData.hasTimeLimit && (
+                <div className="p-4 bg-zinc-800 rounded-lg border border-zinc-700 mb-4">
+                  <div className="text-zinc-300 font-semibold mb-1">No Time Limit</div>
+                  <div className="text-sm text-zinc-400">Competition will run until you manually end it.</div>
+                </div>
+              )}
+              
+              {formData.hasTimeLimit && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setTimeMode('datetime')}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      timeMode === 'datetime'
+                        ? 'border-emerald-500 bg-emerald-500/10'
+                        : 'border-zinc-700 hover:border-zinc-600'
+                    }`}
+                  >
+                    <div className="text-left">
+                      <div className="text-zinc-200 font-semibold mb-1">Date & Time</div>
+                      <div className="text-zinc-400 text-sm">Set specific start and end times</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTimeMode('timer')}
                   className={`p-4 rounded-lg border-2 transition-all ${
                     timeMode === 'timer'
                       ? 'border-emerald-500 bg-emerald-500/10'
@@ -452,10 +524,11 @@ const AdminCompetitionsPage: React.FC = () => {
                   </div>
                 </button>
               </div>
+              )}
             </div>
 
             {/* DateTime Mode Fields */}
-            {timeMode === 'datetime' && (
+            {formData.hasTimeLimit && timeMode === 'datetime' && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-zinc-200 mb-2">Start Time</label>
@@ -479,7 +552,7 @@ const AdminCompetitionsPage: React.FC = () => {
             )}
 
             {/* Timer Mode Fields */}
-            {timeMode === 'timer' && (
+            {formData.hasTimeLimit && timeMode === 'timer' && (
               <div className="p-4 bg-zinc-800 rounded-lg border border-zinc-700">
                 <div className="text-zinc-300 mb-3">
                   <div className="font-semibold mb-1">Competition will be created in pending state</div>

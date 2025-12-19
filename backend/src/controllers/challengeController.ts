@@ -7,6 +7,47 @@ import { uploadWriteupPdf, uploadChallengeFiles } from '../utils/fileUpload';
 import { applyRetroactiveDecay } from '../services/retroactiveDecayService';
 import path from 'path';
 
+// Get solvers for a challenge
+export const getChallengeSolvers = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const challenge = await Challenge.findById(id);
+
+    if (!challenge) {
+      return res.status(404).json({ error: 'Challenge not found' });
+    }
+
+    // Check access
+    const userUniversityCode = req.user?.universityCode?.toUpperCase();
+    const challengeUniversityCode = challenge.universityCode?.toUpperCase();
+
+    if (req.user?.role !== 'super-admin' && challengeUniversityCode !== userUniversityCode) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Return solvers sorted by solve time (first blood first)
+    const solvers = (challenge.solvers || []).sort((a: any, b: any) => 
+      new Date(a.solvedAt).getTime() - new Date(b.solvedAt).getTime()
+    );
+
+    res.json({
+      challengeId: challenge._id,
+      challengeTitle: challenge.title,
+      totalSolves: challenge.solves,
+      solvers: solvers.map((solver: any, index: number) => ({
+        odId: solver.odId,
+        username: solver.username,
+        fullName: solver.fullName,
+        solvedAt: solver.solvedAt,
+        isFirstBlood: solver.isFirstBlood || index === 0,
+        rank: index + 1
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching challenge solvers' });
+  }
+};
+
 export const getChallenges = async (req: AuthRequest, res: Response) => {
   try {
     let universityCode = req.user?.role === 'super-admin'
@@ -278,8 +319,17 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       const normalizedSubmittedFlag = normalize(flag);
       const normalizedStoredFlag = normalize(String(challenge.flag || ''));
 
+      // Check against primary flag and additional flags array
+      const allFlags = [normalizedStoredFlag];
+      if (challenge.flags && Array.isArray(challenge.flags)) {
+        challenge.flags.forEach((f: string) => {
+          if (f) allFlags.push(normalize(String(f)));
+        });
+      }
+
+      const isCorrectFlag = allFlags.some(f => normalizedSubmittedFlag === f);
   
-      if (normalizedSubmittedFlag === normalizedStoredFlag) {
+      if (isCorrectFlag) {
         // Calculate points based on current solve count (before incrementing)
         const awardedPoints = calculateDynamicScore(
           challenge.initialPoints,
@@ -289,9 +339,12 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         );
 
         let totalAwardedPoints = awardedPoints;
+        const isFirstBlood = challenge.solves === 0;
 
-        if (challenge.solves === 0) {
-          totalAwardedPoints += 20;
+        // Add configurable first blood bonus
+        if (isFirstBlood) {
+          const firstBloodBonus = challenge.firstBloodBonus || 20;
+          totalAwardedPoints += firstBloodBonus;
         }
 
         // Update user
@@ -304,8 +357,18 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         user.points += totalAwardedPoints;
         await user.save();
 
-        // Update challenge
+        // Update challenge and track solver
         challenge.solves += 1;
+        if (!challenge.solvers) {
+          challenge.solvers = [];
+        }
+        challenge.solvers.push({
+          odId: (user as any)._id.toString(),
+          username: (user as any).username,
+          fullName: (user as any).fullName || '',
+          solvedAt: new Date(),
+          isFirstBlood
+        });
         await challenge.save();
 
         // Apply retroactive decay to update ALL solvers (including this new one)
@@ -320,7 +383,8 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
           success: true,
           points: totalAwardedPoints,
           basePoints: awardedPoints,
-          firstBlood: challenge.solves === 1,
+          firstBlood: isFirstBlood,
+          firstBloodBonus: isFirstBlood ? (challenge.firstBloodBonus || 20) : 0,
           message: 'Correct flag! Points updated for all solvers.'
         });
       } else {

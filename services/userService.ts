@@ -4,6 +4,9 @@ export const userService = {
   getUserProfile: () =>
     apiService.get('/users/me'),
 
+  getPublicProfile: (userId: string) =>
+    apiService.get(`/users/profile/${userId}`),
+
   getUsers: (universityCode?: string) =>
     apiService.get('/users', universityCode ? { universityCode } : undefined),
 

@@ -15,6 +15,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
   const navigate = useNavigate();
   const [competition, setCompetition] = useState<any>(null);
   const [leaderboardData, setLeaderboardData] = useState<any[]>([]);
+  const [totalChallenges, setTotalChallenges] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,13 +43,20 @@ const CompetitionLeaderboardPage: React.FC = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
-      const [competitionData, leaderboard] = await Promise.all([
+      const [competitionData, leaderboardResponse] = await Promise.all([
         competitionService.getCompetitionById(id!),
         competitionService.getCompetitionLeaderboard(id!)
       ]);
 
       setCompetition(competitionData);
-      setLeaderboardData(leaderboard);
+      // Handle both old format (array) and new format (object with leaderboard and totalChallenges)
+      if (Array.isArray(leaderboardResponse)) {
+        setLeaderboardData(leaderboardResponse);
+        setTotalChallenges(competitionData?.challenges?.length || 0);
+      } else {
+        setLeaderboardData(leaderboardResponse.leaderboard || []);
+        setTotalChallenges(leaderboardResponse.totalChallenges || competitionData?.challenges?.length || 0);
+      }
       setCurrentUser(JSON.parse(localStorage.getItem('user') || '{}'));
       setError('');
     } catch (err: any) {
@@ -90,9 +98,11 @@ const CompetitionLeaderboardPage: React.FC = () => {
     );
   }
 
-  const filteredLeaderboard = leaderboardData.filter((user: any) =>
-    user.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLeaderboard = leaderboardData.filter((user: any) => {
+    const displayName = user.fullName || user.displayName || user.username;
+    return displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           user.username.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -192,11 +202,11 @@ const CompetitionLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {topThree[1].username.charAt(0).toUpperCase()}
+                        {(topThree[1].fullName || topThree[1].displayName || topThree[1].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-base font-bold text-white mb-1">
-                        {topThree[1].username}
+                        {topThree[1].fullName || topThree[1].displayName || topThree[1].username}
                       </h3>
 
                       <div className="text-2xl font-black text-white mb-1">
@@ -257,11 +267,11 @@ const CompetitionLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {topThree[0].username.charAt(0).toUpperCase()}
+                        {(topThree[0].fullName || topThree[0].displayName || topThree[0].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-lg font-bold text-white mb-2">
-                        {topThree[0].username}
+                        {topThree[0].fullName || topThree[0].displayName || topThree[0].username}
                       </h3>
 
                       <div className="text-3xl font-black text-white mb-1">
@@ -322,11 +332,11 @@ const CompetitionLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {topThree[2].username.charAt(0).toUpperCase()}
+                        {(topThree[2].fullName || topThree[2].displayName || topThree[2].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-base font-bold text-white mb-1">
-                        {topThree[2].username}
+                        {topThree[2].fullName || topThree[2].displayName || topThree[2].username}
                       </h3>
 
                       <div className="text-2xl font-black text-white mb-1">
@@ -430,12 +440,12 @@ const CompetitionLeaderboardPage: React.FC = () => {
                               transition-all duration-200
                             `}
                           >
-                            {user.username.charAt(0).toUpperCase()}
+                            {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
                               <span className={`font-semibold ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-100 group-hover:text-white'} transition-colors`}>
-                                {user.username}
+                                {user.fullName || user.displayName || user.username}
                               </span>
                               {isCurrentUser && (
                                 <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">
@@ -456,7 +466,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
 
                       <td className="py-4 px-6 text-right">
                         <span className="text-zinc-300 font-semibold">
-                          {user.solvedChallenges}
+                          {user.solvedChallenges}/{totalChallenges}
                         </span>
                       </td>
 

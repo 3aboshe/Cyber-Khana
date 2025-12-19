@@ -188,7 +188,7 @@ const CompetitionMonitoringPage: React.FC = () => {
   };
 
   const filteredLeaderboard = leaderboard.filter((user: any) => {
-    const nameToCheck = user.displayName || user.fullName || user.username;
+    const nameToCheck = user.fullName || user.displayName || user.username;
     return nameToCheck.toLowerCase().includes(searchTerm.toLowerCase()) ||
            user.username.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -574,7 +574,7 @@ const CompetitionMonitoringPage: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-zinc-200 font-semibold text-sm truncate group-hover/user:text-yellow-400 transition-colors">
-                        {user.displayName || user.fullName || user.username}
+                        {user.fullName || user.displayName || user.username}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-zinc-500">
                         <span className="flex items-center gap-1">
@@ -858,11 +858,11 @@ const CompetitionMonitoringPage: React.FC = () => {
                                   transition-all duration-200
                                 `}
                               >
-                                {(user.displayName || user.fullName || user.username).charAt(0).toUpperCase()}
+                                {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                               </div>
                               <div>
                                 <div className="font-semibold text-zinc-100 group-hover/row:text-emerald-400 transition-colors text-sm">
-                                  {user.displayName || user.fullName || user.username}
+                                  {user.fullName || user.displayName || user.username}
                                 </div>
                                 <div className="text-xs text-zinc-500">{user.username}</div>
                               </div>
@@ -1129,11 +1129,11 @@ const CompetitionMonitoringPage: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex items-center gap-4 p-4 bg-zinc-700/50 rounded-xl">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-white text-2xl font-black">
-                    {(selectedUser.displayName || selectedUser.fullName || selectedUser.username || '?').charAt(0).toUpperCase()}
+                    {(selectedUser.fullName || selectedUser.displayName || selectedUser.username || '?').charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h4 className="text-xl font-bold text-zinc-100">
-                      {selectedUser.displayName || selectedUser.fullName || selectedUser.username}
+                      {selectedUser.fullName || selectedUser.displayName || selectedUser.username}
                     </h4>
                     <p className="text-zinc-400 text-sm">@{selectedUser.username}</p>
                   </div>

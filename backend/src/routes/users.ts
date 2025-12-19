@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getUsers,
   getUserProfile,
+  getPublicProfile,
   getLeaderboard,
   createAdmin,
   promoteToAdmin,
@@ -20,6 +21,7 @@ const router = express.Router();
 
 router.get('/me', authenticate, getUserProfile);
 router.get('/leaderboard', authenticate, getLeaderboard);
+router.get('/profile/:userId', authenticate, getPublicProfile);
 router.get('/', authenticate, getUsers);
 router.patch('/profile', authenticate, updateProfile);
 router.patch('/profile-icon', authenticate, updateProfileIcon);

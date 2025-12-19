@@ -11,13 +11,25 @@ interface LeaderboardUser {
   points: number;
   solvedChallenges: number;
   universityCode: string;
+  universityName?: string;
   totalTimeHours?: number;
   averageSolveTimeHours?: number;
   teamAvatarColor?: string;
+  solvedDetails?: any[];
+}
+
+interface LeaderboardAnalysis {
+  totalParticipants: number;
+  totalPoints: number;
+  averagePoints: number;
+  topSolver: any;
+  fastestAverageSolver: any;
+  totalChallenges: number;
 }
 
 const NewLeaderboardPage: React.FC = () => {
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+  const [totalChallenges, setTotalChallenges] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,6 +68,10 @@ const NewLeaderboardPage: React.FC = () => {
       const data = await userService.getLeaderboard();
       const leaderboard = data.leaderboard || data || [];
       setLeaderboardData(leaderboard);
+      // Get total challenges from analysis
+      if (data.analysis && data.analysis.totalChallenges) {
+        setTotalChallenges(data.analysis.totalChallenges);
+      }
       setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to fetch leaderboard');
@@ -219,7 +235,7 @@ const NewLeaderboardPage: React.FC = () => {
                       <div className="text-white/80 text-xs mb-2">points</div>
 
                       <div className="text-white/90 text-xs">
-                        {topThree[1].solvedChallenges}/12 flags
+                        {topThree[1].solvedChallenges}/{totalChallenges || '?'} flags
                       </div>
 
                       <div className="mt-3 px-2 py-1 bg-zinc-500/20 rounded text-zinc-200 text-xs font-semibold">
@@ -264,11 +280,11 @@ const NewLeaderboardPage: React.FC = () => {
                           mb-3 ring-2 ring-white/20
                         `}
                       >
-                        {(topThree[0].displayName || topThree[0].fullName || topThree[0].username).charAt(0).toUpperCase()}
+                        {(topThree[0].fullName || topThree[0].displayName || topThree[0].username).charAt(0).toUpperCase()}
                       </div>
 
                       <h3 className="text-lg font-bold text-white mb-2">
-                        {topThree[0].displayName || topThree[0].fullName || topThree[0].username}
+                        {topThree[0].fullName || topThree[0].displayName || topThree[0].username}
                       </h3>
 
                       <div className="text-3xl font-black text-white mb-1">
@@ -277,7 +293,7 @@ const NewLeaderboardPage: React.FC = () => {
                       <div className="text-white/80 text-xs mb-2">points</div>
 
                       <div className="text-white/90 text-xs">
-                        {topThree[0].solvedChallenges}/12 flags
+                        {topThree[0].solvedChallenges}/{totalChallenges || '?'} flags
                       </div>
 
                       <div className="mt-3 px-2 py-1 bg-yellow-500/20 rounded text-yellow-200 text-xs font-semibold">
@@ -326,7 +342,7 @@ const NewLeaderboardPage: React.FC = () => {
                       </div>
 
                       <h3 className="text-base font-bold text-white mb-1">
-                        {topThree[2].displayName || topThree[2].fullName || topThree[2].username}
+                        {topThree[2].fullName || topThree[2].displayName || topThree[2].username}
                       </h3>
 
                       <div className="text-2xl font-black text-white mb-1">
@@ -335,7 +351,7 @@ const NewLeaderboardPage: React.FC = () => {
                       <div className="text-white/80 text-xs mb-2">points</div>
 
                       <div className="text-white/90 text-xs">
-                        {topThree[2].solvedChallenges}/12 flags
+                        {topThree[2].solvedChallenges}/{totalChallenges || '?'} flags
                       </div>
 
                       <div className="mt-3 px-2 py-1 bg-amber-600/20 rounded text-amber-200 text-xs font-semibold">
@@ -432,11 +448,11 @@ const NewLeaderboardPage: React.FC = () => {
                                 transition-all duration-200
                               `}
                             >
-                              {(user.displayName || user.fullName || user.username).charAt(0).toUpperCase()}
+                              {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                             </div>
                             <div>
                               <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
-                                {user.displayName || user.fullName || user.username}
+                                {user.fullName || user.displayName || user.username}
                               </div>
                               <div className="text-xs text-zinc-500">{user.universityName || user.universityCode}</div>
                             </div>
@@ -451,7 +467,7 @@ const NewLeaderboardPage: React.FC = () => {
 
                         <td className="py-4 px-6 text-right">
                           <span className="text-zinc-300 font-semibold">
-                            {user.solvedChallenges}/12
+                            {user.solvedChallenges}/{totalChallenges || '?'}
                           </span>
                         </td>
                       </motion.tr>
@@ -579,7 +595,7 @@ const NewLeaderboardPage: React.FC = () => {
                     </div>
 
                     <h3 className="text-2xl font-bold text-white mb-2">
-                      {selectedTeam.displayName || selectedTeam.fullName || selectedTeam.username}
+                      {selectedTeam.fullName || selectedTeam.displayName || selectedTeam.username}
                     </h3>
 
                     <div className="text-4xl font-black text-white mb-1">
@@ -588,7 +604,7 @@ const NewLeaderboardPage: React.FC = () => {
                     <div className="text-white/80 text-sm mb-3">points</div>
 
                     <div className="text-white/90 text-sm">
-                      {selectedTeam.solvedChallenges}/12 flags
+                      {selectedTeam.solvedChallenges}/{totalChallenges || '?'} flags
                     </div>
 
                     <div className="mt-4 inline-flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full text-white text-xs font-semibold">
@@ -608,7 +624,7 @@ const NewLeaderboardPage: React.FC = () => {
                     <div className="text-zinc-400 text-sm mb-1">Flags Solved</div>
                     <div className="text-zinc-100 font-semibold text-2xl">
                       {selectedTeam.solvedChallenges}
-                      <span className="text-sm text-zinc-400">/12</span>
+                      <span className="text-sm text-zinc-400">/{totalChallenges || '?'}</span>
                     </div>
                   </div>
 

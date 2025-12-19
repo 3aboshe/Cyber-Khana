@@ -7,7 +7,7 @@ import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
 import PointDecayInfo from '../src/components/PointDecayInfo';
-import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink, Crown, User } from 'lucide-react';
 
 interface Challenge {
   _id: string;
@@ -58,6 +58,7 @@ const NewChallengeDetailPage: React.FC = () => {
   const [showHintModal, setShowHintModal] = useState(false);
   const [selectedHint, setSelectedHint] = useState<{ index: number; cost: number; title: string } | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [solvers, setSolvers] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) {
@@ -84,6 +85,14 @@ const NewChallengeDetailPage: React.FC = () => {
 
       if (isAlreadySolved) {
         setMessage({ type: '', text: '' });
+      }
+      
+      // Fetch solvers
+      try {
+        const solversData = await challengeService.getChallengeSolvers(id!);
+        setSolvers(solversData || []);
+      } catch (err) {
+        console.error('Error fetching solvers:', err);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -441,6 +450,59 @@ const NewChallengeDetailPage: React.FC = () => {
               </div>
             </Card>
           )}
+
+          {/* Solvers */}
+          <Card className="p-6">
+            <h2 className="text-xl font-bold text-zinc-100 mb-4">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Solvers ({solvers.length})
+              </div>
+            </h2>
+            {solvers.length > 0 ? (
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {solvers.map((solver, index) => (
+                  <div
+                    key={solver.odId || index}
+                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                      solver.isFirstBlood 
+                        ? 'bg-yellow-500/10 border border-yellow-500/30' 
+                        : 'bg-zinc-800/50'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                      solver.isFirstBlood 
+                        ? 'bg-yellow-500 text-yellow-900' 
+                        : 'bg-zinc-700 text-zinc-300'
+                    }`}>
+                      {solver.isFirstBlood ? (
+                        <Crown className="w-4 h-4" />
+                      ) : (
+                        <User className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-semibold truncate ${
+                        solver.isFirstBlood ? 'text-yellow-400' : 'text-zinc-200'
+                      }`}>
+                        {solver.fullName || solver.username}
+                      </p>
+                      <p className="text-xs text-zinc-500">
+                        {solver.isFirstBlood && <span className="text-yellow-400 mr-2">🩸 First Blood</span>}
+                        {new Date(solver.solvedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-zinc-500">
+                <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No solvers yet</p>
+                <p className="text-sm">Be the first to solve this challenge!</p>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
 

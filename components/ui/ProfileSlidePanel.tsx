@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { X, Trophy, Target, Clock, Award } from 'lucide-react';
 
 interface ProfileSlidePanelProps {
@@ -19,6 +20,8 @@ interface ProfileSlidePanelProps {
 }
 
 const ProfileSlidePanel: React.FC<ProfileSlidePanelProps> = ({ isOpen, onClose, user, rank }) => {
+  const navigate = useNavigate();
+  
   if (!isOpen || !user) return null;
 
   return (
@@ -49,7 +52,7 @@ const ProfileSlidePanel: React.FC<ProfileSlidePanelProps> = ({ isOpen, onClose, 
               {/* Avatar and Basic Info */}
               <div className="text-center">
                 <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-3xl font-bold text-white ring-4 ring-zinc-700">
-                  {user.username.charAt(0).toUpperCase()}
+                  {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                 </div>
                 <h3 className="text-2xl font-bold text-zinc-100 mb-1">
                   {user.fullName || user.displayName || user.username}
@@ -106,7 +109,7 @@ const ProfileSlidePanel: React.FC<ProfileSlidePanelProps> = ({ isOpen, onClose, 
                 onClick={() => {
                   onClose();
                   if (user._id) {
-                    window.location.href = `/profile/${user._id}`;
+                    navigate(`/profile/${user._id}`);
                   }
                 }}
                 className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors"

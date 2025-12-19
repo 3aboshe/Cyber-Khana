@@ -19,6 +19,7 @@ const initialFormState: Omit<Challenge, 'id' | 'solves'> = {
   description: '',
   author: '',
   flag: '',
+  flags: [],
   hints: [],
   initialPoints: 1000,
   minimumPoints: 100,
@@ -27,6 +28,7 @@ const initialFormState: Omit<Challenge, 'id' | 'solves'> = {
   estimatedTime: 30,
   challengeLink: '',
   files: [],
+  firstBloodBonus: 0,
 };
 
 
@@ -36,7 +38,13 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
 
   useEffect(() => {
     if (challenge) {
-      setFormData({ ...challenge, hints: challenge.hints || [], files: challenge.files || [] });
+      setFormData({ 
+        ...challenge, 
+        hints: challenge.hints || [], 
+        files: challenge.files || [],
+        flags: challenge.flags || [],
+        firstBloodBonus: challenge.firstBloodBonus || 0
+      });
     } else {
       setFormData(initialFormState);
     }
@@ -48,7 +56,7 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
 
     if (type === 'checkbox') {
       processedValue = (e.target as HTMLInputElement).checked;
-    } else if (name === 'points' || name === 'initialPoints' || name === 'minimumPoints' || name === 'decay' || name === 'estimatedTime') {
+    } else if (name === 'points' || name === 'initialPoints' || name === 'minimumPoints' || name === 'decay' || name === 'estimatedTime' || name === 'firstBloodBonus') {
       processedValue = parseInt(value) || 0;
     }
 
@@ -69,6 +77,22 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
   const removeHint = (index: number) => {
     const newHints = (formData.hints || []).filter((_, i) => i !== index);
     setFormData(prev => ({...prev, hints: newHints}));
+  }
+
+  const handleFlagChange = (index: number, value: string) => {
+    const newFlags = [...(formData.flags || [])];
+    newFlags[index] = value;
+    setFormData(prev => ({...prev, flags: newFlags}));
+  }
+
+  const addFlag = () => {
+    const newFlags = [...(formData.flags || []), ''];
+    setFormData(prev => ({...prev, flags: newFlags}));
+  }
+
+  const removeFlag = (index: number) => {
+    const newFlags = (formData.flags || []).filter((_, i) => i !== index);
+    setFormData(prev => ({...prev, flags: newFlags}));
   }
 
 
@@ -153,8 +177,10 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
         </div>
       </div>
 
-       <div>
-          <label className="text-sm font-medium text-zinc-300 mb-1 block">Flag</label>
+       <div className="border-t border-zinc-700 pt-4">
+        <h3 className="text-lg font-semibold text-zinc-100 mb-3">Flags</h3>
+        <div>
+          <label className="text-sm font-medium text-zinc-300 mb-1 block">Primary Flag</label>
           <Input
             name="flag"
             value={formData.flag}
@@ -163,6 +189,42 @@ const ChallengeForm: React.FC<ChallengeFormProps> = ({ challenge, onSave, onCanc
             required={!challenge}
           />
           {challenge && <p className="text-zinc-500 text-xs mt-1">Leave empty to keep current flag</p>}
+        </div>
+        
+        <div className="mt-4">
+          <label className="text-sm font-medium text-zinc-300 mb-2 block">Additional Flags (Optional)</label>
+          <p className="text-zinc-500 text-xs mb-2">Add alternative flags that are also accepted</p>
+          <div className="space-y-2">
+            {(formData.flags || []).map((flag, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  value={flag}
+                  onChange={(e) => handleFlagChange(index, e.target.value)}
+                  placeholder="Alternative flag..."
+                  className="flex-grow"
+                />
+                <Button type="button" variant="ghost" className="!p-2 text-red-500 hover:text-red-400 hover:bg-red-500/10" onClick={() => removeFlag(index)}>
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            ))}
+            <Button type="button" variant="secondary" onClick={addFlag} className="w-full">
+              <PlusCircle size={16} /> Add Alternative Flag
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="text-sm font-medium text-zinc-300 mb-1 block">First Blood Bonus Points</label>
+          <Input
+            name="firstBloodBonus"
+            type="number"
+            value={formData.firstBloodBonus || 0}
+            onChange={handleChange}
+            min="0"
+          />
+          <p className="text-zinc-500 text-xs mt-1">Extra points awarded to the first solver (0 for no bonus)</p>
+        </div>
       </div>
       <div>
         <label className="text-sm font-medium text-zinc-300 mb-1 block">Description</label>

@@ -39,6 +39,14 @@ export interface IChallengeFile {
   url: string;
 }
 
+export interface IChallengeSolver {
+  odId: string;
+  username: string;
+  fullName?: string;
+  solvedAt: Date;
+  isFirstBlood: boolean;
+}
+
 export interface IChallenge extends Document {
   title: string;
   category: ChallengeCategory;
@@ -46,15 +54,18 @@ export interface IChallenge extends Document {
   description: string;
   author: string;
   flag: string;
+  flags?: string[]; // Support multiple flags
   hints?: IHint[];
   files?: IChallengeFile[];
   universityCode: string;
   solves: number;
+  solvers?: IChallengeSolver[]; // Track who solved the challenge
   fromCompetition?: boolean;
   competitionId?: string;
   challengeLink?: string;
   difficulty?: 'Very Easy' | 'Easy' | 'Medium' | 'Hard' | 'Expert';
   estimatedTime?: number;
+  firstBloodBonus?: number; // Configurable first blood bonus
   writeup?: {
     content: string;
     images?: string[];
@@ -114,8 +125,22 @@ const ChallengeSchema: Schema = new Schema({
     type: String,
     required: true
   },
+  flags: [{
+    type: String
+  }],
   hints: [HintSchema],
   files: [ChallengeFileSchema],
+  solvers: [{
+    odId: String,
+    username: String,
+    fullName: String,
+    solvedAt: Date,
+    isFirstBlood: { type: Boolean, default: false }
+  }],
+  firstBloodBonus: {
+    type: Number,
+    default: 20
+  },
   universityCode: {
     type: String,
     required: true,

@@ -12,6 +12,7 @@ import CompetitionLeaderboardPage from './pages/CompetitionLeaderboardPage';
 import EnhancedLeaderboardPage from './pages/EnhancedLeaderboardPage';
 import NewLeaderboardPage from './pages/NewLeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import PublicProfilePage from './pages/PublicProfilePage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import AppLayout from './components/AppLayout';
 import AdminLayout from './components/AdminLayout';
@@ -129,6 +130,7 @@ const App: React.FC = () => {
               <Route path="announcements" element={<AnnouncementsPage />} />
               <Route path="leaderboard" element={<NewLeaderboardPage />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="profile/:userId" element={<PublicProfilePage />} />
               <Route path="*" element={<Navigate to="/dashboard" />} />
             </Route>
           )}

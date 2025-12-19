@@ -18,6 +18,14 @@ export interface ChallengeFile {
   url: string;
 }
 
+export interface ChallengeSolver {
+  odId: string;
+  username: string;
+  fullName?: string;
+  solvedAt: Date;
+  isFirstBlood: boolean;
+}
+
 export interface Challenge {
   id: string;
   _id: string;
@@ -30,6 +38,9 @@ export interface Challenge {
   files?: ChallengeFile[];
   hints?: Hint[];
   flag?: string;
+  flags?: string[];
+  solvers?: ChallengeSolver[];
+  firstBloodBonus?: number;
   universityCode?: string;
   initialPoints?: number;
   minimumPoints?: number;
