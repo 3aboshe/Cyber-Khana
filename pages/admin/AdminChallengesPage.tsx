@@ -17,6 +17,8 @@ interface Challenge {
   description: string;
   author: string;
   flag: string; // Add flag field for admin access
+  flags?: string[]; // Alternative flags
+  firstBloodBonus?: number; // Bonus points for first solver
   universityCode: string;
   solves: number;
   isPublished: boolean;
@@ -67,6 +69,8 @@ const AdminChallengesPage: React.FC = () => {
     description: '',
     author: '',
     flag: '',
+    flags: [] as string[], // Additional alternative flags
+    firstBloodBonus: 0, // Bonus points for first solver
     initialPoints: 1000,
     minimumPoints: 100,
     decay: 38,
@@ -111,10 +115,14 @@ const AdminChallengesPage: React.FC = () => {
 
       // Prepare challenge data
       // When editing, only include flag if it's not empty
-      const { flag, ...formDataWithoutFlag } = formData;
+      const { flag, flags, ...formDataWithoutFlags } = formData;
       const challengeData: any = {
-        ...formDataWithoutFlag,
-        files: uploadedFiles.length > 0 ? uploadedFiles : undefined
+        ...formDataWithoutFlags,
+        files: uploadedFiles.length > 0 ? uploadedFiles : undefined,
+        // Include alternative flags (filter out empty strings)
+        flags: flags.filter(f => f.trim() !== ''),
+        // Include first blood bonus
+        firstBloodBonus: formData.firstBloodBonus || 0
       };
 
       // Only add flag if it's not empty (for new challenges) or if editing with a new value
@@ -278,6 +286,8 @@ const AdminChallengesPage: React.FC = () => {
         description: challenge.description,
         author: challenge.author,
         flag: challenge.flag || '', // Include the flag value when editing
+        flags: (challenge as any).flags || [],
+        firstBloodBonus: (challenge as any).firstBloodBonus || 0,
         initialPoints: (challenge as any).initialPoints || 1000,
         minimumPoints: (challenge as any).minimumPoints || 100,
         decay: typeof (challenge as any).decay === 'number' ? (challenge as any).decay : 38,
@@ -296,6 +306,8 @@ const AdminChallengesPage: React.FC = () => {
         description: '',
         author: '',
         flag: '',
+        flags: [],
+        firstBloodBonus: 0,
         initialPoints: 1000,
         minimumPoints: 100,
         decay: 38,
@@ -327,6 +339,27 @@ const AdminChallengesPage: React.FC = () => {
     const newHints = [...formData.hints];
     newHints[index] = { ...newHints[index], [field]: field === 'cost' ? parseInt(value) || 0 : value };
     setFormData({ ...formData, hints: newHints });
+  };
+
+  // Flag management functions
+  const addFlag = () => {
+    setFormData({
+      ...formData,
+      flags: [...formData.flags, '']
+    });
+  };
+
+  const removeFlag = (index: number) => {
+    setFormData({
+      ...formData,
+      flags: formData.flags.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateFlag = (index: number, value: string) => {
+    const newFlags = [...formData.flags];
+    newFlags[index] = value;
+    setFormData({ ...formData, flags: newFlags });
   };
 
   const closeModal = () => {
@@ -621,13 +654,58 @@ const AdminChallengesPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-zinc-200 mb-2 font-medium">Flag {editingChallenge && '(Leave empty to keep current)'}</label>
+              <label className="block text-zinc-200 mb-2 font-medium">Primary Flag {editingChallenge && '(Leave empty to keep current)'}</label>
               <Input
                 value={formData.flag}
                 onChange={(e) => setFormData({ ...formData, flag: e.target.value })}
-                placeholder={editingChallenge ? 'Enter new flag to change' : ''}
+                placeholder={editingChallenge ? 'Enter new flag to change' : 'flag{...}'}
                 required={!editingChallenge}
               />
+            </div>
+
+            {/* Alternative Flags Section */}
+            <div className="border-t border-zinc-700 pt-4">
+              <h3 className="text-lg font-semibold text-zinc-100 mb-3">Alternative Flags (Optional)</h3>
+              <p className="text-zinc-500 text-sm mb-3">Add alternative flags that are also accepted as correct answers</p>
+              <div className="space-y-3">
+                {formData.flags.map((flag, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={flag}
+                      onChange={(e) => updateFlag(index, e.target.value)}
+                      placeholder="Alternative flag..."
+                      className="flex-grow"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="!p-2 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={() => removeFlag(index)}
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="secondary" onClick={addFlag} className="w-full">
+                  <PlusCircle size={16} /> Add Alternative Flag
+                </Button>
+              </div>
+            </div>
+
+            {/* First Blood Bonus Section */}
+            <div className="border-t border-zinc-700 pt-4">
+              <h3 className="text-lg font-semibold text-zinc-100 mb-3">First Blood Bonus</h3>
+              <div>
+                <label className="block text-zinc-200 mb-2 font-medium">Bonus Points for First Solver</label>
+                <Input
+                  type="number"
+                  value={formData.firstBloodBonus}
+                  onChange={(e) => setFormData({ ...formData, firstBloodBonus: parseInt(e.target.value) || 0 })}
+                  min="0"
+                  placeholder="0"
+                />
+                <p className="text-zinc-500 text-xs mt-1">Extra points awarded to the first person who solves this challenge (0 = no bonus)</p>
+              </div>
             </div>
 
             <div className="border-t border-zinc-700 pt-4">
