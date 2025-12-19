@@ -13,7 +13,7 @@ export const userService = {
   getLeaderboard: (universityCode?: string) =>
     apiService.get('/users/leaderboard', universityCode ? { universityCode } : undefined),
 
-  updateProfile: (data: { displayName?: string }) =>
+  updateProfile: (data: { displayName?: string; fullName?: string }) =>
     apiService.patch('/users/profile', data),
 
   updateProfileIcon: (icon: string) =>

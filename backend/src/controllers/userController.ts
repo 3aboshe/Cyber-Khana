@@ -377,11 +377,23 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (displayName !== undefined) {
-      user.displayName = displayName;
-    }
+    // Validate fullName length (max 50 characters)
     if (fullName !== undefined) {
-      user.fullName = fullName;
+      if (fullName.length > 50) {
+        return res.status(400).json({ error: 'Full name must be 50 characters or less' });
+      }
+      if (fullName.trim().length < 2 && fullName.trim().length > 0) {
+        return res.status(400).json({ error: 'Full name must be at least 2 characters' });
+      }
+      user.fullName = fullName.trim();
+    }
+
+    // Validate displayName length (max 30 characters)
+    if (displayName !== undefined) {
+      if (displayName.length > 30) {
+        return res.status(400).json({ error: 'Display name must be 30 characters or less' });
+      }
+      user.displayName = displayName.trim();
     }
 
     await user.save();

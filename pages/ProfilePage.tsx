@@ -4,7 +4,7 @@ import Card from '../components/ui/EnhancedCard';
 import Button from '../components/ui/EnhancedButton';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
-import { Trophy, Code, Target, Award, Calendar, TrendingUp, Star } from 'lucide-react';
+import { Trophy, Code, Target, Award, Calendar, TrendingUp, Star, Edit2, Check, X } from 'lucide-react';
 import AchievementsSystem from '../components/AchievementsSystem';
 
 interface UserStats {
@@ -30,6 +30,14 @@ const ProfilePage: React.FC = () => {
   const [stats, setStats] = useState<UserStats>({ points: 0, solvedCount: 0 });
   const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Edit full name state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedFullName, setEditedFullName] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const [nameError, setNameError] = useState('');
+
+  const MAX_FULLNAME_LENGTH = 50;
 
   useEffect(() => {
     fetchProfile();
@@ -56,6 +64,10 @@ const ProfilePage: React.FC = () => {
           achievements: profile.achievements || [],
         });
 
+        // Update user with latest data from profile
+        const updatedUser = { ...parsedUser, ...profile };
+        setUser(updatedUser);
+
         // Calculate category stats from solved challenges
         if (profile.solvedChallengesDetails && profile.solvedChallengesDetails.length > 0) {
           const categoryMap = new Map<string, { count: number; points: number }>();
@@ -78,6 +90,51 @@ const ProfilePage: React.FC = () => {
       console.error('Error fetching profile:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEditName = () => {
+    setEditedFullName(user?.fullName || '');
+    setIsEditingName(true);
+    setNameError('');
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingName(false);
+    setEditedFullName('');
+    setNameError('');
+  };
+
+  const handleSaveName = async () => {
+    const trimmedName = editedFullName.trim();
+    
+    if (trimmedName.length > MAX_FULLNAME_LENGTH) {
+      setNameError(`Name must be ${MAX_FULLNAME_LENGTH} characters or less`);
+      return;
+    }
+    
+    if (trimmedName.length > 0 && trimmedName.length < 2) {
+      setNameError('Name must be at least 2 characters');
+      return;
+    }
+
+    setSavingName(true);
+    setNameError('');
+    
+    try {
+      await userService.updateProfile({ fullName: trimmedName });
+      
+      // Update local state and localStorage
+      const updatedUser = { ...user, fullName: trimmedName };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      setIsEditingName(false);
+      setEditedFullName('');
+    } catch (err: any) {
+      setNameError(err.message || 'Failed to update name');
+    } finally {
+      setSavingName(false);
     }
   };
 
@@ -115,10 +172,60 @@ const ProfilePage: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex-1">
-            <h2 className="text-3xl font-bold text-zinc-100 mb-2">
-              {user?.displayName || user?.fullName || user?.username}
-            </h2>
+          <div className="flex-1 min-w-0">
+            {isEditingName ? (
+              <div className="mb-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={editedFullName}
+                    onChange={(e) => setEditedFullName(e.target.value)}
+                    placeholder="Enter your full name"
+                    maxLength={MAX_FULLNAME_LENGTH}
+                    className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-100 text-xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    autoFocus
+                    disabled={savingName}
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    disabled={savingName}
+                    className="p-2 bg-emerald-500 hover:bg-emerald-600 rounded-md text-white transition-colors disabled:opacity-50"
+                    title="Save"
+                  >
+                    <Check className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    disabled={savingName}
+                    className="p-2 bg-zinc-700 hover:bg-zinc-600 rounded-md text-zinc-300 transition-colors disabled:opacity-50"
+                    title="Cancel"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex justify-between mt-1">
+                  {nameError ? (
+                    <p className="text-red-400 text-xs">{nameError}</p>
+                  ) : (
+                    <p className="text-zinc-500 text-xs">Max {MAX_FULLNAME_LENGTH} characters</p>
+                  )}
+                  <p className="text-zinc-500 text-xs">{editedFullName.length}/{MAX_FULLNAME_LENGTH}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-3xl font-bold text-zinc-100 truncate max-w-md" title={user?.fullName || user?.displayName || user?.username}>
+                  {user?.fullName || user?.displayName || user?.username}
+                </h2>
+                <button
+                  onClick={handleEditName}
+                  className="p-1.5 text-zinc-500 hover:text-emerald-400 hover:bg-zinc-800 rounded-md transition-colors"
+                  title="Edit full name"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
               <span className="flex items-center gap-1">

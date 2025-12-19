@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
       <div className="flex items-center justify-end h-16 px-4 sm:px-6 md:px-8">
         <div className="flex items-center space-x-4">
           <div className="text-right">
-            <p className="font-semibold text-sm text-zinc-100">{user.fullName || user.displayName || user.username || user.name}</p>
+            <p className="font-semibold text-sm text-zinc-100 truncate max-w-[150px]" title={user.fullName || user.displayName || user.username || user.name}>{user.fullName || user.displayName || user.username || user.name}</p>
             <p className="text-xs text-zinc-400">{user.points} pts</p>
           </div>
           <Link to="/announcements">

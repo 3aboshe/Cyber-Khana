@@ -205,7 +205,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
                         {(topThree[1].fullName || topThree[1].displayName || topThree[1].username).charAt(0).toUpperCase()}
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-1">
+                      <h3 className="text-base font-bold text-white mb-1 truncate max-w-[120px] mx-auto" title={topThree[1].fullName || topThree[1].displayName || topThree[1].username}>
                         {topThree[1].fullName || topThree[1].displayName || topThree[1].username}
                       </h3>
 
@@ -270,7 +270,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
                         {(topThree[0].fullName || topThree[0].displayName || topThree[0].username).charAt(0).toUpperCase()}
                       </div>
 
-                      <h3 className="text-lg font-bold text-white mb-2">
+                      <h3 className="text-lg font-bold text-white mb-2 truncate max-w-[140px] mx-auto" title={topThree[0].fullName || topThree[0].displayName || topThree[0].username}>
                         {topThree[0].fullName || topThree[0].displayName || topThree[0].username}
                       </h3>
 
@@ -335,7 +335,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
                         {(topThree[2].fullName || topThree[2].displayName || topThree[2].username).charAt(0).toUpperCase()}
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-1">
+                      <h3 className="text-base font-bold text-white mb-1 truncate max-w-[120px] mx-auto" title={topThree[2].fullName || topThree[2].displayName || topThree[2].username}>
                         {topThree[2].fullName || topThree[2].displayName || topThree[2].username}
                       </h3>
 
@@ -442,9 +442,9 @@ const CompetitionLeaderboardPage: React.FC = () => {
                           >
                             {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className={`font-semibold ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-100 group-hover:text-white'} transition-colors`}>
+                              <span className={`font-semibold ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-100 group-hover:text-white'} transition-colors truncate max-w-[180px]`} title={user.fullName || user.displayName || user.username}>
                                 {user.fullName || user.displayName || user.username}
                               </span>
                               {isCurrentUser && (

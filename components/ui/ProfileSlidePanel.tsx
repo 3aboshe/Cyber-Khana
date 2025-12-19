@@ -131,7 +131,7 @@ const ProfileSlidePanel: React.FC<ProfileSlidePanelProps> = ({ isOpen, onClose, 
                 <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-3xl font-bold text-white ring-4 ring-zinc-700">
                   {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                 </div>
-                <h3 className="text-2xl font-bold text-zinc-100 mb-1">
+                <h3 className="text-2xl font-bold text-zinc-100 mb-1 truncate max-w-[280px] mx-auto" title={user.fullName || user.displayName || user.username}>
                   {user.fullName || user.displayName || user.username}
                 </h3>
                 <p className="text-zinc-400">@{user.username}</p>

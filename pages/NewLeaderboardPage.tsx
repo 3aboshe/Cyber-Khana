@@ -288,8 +288,8 @@ const NewLeaderboardPage: React.FC = () => {
                         {(topThree[1].displayName || topThree[1].fullName || topThree[1].username).charAt(0).toUpperCase()}
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-1">
-                        {topThree[1].displayName || topThree[1].fullName || topThree[1].username}
+                      <h3 className="text-base font-bold text-white mb-1 truncate max-w-[120px] mx-auto" title={topThree[1].fullName || topThree[1].displayName || topThree[1].username}>
+                        {topThree[1].fullName || topThree[1].displayName || topThree[1].username}
                       </h3>
 
                       <div className="text-2xl font-black text-white mb-1">
@@ -346,7 +346,7 @@ const NewLeaderboardPage: React.FC = () => {
                         {(topThree[0].fullName || topThree[0].displayName || topThree[0].username).charAt(0).toUpperCase()}
                       </div>
 
-                      <h3 className="text-lg font-bold text-white mb-2">
+                      <h3 className="text-lg font-bold text-white mb-2 truncate max-w-[140px] mx-auto" title={topThree[0].fullName || topThree[0].displayName || topThree[0].username}>
                         {topThree[0].fullName || topThree[0].displayName || topThree[0].username}
                       </h3>
 
@@ -404,7 +404,7 @@ const NewLeaderboardPage: React.FC = () => {
                         {(topThree[2].displayName || topThree[2].fullName || topThree[2].username).charAt(0).toUpperCase()}
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-1">
+                      <h3 className="text-base font-bold text-white mb-1 truncate max-w-[120px] mx-auto" title={topThree[2].fullName || topThree[2].displayName || topThree[2].username}>
                         {topThree[2].fullName || topThree[2].displayName || topThree[2].username}
                       </h3>
 
@@ -513,11 +513,11 @@ const NewLeaderboardPage: React.FC = () => {
                             >
                               {(user.fullName || user.displayName || user.username).charAt(0).toUpperCase()}
                             </div>
-                            <div>
-                              <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors truncate max-w-[200px]" title={user.fullName || user.displayName || user.username}>
                                 {user.fullName || user.displayName || user.username}
                               </div>
-                              <div className="text-xs text-zinc-500">{user.universityName || user.universityCode}</div>
+                              <div className="text-xs text-zinc-500 truncate">{user.universityName || user.universityCode}</div>
                             </div>
                           </div>
                         </td>
@@ -657,7 +657,7 @@ const NewLeaderboardPage: React.FC = () => {
                       {selectedTeam.username.charAt(0).toUpperCase()}
                     </div>
 
-                    <h3 className="text-2xl font-bold text-white mb-2">
+                    <h3 className="text-2xl font-bold text-white mb-2 truncate max-w-[250px] mx-auto" title={selectedTeam.fullName || selectedTeam.displayName || selectedTeam.username}>
                       {selectedTeam.fullName || selectedTeam.displayName || selectedTeam.username}
                     </h3>
 
