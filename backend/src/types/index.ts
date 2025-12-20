@@ -22,4 +22,5 @@ export interface IJWTPayload {
   username: string;
   role: 'user' | 'admin' | 'super-admin';
   universityCode: string;
+  unlockedHints?: string[];
 }

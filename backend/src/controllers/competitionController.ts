@@ -20,7 +20,7 @@ export const getCompetitionChallengeSolvers = async (req: AuthRequest, res: Resp
     }
 
     // Return solvers sorted by solve time (first blood first)
-    const solvers = (challenge.solvers || []).sort((a: any, b: any) => 
+    const solvers = (challenge.solvers || []).sort((a: any, b: any) =>
       new Date(a.solvedAt).getTime() - new Date(b.solvedAt).getTime()
     );
 
@@ -206,9 +206,26 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
       })
     );
 
+    // SECURITY: Scrub hints if user hasn't unlocked them
+    const unlockedHints = req.user?.unlockedHints || [];
+    const scrubbedChallenges = challengesWithDynamicPoints.map((challenge: any) => {
+      if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+        if (challenge.hints) {
+          challenge.hints = challenge.hints.map((hint: any, index: number) => {
+            const hintKey = `${id}_${challenge._id}_${index}`;
+            if (!unlockedHints.includes(hintKey)) {
+              return { ...hint, text: 'LOCKED' };
+            }
+            return hint;
+          });
+        }
+      }
+      return challenge;
+    });
+
     const competitionWithDynamicPoints = {
       ...competition.toObject ? competition.toObject() : competition,
-      challenges: challengesWithDynamicPoints
+      challenges: scrubbedChallenges
     };
 
     res.json(competitionWithDynamicPoints);
@@ -329,11 +346,11 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
     if (competition.status !== 'active') {
       return res.status(400).json({ error: 'Competition is not active' });
     }
-    
+
     if (now < competition.startTime) {
       return res.status(400).json({ error: 'Competition has not started yet' });
     }
-    
+
     // Only check end time if competition has a time limit
     if (competition.hasTimeLimit !== false && competition.endTime && now > competition.endTime) {
       return res.status(400).json({ error: 'Competition has ended' });
@@ -567,7 +584,7 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
         const competitionPenalties = (user.competitionPenalties || [])
           .filter((penalty: any) => penalty.competitionId === id)
           .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-        
+
         competitionPoints = Math.max(0, competitionPoints - competitionPenalties);
 
         const competitionSolvedCount = competitionSolves.length || 0;

@@ -57,7 +57,8 @@ export const register = async (req: Request, res: Response) => {
       userId: (user._id as any).toString(),
       username: user.username,
       role: user.role,
-      universityCode: user.universityCode
+      universityCode: user.universityCode,
+      unlockedHints: user.unlockedHints || []
     };
 
     const token = generateToken(payload);
@@ -144,7 +145,8 @@ export const login = async (req: Request, res: Response) => {
       userId: (user._id as any).toString(),
       username: user.username,
       role: user.role,
-      universityCode: user.universityCode
+      universityCode: user.universityCode,
+      unlockedHints: user.unlockedHints || []
     };
 
     const token = generateToken(payload);
@@ -199,7 +201,8 @@ export const loginAdmin = async (req: Request, res: Response) => {
       userId: (user._id as any).toString(),
       username: user.username,
       role: user.role,
-      universityCode: user.universityCode
+      universityCode: user.universityCode,
+      unlockedHints: user.unlockedHints || []
     };
 
     const token = generateToken(payload);

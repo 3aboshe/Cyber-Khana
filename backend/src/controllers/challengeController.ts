@@ -87,6 +87,20 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
         };
       }
 
+      // SECURITY: Scrub hints if user hasn't unlocked them
+      if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+        const unlockedHints = req.user?.unlockedHints || [];
+        if (challengeObj.hints) {
+          challengeObj.hints = challengeObj.hints.map((hint: any, index: number) => {
+            const hintId = `${challenge._id}-${index}`;
+            if (!unlockedHints.includes(hintId)) {
+              return { ...hint, text: 'LOCKED' };
+            }
+            return hint;
+          });
+        }
+      }
+
       // SECURITY: Never expose the flag to regular users
       if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
         const { flag, ...challengeWithoutFlag } = challengeObj;
@@ -178,6 +192,20 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
         images: [],
         isUnlocked: false
       };
+    }
+
+    // SECURITY: Scrub hints if user hasn't unlocked them
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      const unlockedHints = req.user?.unlockedHints || [];
+      if (challengeObj.hints) {
+        challengeObj.hints = challengeObj.hints.map((hint: any, index: number) => {
+          const hintId = `${challenge._id}-${index}`;
+          if (!unlockedHints.includes(hintId)) {
+            return { ...hint, text: 'LOCKED' };
+          }
+          return hint;
+        });
+      }
     }
 
     // SECURITY: Never expose the flag to regular users
