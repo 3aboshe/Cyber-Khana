@@ -154,12 +154,23 @@ const NewChallengeDetailPage: React.FC = () => {
   };
 
   const confirmPurchaseHint = async () => {
-    if (!selectedHint || !currentUser) return;
+    if (!selectedHint || !currentUser || !challenge) return;
 
     try {
-      await userService.purchaseHint(challenge!._id, selectedHint.index, selectedHint.cost);
-      const hintId = `${challenge!._id}-${selectedHint.index}`;
+      const result = await userService.purchaseHint(challenge._id, selectedHint.index, selectedHint.cost);
+      const hintId = `${challenge._id}-${selectedHint.index}`;
       setUnlockedHints([...unlockedHints, hintId]);
+
+      // Update the challenge hints in state with the revealed hint text
+      if (result.hintText && challenge.hints) {
+        const updatedHints = challenge.hints.map((hint: any, idx: number) => {
+          if (idx === selectedHint.index) {
+            return { ...hint, text: result.hintText };
+          }
+          return hint;
+        });
+        setChallenge({ ...challenge, hints: updatedHints });
+      }
 
       const newPoints = currentUser.points - selectedHint.cost;
       setCurrentUser({ ...currentUser, points: newPoints });

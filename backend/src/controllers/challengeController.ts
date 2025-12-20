@@ -69,6 +69,15 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
 
     const challenges = await Challenge.find(query);
 
+    // Fetch user to get latest unlocked hints (JWT might be stale)
+    let unlockedHints: string[] = [];
+    if (req.user?.role === 'user') {
+      const user = await User.findById(req.user.userId);
+      if (user) {
+        unlockedHints = user.unlockedHints || [];
+      }
+    }
+
     const challengesWithCurrentPoints = challenges.map(challenge => {
       const challengeObj = challenge.toObject();
       challengeObj.currentPoints = calculateDynamicScore(
@@ -89,7 +98,6 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
 
       // SECURITY: Scrub hints if user hasn't unlocked them
       if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
-        const unlockedHints = req.user?.unlockedHints || [];
         if (challengeObj.hints) {
           challengeObj.hints = challengeObj.hints.map((hint: any, index: number) => {
             const hintId = `${challenge._id}-${index}`;
@@ -185,6 +193,15 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
       challenge.solves
     );
 
+    // Fetch user to get latest unlocked hints (JWT might be stale)
+    let unlockedHints: string[] = [];
+    if (req.user?.role === 'user') {
+      const user = await User.findById(req.user.userId);
+      if (user) {
+        unlockedHints = user.unlockedHints || [];
+      }
+    }
+
     // If user is not admin and writeup is not unlocked, remove writeup data
     if (req.user?.role === 'user' && !challenge.writeup?.isUnlocked) {
       challengeObj.writeup = {
@@ -196,7 +213,6 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
 
     // SECURITY: Scrub hints if user hasn't unlocked them
     if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
-      const unlockedHints = req.user?.unlockedHints || [];
       if (challengeObj.hints) {
         challengeObj.hints = challengeObj.hints.map((hint: any, index: number) => {
           const hintId = `${challenge._id}-${index}`;

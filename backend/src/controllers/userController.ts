@@ -45,12 +45,12 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
     const competitionSolvedDetails: any[] = [];
 
     for (const solve of user.solvedChallengesDetails || []) {
-      const isCompetitionChallenge = competitionChallengeIds.has(solve.challengeId) || 
-                                     integratedChallengeIds.has(solve.challengeId);
-      
+      const isCompetitionChallenge = competitionChallengeIds.has(solve.challengeId) ||
+        integratedChallengeIds.has(solve.challengeId);
+
       // Try to get challenge info
       let challengeInfo = null;
-      
+
       // First check in regular challenges
       const regularChallenge = await Challenge.findById(solve.challengeId);
       if (regularChallenge) {
@@ -89,9 +89,9 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
     }
 
     // Calculate rank among all users
-    const allUsers = await User.find({ 
-      universityCode: user.universityCode, 
-      isBanned: { $ne: true } 
+    const allUsers = await User.find({
+      universityCode: user.universityCode,
+      isBanned: { $ne: true }
     }).select('points penalties').sort({ points: -1 });
     const rank = allUsers.findIndex(u => (u as any)._id.toString() === userId) + 1;
 
@@ -102,7 +102,7 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
     const generalPenalties = (user.penalties || [])
       .filter((penalty: any) => penalty.type === 'general')
       .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-    
+
     // Points after penalties
     const adjustedPoints = Math.max(0, nonCompetitionPoints - generalPenalties);
 
@@ -123,10 +123,10 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
       totalSolved: user.solvedChallenges.length,
       regularSolvedCount: regularSolvedDetails.length,
       competitionSolvedCount: competitionSolvedDetails.length,
-      regularSolvedChallenges: regularSolvedDetails.sort((a, b) => 
+      regularSolvedChallenges: regularSolvedDetails.sort((a, b) =>
         new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
       ),
-      competitionSolvedChallenges: competitionSolvedDetails.sort((a, b) => 
+      competitionSolvedChallenges: competitionSolvedDetails.sort((a, b) =>
         new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
       ),
       createdAt: user.createdAt
@@ -195,7 +195,7 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
     const generalPenalties = (user.penalties || [])
       .filter((penalty: any) => penalty.type === 'general')
       .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-    
+
     const adjustedPoints = Math.max(0, user.points - generalPenalties);
 
     res.json({
@@ -264,7 +264,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       const generalPenalties = (user.penalties || [])
         .filter((penalty: any) => penalty.type === 'general')
         .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-      
+
       nonCompetitionPoints = Math.max(0, nonCompetitionPoints - generalPenalties);
 
       // Calculate solve count for non-competition challenges
@@ -305,8 +305,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
 
     // Get all published challenges count for the university
     const ChallengeModel = require('../models/Challenge').default;
-    const publishedChallengesCount = await ChallengeModel.countDocuments({ 
-      universityCode, 
+    const publishedChallengesCount = await ChallengeModel.countDocuments({
+      universityCode,
       isPublished: true,
       fromCompetition: { $ne: true } // Exclude competition challenges
     });
@@ -653,7 +653,7 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
       // Deduct from general points
       const pointsToDeduct = Math.min(points, targetUser.points);
       targetUser.points = Math.max(0, targetUser.points - points);
-      
+
       // Store the penalty record
       if (!targetUser.penalties) {
         targetUser.penalties = [];
@@ -665,7 +665,7 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
         adminId: req.user?.userId,
         createdAt: new Date()
       });
-      
+
       await targetUser.save();
 
       res.json({
@@ -693,7 +693,7 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
 
       // Find user's solves in this competition and deduct points
       const competitionChallengeIds = competition.challenges.map((c: any) => c._id.toString());
-      
+
       // Get integrated challenges for this competition
       const Challenge = require('../models/Challenge').default;
       const integratedChallenges = await Challenge.find({
@@ -704,17 +704,17 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
 
       // Calculate current competition points for this user
       const competitionSolves = (targetUser.solvedChallengesDetails || []).filter((solve: any) =>
-        competitionChallengeIds.includes(solve.challengeId) || 
+        competitionChallengeIds.includes(solve.challengeId) ||
         integratedChallengeIds.includes(solve.challengeId)
       );
-      
+
       const currentCompPoints = competitionSolves.reduce((total: number, solve: any) => total + (solve.points || 0), 0);
 
       // Store the penalty in user's record
       if (!targetUser.competitionPenalties) {
         targetUser.competitionPenalties = [];
       }
-      
+
       targetUser.competitionPenalties.push({
         competitionId: competitionId,
         amount: points,
@@ -722,7 +722,7 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
         adminId: req.user?.userId,
         createdAt: new Date()
       });
-      
+
       await targetUser.save();
 
       res.json({
@@ -819,11 +819,17 @@ export const purchaseHint = async (req: AuthRequest, res: Response) => {
 
     await user.save();
 
+    // Get the actual hint text to return to the user
+    const hintText = challenge.hints && challenge.hints[hintIndex]
+      ? challenge.hints[hintIndex].text
+      : '';
+
     res.json({
       message: 'Hint purchased successfully',
       remainingPoints: isFromCompetition ? user.competitionPoints : user.points,
       pointsType: isFromCompetition ? 'competition' : 'regular',
-      unlockedHint: hintId
+      unlockedHint: hintId,
+      hintText: hintText
     });
   } catch (error) {
     res.status(500).json({ error: 'Error purchasing hint' });

@@ -206,8 +206,15 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
       })
     );
 
-    // SECURITY: Scrub hints if user hasn't unlocked them
-    const unlockedHints = req.user?.unlockedHints || [];
+    // SECURITY: Scrub hints if user hasn't unlocked them (Fetch fresh user for latest hints)
+    let unlockedHints: string[] = [];
+    if (req.user?.role === 'user') {
+      const user = await User.findById(req.user.userId);
+      if (user) {
+        unlockedHints = user.unlockedHints || [];
+      }
+    }
+
     const scrubbedChallenges = challengesWithDynamicPoints.map((challenge: any) => {
       if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
         if (challenge.hints) {

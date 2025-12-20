@@ -163,14 +163,25 @@ const CompetitionChallengeDetailPage: React.FC = () => {
   };
 
   const confirmPurchaseHint = async () => {
-    if (!selectedHint || !currentUser) return;
+    if (!selectedHint || !currentUser || !challenge) return;
 
     try {
-      const result = await competitionService.buyCompetitionHint(id!, challenge!._id, selectedHint.index);
+      const result = await competitionService.buyCompetitionHint(id!, challenge._id, selectedHint.index);
 
       // Add the hint to unlocked hints
-      const hintId = `${challenge!._id}-${selectedHint.index}`;
+      const hintId = `${id}_${challenge._id}_${selectedHint.index}`;
       setUnlockedHints([...unlockedHints, hintId]);
+
+      // Update the challenge hints in state with the revealed hint text
+      if (result.hint && challenge.hints) {
+        const updatedHints = challenge.hints.map((hint: any, idx: number) => {
+          if (idx === selectedHint.index) {
+            return { ...hint, text: result.hint };
+          }
+          return hint;
+        });
+        setChallenge({ ...challenge, hints: updatedHints });
+      }
 
       // Update user points from the response
       const newPoints = result.remainingPoints;
