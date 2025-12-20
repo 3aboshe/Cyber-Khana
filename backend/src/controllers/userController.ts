@@ -284,19 +284,19 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         return b.nonCompetitionPoints - a.nonCompetitionPoints;
       }
 
-      const aFirstSolve = a.nonCompetitionSolvedDetails.length > 0
-        ? new Date(Math.min(...a.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
+      const aLastSolve = a.nonCompetitionSolvedDetails.length > 0
+        ? new Date(Math.max(...a.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
 
-      const bFirstSolve = b.nonCompetitionSolvedDetails.length > 0
-        ? new Date(Math.min(...b.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
+      const bLastSolve = b.nonCompetitionSolvedDetails.length > 0
+        ? new Date(Math.max(...b.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
 
-      if (aFirstSolve && bFirstSolve) {
-        return aFirstSolve.getTime() - bFirstSolve.getTime();
-      } else if (aFirstSolve) {
+      if (aLastSolve && bLastSolve) {
+        return aLastSolve.getTime() - bLastSolve.getTime();
+      } else if (aLastSolve) {
         return -1;
-      } else if (bFirstSolve) {
+      } else if (bLastSolve) {
         return 1;
       }
 
