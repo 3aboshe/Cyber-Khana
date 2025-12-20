@@ -62,6 +62,13 @@ export const register = async (req: Request, res: Response) => {
 
     const token = generateToken(payload);
 
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     res.status(201).json({
       token,
       user: {
@@ -106,6 +113,13 @@ export const login = async (req: Request, res: Response) => {
 
       const token = generateToken(payload);
 
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
       return res.json({
         token,
         user: {
@@ -134,6 +148,13 @@ export const login = async (req: Request, res: Response) => {
     };
 
     const token = generateToken(payload);
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
 
     // Get university name
     const university = await University.findOne({ code: user.universityCode });
@@ -183,6 +204,13 @@ export const loginAdmin = async (req: Request, res: Response) => {
 
     const token = generateToken(payload);
 
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
     // Get university name
     const university = await University.findOne({ code: user.universityCode });
 
@@ -226,6 +254,13 @@ export const loginSuperAdmin = async (req: Request, res: Response) => {
     };
 
     const token = generateToken(payload);
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
 
     res.json({
       token,

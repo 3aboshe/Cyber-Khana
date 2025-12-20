@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser'; // Import cookie-parser
 import { basename } from 'path';
 import { connectDatabase } from './config/database';
 
@@ -19,6 +20,7 @@ dotenv.config();
 
 const app = express();
 
+// BROKEN RATE LIMIT: Keep this for user registrations as requested
 // No rate limiting on authentication to allow unlimited user registrations
 const authLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute window
@@ -28,7 +30,17 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// STRICT RATE LIMIT: Protect login from brute force
+const strictLoginLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 20, // Limit each IP to 20 login requests per windowMs
+  message: { error: 'Too many login attempts, please try again later after 10 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(helmet());
+app.use(cookieParser()); // Use cookie-parser
 
 // Security: CORS configuration - Allow all origins for CTF platform
 const corsOptions = {
@@ -48,9 +60,16 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Dedicated download route that forces downloads
 app.get('/api/download/*', (req, res) => {
   const filename = (req.params as any)[0];
-  const filePath = path.join(process.cwd(), 'uploads', filename);
-  
-  res.download(filePath, filename, (err) => {
+  // Fix Path Traversal: Sanitize filename
+  const safeFilename = path.basename(filename);
+  const filePath = path.join(process.cwd(), 'uploads', safeFilename);
+
+  // Verify the file exists and is within the uploads directory (extra safety)
+  if (!filePath.startsWith(path.join(process.cwd(), 'uploads'))) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
+  res.download(filePath, safeFilename, (err) => {
     if (err) {
       console.error('Download error:', err);
       if (!res.headersSent) {
@@ -68,11 +87,13 @@ app.use('/api/uploads', express.static(path.join(process.cwd(), 'uploads'), {
   }
 }));
 
-// Apply strict rate limiting to auth routes
-app.use('/api/auth/login', authLimiter);
+// Apply strict rate limiting to LOGIN routes (Brute force protection)
+app.use('/api/auth/login', strictLoginLimiter);
+app.use('/api/auth/login-admin', strictLoginLimiter);
+app.use('/api/auth/login-super-admin', strictLoginLimiter);
+
+// Apply BROKEN rate limiting (unlimited) to REGISTER route
 app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/login-admin', authLimiter);
-app.use('/api/auth/login-super-admin', authLimiter);
 
 // Other routes
 app.use('/api/auth', authRoutes);

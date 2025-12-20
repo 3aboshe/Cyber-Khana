@@ -26,7 +26,7 @@ export const getChallengeSolvers = async (req: AuthRequest, res: Response) => {
     }
 
     // Return solvers sorted by solve time (first blood first)
-    const solvers = (challenge.solvers || []).sort((a: any, b: any) => 
+    const solvers = (challenge.solvers || []).sort((a: any, b: any) =>
       new Date(a.solvedAt).getTime() - new Date(b.solvedAt).getTime()
     );
 
@@ -293,20 +293,7 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
     }
 
     if (req.user?.role === 'user') {
-      const user = await User.findById(req.user.userId);
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' });
-      }
-
-      // Convert IDs to strings for comparison
       const challengeIdStr = id.toString();
-      const alreadySolved = user.solvedChallenges.some(
-        (solvedId: any) => solvedId.toString() === challengeIdStr
-      );
-
-      if (alreadySolved) {
-        return res.status(400).json({ error: 'Challenge already solved' });
-      }
 
       // Normalize flags for comparison safely and more robustly
       const normalize = (s: string) =>
@@ -328,70 +315,91 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       }
 
       const isCorrectFlag = allFlags.some(f => normalizedSubmittedFlag === f);
-  
-      if (isCorrectFlag) {
-        // Calculate points based on current solve count (before incrementing)
-        const awardedPoints = calculateDynamicScore(
-          challenge.initialPoints,
-          challenge.minimumPoints,
-          challenge.decay,
-          challenge.solves
-        );
 
-        let totalAwardedPoints = awardedPoints;
-        const isFirstBlood = challenge.solves === 0;
-
-        // Add configurable first blood bonus
-        if (isFirstBlood) {
-          const firstBloodBonus = challenge.firstBloodBonus || 20;
-          totalAwardedPoints += firstBloodBonus;
-        }
-
-        // Update user
-        user.solvedChallenges.push(challengeIdStr);
-        user.solvedChallengesDetails.push({
-          challengeId: challengeIdStr,
-          solvedAt: new Date(),
-          points: totalAwardedPoints
-        });
-        user.points += totalAwardedPoints;
-        await user.save();
-
-        // Update challenge and track solver
-        challenge.solves += 1;
-        if (!challenge.solvers) {
-          challenge.solvers = [];
-        }
-        challenge.solvers.push({
-          odId: (user as any)._id.toString(),
-          username: (user as any).username,
-          fullName: (user as any).fullName || '',
-          solvedAt: new Date(),
-          isFirstBlood
-        });
-        await challenge.save();
-
-        // Apply retroactive decay to update ALL solvers (including this new one)
-        try {
-          await applyRetroactiveDecay(challengeIdStr);
-        } catch (error) {
-          // Don't fail the request if retroactive decay fails
-          // The points are still correct for the new solver
-        }
-
-        res.json({
-          success: true,
-          points: totalAwardedPoints,
-          basePoints: awardedPoints,
-          firstBlood: isFirstBlood,
-          firstBloodBonus: isFirstBlood ? (challenge.firstBloodBonus || 20) : 0,
-          message: 'Correct flag! Points updated for all solvers.'
-        });
-      } else {
-        res.status(400).json({
-          error: 'Incorrect flag'
-        });
+      if (!isCorrectFlag) {
+        return res.status(400).json({ error: 'Incorrect flag' });
       }
+
+      // Calculate potential points (using current state of challenge)
+      const awardedPoints = calculateDynamicScore(
+        challenge.initialPoints,
+        challenge.minimumPoints,
+        challenge.decay,
+        challenge.solves
+      );
+
+      let totalAwardedPoints = awardedPoints;
+      // First blood bonus check (approximate due to race, but safe)
+      const isFirstBlood = challenge.solves === 0;
+      if (isFirstBlood) {
+        const firstBloodBonus = challenge.firstBloodBonus || 20;
+        totalAwardedPoints += firstBloodBonus;
+      }
+
+      // CRITICAL FIX: Atomic update to prevent Race Condition (Double Submission)
+      // "solvedChallenges: { $ne: challengeIdStr }" ensures we only update if not already solved.
+      const userUpdate = await User.findOneAndUpdate(
+        {
+          _id: req.user.userId,
+          solvedChallenges: { $ne: challengeIdStr }
+        },
+        {
+          $push: {
+            solvedChallenges: challengeIdStr,
+            solvedChallengesDetails: {
+              challengeId: challengeIdStr,
+              solvedAt: new Date(),
+              points: totalAwardedPoints
+            }
+          },
+          $inc: { points: totalAwardedPoints }
+        },
+        { new: true }
+      );
+
+      if (!userUpdate) {
+        // Validation: Check if user exists or if just already solved
+        const userExists = await User.exists({ _id: req.user.userId });
+        if (!userExists) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+        return res.status(400).json({ error: 'Challenge already solved' });
+      }
+
+      // Update challenge stats atomically as well
+      const challengeUpdate = await Challenge.findByIdAndUpdate(
+        id,
+        {
+          $inc: { solves: 1 },
+          $push: {
+            solvers: {
+              odId: (userUpdate as any)._id.toString(),
+              username: (userUpdate as any).username,
+              fullName: (userUpdate as any).fullName || '',
+              solvedAt: new Date(),
+              isFirstBlood
+            }
+          }
+        },
+        { new: true }
+      );
+
+      // Apply retroactive decay to update ALL solvers
+      // This ensures score integrity over time
+      try {
+        await applyRetroactiveDecay(challengeIdStr);
+      } catch (error) {
+        console.error('Retroactive decay error:', error);
+      }
+
+      res.json({
+        success: true,
+        points: totalAwardedPoints,
+        basePoints: awardedPoints,
+        firstBlood: isFirstBlood,
+        firstBloodBonus: isFirstBlood ? (challenge.firstBloodBonus || 20) : 0,
+        message: 'Correct flag! Points updated for all solvers.'
+      });
     }
   } catch (error) {
     console.error('Submit flag error:', error);

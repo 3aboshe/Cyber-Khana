@@ -60,7 +60,7 @@ const App: React.FC = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
-    window.location.reload();
+    window.location.href = '/';
   };
 
   if (isLoading) {
