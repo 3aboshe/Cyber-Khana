@@ -185,7 +185,7 @@ const NewChallengeDetailPage: React.FC = () => {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-          <p className="text-zinc-400 font-medium animate-pulse">Decrypting Challenge Data...</p>
+          <p className="text-zinc-400 font-medium animate-pulse">Loading Challenge...</p>
         </div>
       </div>
     );
@@ -281,7 +281,7 @@ const NewChallengeDetailPage: React.FC = () => {
                   className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500 text-zinc-950 rounded-full text-xs font-black uppercase tracking-tighter"
                 >
                   <Award size={14} />
-                  Mission Accomplished
+                  Solved
                 </motion.div>
               )}
             </div>
@@ -301,7 +301,7 @@ const NewChallengeDetailPage: React.FC = () => {
 
               <h2 className="text-xl font-bold text-zinc-100 mb-6 flex items-center gap-3">
                 <div className="w-1.5 h-6 bg-emerald-500 rounded-full" />
-                Challenge Intel
+                Description
               </h2>
 
               <div className="relative z-10">
@@ -368,7 +368,7 @@ const NewChallengeDetailPage: React.FC = () => {
               <Card className="p-8 bg-zinc-900/40 border-zinc-800 border-l-4 border-l-emerald-500">
                 <h2 className="text-xl font-bold text-zinc-100 mb-6 flex items-center gap-3">
                   <CheckCircle size={20} className="text-emerald-400" />
-                  Declassified Writeup
+                  Writeup
                 </h2>
                 <div className="space-y-6">
                   {challenge.writeup.pdfFile && (
@@ -406,7 +406,7 @@ const NewChallengeDetailPage: React.FC = () => {
           {/* Sidebar */}
           <div className="lg:col-span-4 space-y-8">
             {/* Submission Card */}
-            <Card className={`p-8 sticky top-24 transition-all duration-500 ${solved ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-zinc-900 border-zinc-800 shadow-2xl shadow-emerald-500/5'}`}>
+            <Card className={`p-8 transition-all duration-500 ${solved ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-zinc-900 border-zinc-800 shadow-2xl shadow-emerald-500/5'}`}>
               <h2 className="text-xl font-bold text-zinc-100 mb-6 flex items-center gap-2">
                 <Target size={20} className={solved ? 'text-emerald-400' : 'text-zinc-500'} />
                 Flag Submission
@@ -418,7 +418,7 @@ const NewChallengeDetailPage: React.FC = () => {
                     <CheckCircle className="w-10 h-10 text-emerald-400" />
                   </div>
                   <div className="text-center">
-                    <p className="text-xl font-black text-white mb-1">Authenticated</p>
+                    <p className="text-xl font-black text-white mb-1">Solved</p>
                     <p className="text-zinc-500 text-sm">System integrity verified. Points awarded.</p>
                   </div>
                   <Button variant="outline" className="w-full border-zinc-800" onClick={() => navigate('/challenges')}>
@@ -445,7 +445,7 @@ const NewChallengeDetailPage: React.FC = () => {
                     disabled={submitting}
                     className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-500/20 h-auto rounded-2xl text-lg font-black"
                   >
-                    {submitting ? 'VALIDATING...' : 'SUBMIT AUTH KEY'}
+                    {submitting ? 'SUBMITTING...' : 'SUBMIT FLAG'}
                   </Button>
                 </form>
               )}
@@ -471,11 +471,10 @@ const NewChallengeDetailPage: React.FC = () => {
               <Card className="p-8 bg-zinc-900 border-zinc-800">
                 <h2 className="text-xl font-bold text-zinc-100 mb-6 flex items-center gap-2">
                   <HelpCircle size={20} className="text-zinc-500" />
-                  Encrypted Intel
+                  Hints
                 </h2>
                 <div className="space-y-4">
                   {challenge.hints
-                    .filter((hint: any) => hint.isPublished !== false)
                     .map((hint: any, index: number) => {
                       const hintId = `${challenge._id}-${index}`;
                       const isUnlocked = unlockedHints.includes(hintId);
@@ -492,7 +491,7 @@ const NewChallengeDetailPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               {isUnlocked ? <HelpCircle size={16} className="text-emerald-400" /> : <Lock size={16} className="text-zinc-600" />}
                               <span className={`text-xs font-black uppercase tracking-widest ${isUnlocked ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                                DATA PACK {index + 1}
+                                HINT {index + 1}
                               </span>
                             </div>
                             {!isUnlocked && (
@@ -511,7 +510,7 @@ const NewChallengeDetailPage: React.FC = () => {
                               className="w-full bg-zinc-800 hover:bg-zinc-700 h-9 rounded-xl text-[10px] font-black tracking-widest uppercase"
                               variant="secondary"
                             >
-                              BUY INTEL
+                              UNLOCK HINT
                             </Button>
                           )}
                         </div>
@@ -581,7 +580,7 @@ const NewChallengeDetailPage: React.FC = () => {
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-24 h-24 mx-auto mb-8 rounded-full bg-emerald-500/20 flex items-center justify-center border-2 border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.3)]">
             <CheckCircle className="w-14 h-14 text-emerald-400" />
           </motion.div>
-          <h2 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase italic">Target Neutered</h2>
+          <h2 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase italic">Challenge Solved</h2>
           <p className="text-zinc-400 font-medium mb-8 leading-relaxed">Excellent work agent. Your credentials have been verified and points have been allocated to your profile.</p>
           <Button onClick={() => setShowSuccessModal(false)} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-2xl h-auto">
             ACKNOWLEDGE
@@ -593,12 +592,12 @@ const NewChallengeDetailPage: React.FC = () => {
         <div className="p-8 bg-zinc-950 border border-zinc-800 rounded-3xl">
           <h3 className="text-xl font-black text-white mb-4 tracking-tight uppercase italic flex items-center gap-2">
             <Lock className="text-yellow-500" />
-            Buy Intel?
+            Unlock Hint?
           </h3>
           {selectedHint && (
             <>
               <p className="text-zinc-400 font-medium mb-8 leading-relaxed text-sm">
-                Decryption of <strong className="text-zinc-200">Data Pack {selectedHint.index + 1}</strong> will cost <strong className="text-yellow-500">{selectedHint.cost} Units</strong>. This budget allocation is permanent.
+                Unlocking <strong className="text-zinc-200">Hint {selectedHint.index + 1}</strong> will cost <strong className="text-yellow-500">{selectedHint.cost} Units</strong>. This budget allocation is permanent.
               </p>
               <div className="flex gap-4">
                 <Button variant="secondary" onClick={() => setShowHintModal(false)} className="flex-1 bg-zinc-900 border-zinc-800 rounded-xl h-12">

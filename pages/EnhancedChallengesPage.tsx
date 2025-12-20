@@ -184,13 +184,13 @@ const EnhancedChallengesPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <Target size={16} className="text-zinc-500" />
                   <span className="text-sm font-bold text-zinc-400">
-                    <span className="text-zinc-100">{challenges.length}</span> ENCRYPTED
+                    <span className="text-zinc-100">{challenges.length}</span> CHALLENGES
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Award size={16} className="text-emerald-500" />
                   <span className="text-sm font-bold text-zinc-400">
-                    <span className="text-emerald-400">{solvedChallenges.length}</span> DECRYPTED
+                    <span className="text-emerald-400">{solvedChallenges.length}</span> SOLVED
                   </span>
                 </div>
               </div>

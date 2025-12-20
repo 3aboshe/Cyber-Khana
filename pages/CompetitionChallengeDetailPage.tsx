@@ -166,7 +166,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
     if (!selectedHint || !currentUser) return;
 
     try {
-      const result = await competitionService.buyCompetitionHint(id!, challenge!._id, selectedHint.index, selectedHint.cost);
+      const result = await competitionService.buyCompetitionHint(id!, challenge!._id, selectedHint.index);
 
       // Add the hint to unlocked hints
       const hintId = `${challenge!._id}-${selectedHint.index}`;
@@ -349,7 +349,7 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                       disabled={submitting}
                       className="w-full"
                     >
-                      {submitting ? 'Submitting...' : 'Submit'}
+                      {submitting ? 'Submitting...' : 'Submit Flag'}
                     </Button>
                   </form>
                 )}
@@ -375,7 +375,6 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                   <h2 className="text-lg font-bold text-zinc-100 mb-4">Hints</h2>
                   <div className="space-y-3">
                     {challenge.hints
-                      .filter((hint: any) => hint.isPublished !== false)
                       .map((hint: any, index: number) => {
                         const hintId = `${challenge._id}-${index}`;
                         const isUnlocked = unlockedHints.includes(hintId);
@@ -416,13 +415,13 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                               >
                                 {currentUser && (currentUser.competitionPoints || 0) < hint.cost
                                   ? 'Not enough points'
-                                  : `Purchase for ${hint.cost} points`}
+                                  : `Unlock for ${hint.cost} points`}
                               </Button>
                             </div>
                           );
                         }
                       })}
-                    {challenge.hints.filter((h: any) => h.isPublished !== false).length === 0 && (
+                    {challenge.hints.length === 0 && (
                       <div className="text-center py-8 text-zinc-500">
                         <HelpCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
                         <p>No hints published yet</p>
