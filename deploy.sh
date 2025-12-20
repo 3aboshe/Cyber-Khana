@@ -69,7 +69,16 @@ pm2 restart cyber-khana-backend || {
 echo -e "${GREEN}✓ PM2 restarted${NC}"
 echo ""
 
-echo -e "${YELLOW}Step 6/6: Verifying deployment...${NC}"
+echo -e "${YELLOW}Step 6/7: Updating Nginx configuration...${NC}"
+cp /root/cyber-khana/nginx.conf /etc/nginx/sites-available/cyber-khana
+nginx -t && systemctl reload nginx || {
+    echo -e "${RED}Nginx reload failed${NC}"
+    exit 1
+}
+echo -e "${GREEN}✓ Nginx configuration updated${NC}"
+echo ""
+
+echo -e "${YELLOW}Step 7/7: Verifying deployment...${NC}"
 echo "Checking PM2 status..."
 pm2 status | grep "cyber-khana-backend"
 
