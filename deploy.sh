@@ -28,6 +28,11 @@ echo ""
 echo -e "${YELLOW}Step 2/6: Rebuilding frontend...${NC}"
 echo "Removing old build files..."
 rm -rf /root/cyber-khana/dist
+echo "Installing frontend dependencies..."
+npm install || {
+    echo -e "${RED}Frontend install failed${NC}"
+    exit 1
+}
 echo "Building frontend..."
 npm run build || {
     echo -e "${RED}Frontend build failed${NC}"
@@ -44,6 +49,11 @@ echo ""
 
 echo -e "${YELLOW}Step 4/6: Rebuilding backend...${NC}"
 cd /root/cyber-khana/backend
+echo "Installing backend dependencies..."
+npm install || {
+    echo -e "${RED}Backend install failed${NC}"
+    exit 1
+}
 npm run build || {
     echo -e "${RED}Backend build failed${NC}"
     exit 1

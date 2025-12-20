@@ -49,6 +49,7 @@ export interface Challenge {
   difficulty?: 'Very Easy' | 'Easy' | 'Medium' | 'Hard' | 'Expert';
   estimatedTime?: number;
   challengeLink?: string;
+  createdAt: string;
 }
 
 export interface User {
@@ -70,11 +71,11 @@ export interface LeaderboardEntry {
 }
 
 export interface Announcement {
-    id: string;
-    title: string;
-    content: string;
-    timestamp: string;
-    type: 'info' | 'success' | 'warning';
+  id: string;
+  title: string;
+  content: string;
+  timestamp: string;
+  type: 'info' | 'success' | 'warning';
 }
 
 export interface CompetitionChallenge {

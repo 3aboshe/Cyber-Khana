@@ -9,9 +9,11 @@ import Button from '../components/ui/EnhancedButton';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import EmptyState from '../components/ui/EmptyState';
-import { BookOpen, Filter, Grid, List } from 'lucide-react';
+import { BookOpen, Filter, Grid, List, Search, Target, Award, Rocket } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
 // Temporary: Remove toast dependency
-const useToast = () => ({ toast: () => {} });
+const useToast = () => ({ toast: (type: string, msg: string) => console.log(msg) });
 
 const CATEGORIES = [
   { label: 'All Categories', value: 'all' },
@@ -59,7 +61,6 @@ const EnhancedChallengesPage: React.FC = () => {
   useEffect(() => {
     fetchData();
 
-    // Listen for challenge updates to refetch data
     const handleChallengeUpdate = () => {
       fetchData();
     };
@@ -96,26 +97,11 @@ const EnhancedChallengesPage: React.FC = () => {
   };
 
   const isSolved = (challengeId: string) => solvedChallenges.includes(challengeId);
-  const isBookmarked = (challengeId: string) => bookmarkedChallenges.includes(challengeId);
-
-  const handleBookmark = async (challengeId: string) => {
-    try {
-      if (isBookmarked(challengeId)) {
-        setBookmarkedChallenges(prev => prev.filter(id => id !== challengeId));
-        toast('success', 'Removed from bookmarks');
-      } else {
-        setBookmarkedChallenges(prev => [...prev, challengeId]);
-        toast('success', 'Added to bookmarks');
-      }
-    } catch (err) {
-      toast('error', 'Failed to update bookmark');
-    }
-  };
 
   const filteredAndSortedChallenges = useMemo(() => {
     let filtered = challenges.filter((challenge) => {
       const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           challenge.description.toLowerCase().includes(searchTerm.toLowerCase());
+        challenge.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'all' || challenge.category === selectedCategory;
       const matchesDifficulty = difficultyFilter === 'all' || challenge.difficulty === difficultyFilter;
       const matchesSolved = !showSolvedOnly || isSolved(challenge._id);
@@ -123,7 +109,6 @@ const EnhancedChallengesPage: React.FC = () => {
       return matchesSearch && matchesCategory && matchesDifficulty && matchesSolved;
     });
 
-    // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'points-desc':
@@ -156,109 +141,170 @@ const EnhancedChallengesPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Breadcrumbs />
-        <div className="mb-8">
-          <div className="h-10 bg-zinc-800 rounded w-1/4 mb-4"></div>
-          <div className="h-12 bg-zinc-800 rounded"></div>
-        </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <LoadingSkeleton key={i} variant="card" />
-          ))}
+      <div className="container mx-auto px-4 py-12">
+        <div className="space-y-8">
+          <div className="h-12 bg-zinc-900 rounded-2xl w-64 animate-pulse" />
+          <div className="h-20 bg-zinc-900 rounded-3xl animate-pulse" />
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[...Array(6)].map((_, i) => (
+              <LoadingSkeleton key={i} variant="card" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 pb-24 md:pb-8">
-      <Breadcrumbs />
+    <div className="min-h-screen bg-zinc-950 pb-20">
+      {/* Hero Header */}
+      <div className="relative pt-12 pb-20 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(16,185,129,0.05),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.05),transparent_50%)]" />
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-4xl font-bold text-zinc-100 mb-2">Challenges</h1>
-            <p className="text-zinc-400">
-              {filteredAndSortedChallenges.length} of {challenges.length} challenges
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === 'grid' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
+        <div className="container mx-auto px-4 relative z-10">
+          <Breadcrumbs />
+
+          <div className="mt-8 flex flex-col md:flex-row md:items-end justify-between gap-8">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
             >
-              <Grid className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <Rocket size={20} />
+                </div>
+                <span className="text-sm font-black uppercase tracking-[0.2em] text-emerald-500/80">Active Operations</span>
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-white via-zinc-200 to-zinc-500">
+                Challenges
+              </h1>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-2">
+                  <Target size={16} className="text-zinc-500" />
+                  <span className="text-sm font-bold text-zinc-400">
+                    <span className="text-zinc-100">{challenges.length}</span> ENCRYPTED
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award size={16} className="text-emerald-500" />
+                  <span className="text-sm font-bold text-zinc-400">
+                    <span className="text-emerald-400">{solvedChallenges.length}</span> DECRYPTED
+                  </span>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex gap-3 bg-zinc-900/50 p-2 rounded-2xl border border-zinc-800/50 backdrop-blur-xl"
             >
-              <List className="w-4 h-4" />
-            </Button>
+              <Button
+                variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+                className={`!p-3 ${viewMode === 'grid' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : ''}`}
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid className="w-5 h-5" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'primary' : 'ghost'}
+                className={`!p-3 ${viewMode === 'list' ? 'bg-emerald-500 shadow-lg shadow-emerald-500/20' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                <List className="w-5 h-5" />
+              </Button>
+            </motion.div>
           </div>
         </div>
-
-        <FilterBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          categories={CATEGORIES}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          sortOptions={SORT_OPTIONS}
-          showSolvedOnly={showSolvedOnly}
-          onToggleSolvedOnly={() => setShowSolvedOnly(!showSolvedOnly)}
-          showFilters={showFilters}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          activeFiltersCount={activeFiltersCount}
-          onClearFilters={() => {
-            setSearchTerm('');
-            setSelectedCategory('all');
-            setDifficultyFilter('all');
-            setShowSolvedOnly(false);
-            setSortBy('points-desc');
-          }}
-          difficultyFilter={difficultyFilter}
-          onDifficultyChange={setDifficultyFilter}
-          difficultyOptions={DIFFICULTY_OPTIONS}
-        />
       </div>
 
-      {/* Results */}
-      {filteredAndSortedChallenges.length === 0 ? (
-        <EmptyState
-          icon={BookOpen}
-          title="No challenges found"
-          description="Try adjusting your search or filter criteria"
-          actionLabel="Clear Filters"
-          onAction={() => {
-            setSearchTerm('');
-            setSelectedCategory('all');
-            setDifficultyFilter('all');
-            setShowSolvedOnly(false);
-          }}
-        />
-      ) : (
-        <div className={viewMode === 'grid'
-          ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6'
-          : 'space-y-4'
-        }>
-          {filteredAndSortedChallenges.map((challenge) => (
-            <EnhancedChallengeCard
-              key={challenge._id}
-              challenge={challenge}
-              isSolved={isSolved(challenge._id)}
-              isBookmarked={isBookmarked(challenge._id)}
-              onBookmark={handleBookmark}
-            />
-          ))}
-        </div>
-      )}
+      <div className="container mx-auto px-4">
+        {/* Filters */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-12"
+        >
+          <FilterBar
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            categories={CATEGORIES}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            sortOptions={SORT_OPTIONS}
+            showSolvedOnly={showSolvedOnly}
+            onToggleSolvedOnly={() => setShowSolvedOnly(!showSolvedOnly)}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            activeFiltersCount={activeFiltersCount}
+            onClearFilters={() => {
+              setSearchTerm('');
+              setSelectedCategory('all');
+              setDifficultyFilter('all');
+              setShowSolvedOnly(false);
+              setSortBy('points-desc');
+            }}
+            difficultyFilter={difficultyFilter}
+            onDifficultyChange={setDifficultyFilter}
+            difficultyOptions={DIFFICULTY_OPTIONS}
+          />
+        </motion.div>
+
+        {/* Results */}
+        <AnimatePresence mode="popLayout">
+          {filteredAndSortedChallenges.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+            >
+              <EmptyState
+                icon={BookOpen}
+                title="No challenges found"
+                description="Try adjusting your search or filter criteria"
+                actionLabel="Clear Filters"
+                onAction={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('all');
+                  setDifficultyFilter('all');
+                  setShowSolvedOnly(false);
+                }}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className={viewMode === 'grid'
+                ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-8'
+                : 'space-y-4'
+              }
+            >
+              {filteredAndSortedChallenges.map((challenge, index) => (
+                <motion.div
+                  key={challenge._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  layout
+                >
+                  <EnhancedChallengeCard
+                    challenge={challenge}
+                    isSolved={isSolved(challenge._id)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
