@@ -809,10 +809,14 @@ export const addPoints = async (req: AuthRequest, res: Response) => {
     }
 
     const { userId } = req.params;
-    const { points, reason } = req.body;
+    const { points, reason, type = 'general', competitionId } = req.body;
 
     if (!points || points <= 0) {
       return res.status(400).json({ error: 'Points must be a positive number' });
+    }
+
+    if (!['general', 'competition'].includes(type)) {
+      return res.status(400).json({ error: 'Type must be "general" or "competition"' });
     }
 
     const targetUser = await User.findById(userId);
@@ -820,20 +824,57 @@ export const addPoints = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update bonus points
-    targetUser.bonusPoints = (targetUser.bonusPoints || 0) + points;
+    if (type === 'general') {
+      // Update general bonus points
+      targetUser.bonusPoints = (targetUser.bonusPoints || 0) + points;
+      // Also update main points
+      targetUser.points = (targetUser.points || 0) + points;
 
-    // Also update main points for consistency (though leaderboard is dynamic)
-    targetUser.points = (targetUser.points || 0) + points;
+      await targetUser.save();
 
-    await targetUser.save();
+      res.json({
+        message: `Successfully added ${points} bonus points`,
+        newPoints: targetUser.points,
+        totalBonusPoints: targetUser.bonusPoints,
+        reason: reason || 'Manual adjustment'
+      });
+    } else {
+      // Competition points
+      if (!competitionId) {
+        return res.status(400).json({ error: 'Competition ID is required for competition points' });
+      }
 
-    res.json({
-      message: `Successfully added ${points} bonus points`,
-      newPoints: targetUser.points,
-      totalBonusPoints: targetUser.bonusPoints,
-      reason: reason || 'Manual adjustment'
-    });
+      const Competition = require('../models/Competition').default;
+      const competition = await Competition.findById(competitionId);
+      if (!competition) {
+        return res.status(404).json({ error: 'Competition not found' });
+      }
+
+      // Add to competition bonus points array
+      if (!targetUser.competitionBonusPoints) {
+        targetUser.competitionBonusPoints = [];
+      }
+
+      targetUser.competitionBonusPoints.push({
+        competitionId,
+        amount: points,
+        reason: reason || 'Bonus points awarded by admin',
+        adminId: req.user.userId,
+        createdAt: new Date()
+      });
+
+      // Update cached competition points
+      targetUser.competitionPoints = (targetUser.competitionPoints || 0) + points;
+
+      await targetUser.save();
+
+      res.json({
+        message: `Successfully added ${points} bonus points to competition "${competition.name}"`,
+        newCompetitionPoints: targetUser.competitionPoints,
+        competitionName: competition.name,
+        reason: reason || 'Manual adjustment'
+      });
+    }
   } catch (error) {
     console.error('Error adding points:', error);
     res.status(500).json({ error: 'Error adding points' });

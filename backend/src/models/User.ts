@@ -16,6 +16,14 @@ export interface ICompetitionPenalty {
   createdAt: Date;
 }
 
+export interface ICompetitionBonusPoint {
+  competitionId: string;
+  amount: number;
+  reason: string;
+  adminId: string;
+  createdAt: Date;
+}
+
 export interface IUser extends Document {
   username: string;
   displayName?: string;
@@ -36,6 +44,7 @@ export interface IUser extends Document {
   isBanned?: boolean;
   penalties?: IPenalty[];
   competitionPenalties?: ICompetitionPenalty[];
+  competitionBonusPoints?: ICompetitionBonusPoint[];
   createdAt: Date;
   updatedAt: Date;
   bonusPoints: number;
@@ -53,6 +62,14 @@ const CompetitionPenaltySchema = new Schema({
   competitionId: { type: String, required: true },
   amount: { type: Number, required: true },
   reason: { type: String, default: 'Points deduction by admin' },
+  adminId: { type: String },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const CompetitionBonusPointSchema = new Schema({
+  competitionId: { type: String, required: true },
+  amount: { type: Number, required: true },
+  reason: { type: String, default: 'Bonus points awarded by admin' },
   adminId: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
@@ -121,6 +138,7 @@ const UserSchema: Schema = new Schema({
   }],
   penalties: [PenaltySchema],
   competitionPenalties: [CompetitionPenaltySchema],
+  competitionBonusPoints: [CompetitionBonusPointSchema],
   bonusPoints: {
     type: Number,
     default: 0

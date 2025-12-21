@@ -552,7 +552,7 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
     const users = await User.find({
       universityCode: competition.universityCode,
       isBanned: { $ne: true }
-    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon competitionPenalties unlockedHints');
+    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon competitionPenalties competitionBonusPoints unlockedHints');
 
     // Get integrated challenges for this competition
     const Challenge = require('../models/Challenge').default;
@@ -567,14 +567,19 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
       integratedChallengeMap.set(c._id.toString(), c);
     });
 
-    // Filter users who have solved at least one competition challenge
+    // Filter users who have solved at least one competition challenge OR have bonus points
     const leaderboard = users
       .filter((user: any) => {
+        // Check if user has bonus points for this competition
+        const hasBonusPoints = user.competitionBonusPoints?.some((bp: any) => bp.competitionId === id);
+
         // Check if user has solved any competition challenge or integrated challenge
-        return user.solvedChallengesDetails?.some((solve: any) =>
+        const hasSolves = user.solvedChallengesDetails?.some((solve: any) =>
           competition.challenges.some((c: any) => c._id?.toString() === solve.challengeId?.toString()) ||
           integratedChallengeMap.has(solve.challengeId?.toString())
         );
+
+        return hasBonusPoints || hasSolves;
       })
       .map((user: any) => {
         // Get competition-related solves with timestamps
@@ -587,6 +592,13 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
         // Calculate points from competition challenges and integrated challenges
         let competitionPoints = competitionSolves
           .reduce((total: number, solve: any) => total + (solve.points || 0), 0) || 0;
+
+        // Add bonus points for this specific competition
+        const bonusPoints = (user.competitionBonusPoints || [])
+          .filter((bp: any) => bp.competitionId === id)
+          .reduce((total: number, bp: any) => total + (bp.amount || 0), 0);
+
+        competitionPoints += bonusPoints;
 
         // Deduct penalties for this specific competition
         const competitionPenalties = (user.competitionPenalties || [])
@@ -618,6 +630,9 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
         const competitionSolvedCount = competitionSolves.length || 0;
 
         // Get the last solve timestamp for tiebreaker
+        // If bonus points were the last "activity", we might want to use that timestamp, but keeping it simple for now:
+        // Use last solve time. If no solves but bonus points, maybe null or last bonus time?
+        // Let's stick to last solve time for now as it's the primary tiebreaker for skills.
         const lastSolveTime = competitionSolves.length > 0
           ? new Date(Math.max(...competitionSolves.map((s: any) => new Date(s.solvedAt).getTime())))
           : null;
@@ -633,7 +648,8 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
           universityCode: user.universityCode,
           lastSolveTime,
           solvedDetails: competitionSolves,
-          penaltyPoints: competitionPenalties
+          penaltyPoints: competitionPenalties,
+          bonusPoints
         };
       })
       .sort((a: any, b: any) => {

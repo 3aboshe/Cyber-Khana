@@ -81,6 +81,9 @@ const AdminUsersPage: React.FC = () => {
   const [addPointsUsername, setAddPointsUsername] = useState('');
   const [addPointsValue, setAddPointsValue] = useState('');
   const [addPointsReason, setAddPointsReason] = useState('');
+
+  const [addPointsType, setAddPointsType] = useState<'general' | 'competition'>('general');
+  const [selectedCompetitionIdForAdd, setSelectedCompetitionIdForAdd] = useState('');
   const [addingPoints, setAddingPoints] = useState(false);
 
   useEffect(() => {
@@ -399,7 +402,9 @@ const AdminUsersPage: React.FC = () => {
         },
         body: JSON.stringify({
           points,
-          reason: addPointsReason || 'Manual adjustment'
+          reason: addPointsReason || 'Manual adjustment',
+          type: addPointsType,
+          competitionId: addPointsType === 'competition' ? selectedCompetitionIdForAdd : undefined
         })
       });
 
@@ -649,13 +654,16 @@ const AdminUsersPage: React.FC = () => {
                         )}
                         {currentUser?.role === 'super-admin' && (
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               setAddPointsUserId(user._id);
                               setAddPointsUsername(user.username);
                               setAddPointsValue('');
                               setAddPointsReason('');
+                              setAddPointsType('general');
+                              setSelectedCompetitionIdForAdd('');
                               setShowAddPointsModal(true);
                               setActionMenuOpen(null);
+                              await fetchCompetitions();
                             }}
                             className="w-full px-4 py-2 text-left text-emerald-400 hover:bg-zinc-700/50 flex items-center gap-2"
                           >
@@ -915,6 +923,54 @@ const AdminUsersPage: React.FC = () => {
                 Adding points to: <span className="text-zinc-200 font-semibold">{addPointsUsername}</span>
               </p>
 
+              {/* Add Type Selection */}
+              <div className="mb-4">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Add To
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setAddPointsType('general')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${addPointsType === 'general'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
+                  >
+                    General Leaderboard
+                  </button>
+                  <button
+                    onClick={() => setAddPointsType('competition')}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${addPointsType === 'competition'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
+                  >
+                    Competition
+                  </button>
+                </div>
+              </div>
+
+              {/* Competition Selection (if competition type) */}
+              {addPointsType === 'competition' && (
+                <div className="mb-4">
+                  <label className="block text-zinc-300 text-sm font-medium mb-2">
+                    Select Competition
+                  </label>
+                  <select
+                    value={selectedCompetitionIdForAdd}
+                    onChange={(e) => setSelectedCompetitionIdForAdd(e.target.value)}
+                    className="w-full bg-zinc-800 border border-zinc-600 rounded-md px-3 py-2 text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">-- Select a competition --</option>
+                    {competitions.map((comp) => (
+                      <option key={comp._id} value={comp._id}>
+                        {comp.name} ({comp.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               {/* Points to Add */}
               <div className="mb-4">
                 <label className="block text-zinc-300 text-sm font-medium mb-2">
@@ -958,7 +1014,7 @@ const AdminUsersPage: React.FC = () => {
                 <Button
                   onClick={handleAddPoints}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                  disabled={!addPointsValue || addingPoints}
+                  disabled={!addPointsValue || addingPoints || (addPointsType === 'competition' && !selectedCompetitionIdForAdd)}
                 >
                   {addingPoints ? 'Adding...' : 'Add Points'}
                 </Button>
