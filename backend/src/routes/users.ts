@@ -15,7 +15,8 @@ import {
   deleteUser,
   purchaseHint,
   deductPoints,
-  getUserPenalties
+  getUserPenalties,
+  addPoints
 } from '../controllers/userController';
 import { authenticate, authenticateSuperAdmin, requireAdmin } from '../middleware/auth';
 
@@ -33,6 +34,7 @@ router.post('/promote/:userId', authenticate, authenticateSuperAdmin, promoteToA
 router.post('/demote/:userId', authenticate, authenticateSuperAdmin, demoteFromAdmin);
 router.post('/change-password/:userId', authenticate, authenticateSuperAdmin, changeUserPassword);
 router.post('/:userId/deduct-points', authenticate, requireAdmin, deductPoints);
+router.post('/:userId/add-points', authenticate, authenticateSuperAdmin, addPoints);
 router.delete('/:userId', authenticate, authenticateSuperAdmin, deleteUser);
 router.post('/ban/:userId', authenticate, requireAdmin, banUser);
 router.post('/unban/:userId', authenticate, requireAdmin, unbanUser);

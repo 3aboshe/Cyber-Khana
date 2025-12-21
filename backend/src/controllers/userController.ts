@@ -297,7 +297,8 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         return total;
       }, 0);
 
-      nonCompetitionPoints = Math.max(0, nonCompetitionPoints - generalPenalties - hintCosts);
+      // Add bonus points and deduct penalties/hints
+      nonCompetitionPoints = Math.max(0, nonCompetitionPoints + (user.bonusPoints || 0) - generalPenalties - hintCosts);
 
       // Calculate solve count for non-competition challenges
       const nonCompetitionSolvedCount = nonCompetitionSolvedDetails.length;
@@ -796,6 +797,46 @@ export const getUserPenalties = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching user penalties' });
+  }
+};
+
+// Add points to a user (SUPER ADMIN ONLY)
+export const addPoints = async (req: AuthRequest, res: Response) => {
+  try {
+    // Strictly restrict to Super Admin
+    if (req.user?.role !== 'super-admin') {
+      return res.status(403).json({ error: 'Only super admin can add manual points' });
+    }
+
+    const { userId } = req.params;
+    const { points, reason } = req.body;
+
+    if (!points || points <= 0) {
+      return res.status(400).json({ error: 'Points must be a positive number' });
+    }
+
+    const targetUser = await User.findById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Update bonus points
+    targetUser.bonusPoints = (targetUser.bonusPoints || 0) + points;
+
+    // Also update main points for consistency (though leaderboard is dynamic)
+    targetUser.points = (targetUser.points || 0) + points;
+
+    await targetUser.save();
+
+    res.json({
+      message: `Successfully added ${points} bonus points`,
+      newPoints: targetUser.points,
+      totalBonusPoints: targetUser.bonusPoints,
+      reason: reason || 'Manual adjustment'
+    });
+  } catch (error) {
+    console.error('Error adding points:', error);
+    res.status(500).json({ error: 'Error adding points' });
   }
 };
 

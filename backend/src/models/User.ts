@@ -38,6 +38,7 @@ export interface IUser extends Document {
   competitionPenalties?: ICompetitionPenalty[];
   createdAt: Date;
   updatedAt: Date;
+  bonusPoints: number;
 }
 
 const PenaltySchema = new Schema({
@@ -119,7 +120,11 @@ const UserSchema: Schema = new Schema({
     type: String
   }],
   penalties: [PenaltySchema],
-  competitionPenalties: [CompetitionPenaltySchema]
+  competitionPenalties: [CompetitionPenaltySchema],
+  bonusPoints: {
+    type: Number,
+    default: 0
+  }
 }, {
   timestamps: true
 });

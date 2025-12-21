@@ -3,7 +3,7 @@ import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
 import Input from '../../components/ui/input';
-import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X, Trophy, MinusCircle } from 'lucide-react';
+import { Search, Ban, UserCheck, Shield, Users, MoreVertical, School, KeyRound, X, Trophy, MinusCircle, PlusCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConfirmation } from '../../src/contexts/ConfirmationContext';
 import { useToast } from '../../src/hooks/useToast';
@@ -74,6 +74,14 @@ const AdminUsersPage: React.FC = () => {
   const [selectedCompetitionId, setSelectedCompetitionId] = useState('');
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [deducting, setDeducting] = useState(false);
+
+  // Add points state
+  const [showAddPointsModal, setShowAddPointsModal] = useState(false);
+  const [addPointsUserId, setAddPointsUserId] = useState('');
+  const [addPointsUsername, setAddPointsUsername] = useState('');
+  const [addPointsValue, setAddPointsValue] = useState('');
+  const [addPointsReason, setAddPointsReason] = useState('');
+  const [addingPoints, setAddingPoints] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -360,7 +368,7 @@ const AdminUsersPage: React.FC = () => {
       const result = await response.json();
       toast('success', result.message);
       setShowDeductModal(false);
-      
+
       // Refresh users list to update points
       await fetchUsers();
     } catch (err: any) {
@@ -371,19 +379,62 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleAddPoints = async () => {
+    const points = parseInt(addPointsValue);
+    if (!points || points <= 0) {
+      toast('warning', 'Please enter a valid positive number of points');
+      return;
+    }
+
+    setAddingPoints(true);
+    try {
+      const API_URL = '/api';
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`${API_URL}/users/${addPointsUserId}/add-points`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          points,
+          reason: addPointsReason || 'Manual adjustment'
+        })
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to add points');
+      }
+
+      const result = await response.json();
+      toast('success', result.message);
+      setShowAddPointsModal(false);
+
+      // Refresh users list to update points
+      await fetchUsers();
+    } catch (err: any) {
+      console.error('Error adding points:', err);
+      toast('error', err.message || 'Failed to add points');
+    } finally {
+      setAddingPoints(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
     // Search by username or full name
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       user.username.toLowerCase().includes(searchLower) ||
       (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
       (user.displayName && user.displayName.toLowerCase().includes(searchLower));
-    
+
     const matchesBanned = !filterBanned || user.isBanned;
-    
+
     // University filter (super-admin only)
     const matchesUniversity = universityFilter === 'all' || user.universityCode === universityFilter;
-    
+
     return matchesSearch && matchesBanned && matchesUniversity;
   });
 
@@ -440,11 +491,10 @@ const AdminUsersPage: React.FC = () => {
           )}
           <button
             onClick={() => setFilterBanned(!filterBanned)}
-            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${
-              filterBanned
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-            }`}
+            className={`flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-all ${filterBanned
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
+              }`}
           >
             <Ban className="w-5 h-5" />
             {filterBanned ? 'Showing Banned' : 'Show Banned Only'}
@@ -468,9 +518,8 @@ const AdminUsersPage: React.FC = () => {
             return (
               <Card
                 key={user._id}
-                className={`p-4 transition-all ${
-                  user.isBanned ? 'opacity-60 bg-zinc-900/50' : 'hover:border-zinc-600'
-                }`}
+                className={`p-4 transition-all ${user.isBanned ? 'opacity-60 bg-zinc-900/50' : 'hover:border-zinc-600'
+                  }`}
               >
                 <div className="flex items-center gap-4">
                   {/* Avatar */}
@@ -490,10 +539,10 @@ const AdminUsersPage: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-lg font-semibold text-zinc-100 truncate">
-                        {user.fullName 
-                          ? (user.fullName.length > 30 
-                              ? user.fullName.substring(0, 30) + '...' 
-                              : user.fullName)
+                        {user.fullName
+                          ? (user.fullName.length > 30
+                            ? user.fullName.substring(0, 30) + '...'
+                            : user.fullName)
                           : user.displayName || user.username}
                       </h3>
                       {user.role === 'admin' && (
@@ -596,6 +645,22 @@ const AdminUsersPage: React.FC = () => {
                           >
                             <X className="w-4 h-4" />
                             Delete User
+                          </button>
+                        )}
+                        {currentUser?.role === 'super-admin' && (
+                          <button
+                            onClick={() => {
+                              setAddPointsUserId(user._id);
+                              setAddPointsUsername(user.username);
+                              setAddPointsValue('');
+                              setAddPointsReason('');
+                              setShowAddPointsModal(true);
+                              setActionMenuOpen(null);
+                            }}
+                            className="w-full px-4 py-2 text-left text-emerald-400 hover:bg-zinc-700/50 flex items-center gap-2"
+                          >
+                            <PlusCircle className="w-4 h-4" />
+                            Add Bonus Points
                           </button>
                         )}
                       </div>
@@ -732,21 +797,19 @@ const AdminUsersPage: React.FC = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setDeductType('general')}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                      deductType === 'general'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                    }`}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deductType === 'general'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
                   >
                     General Leaderboard
                   </button>
                   <button
                     onClick={() => setDeductType('competition')}
-                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                      deductType === 'competition'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-                    }`}
+                    className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${deductType === 'competition'
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                      }`}
                   >
                     Competition
                   </button>
@@ -799,7 +862,7 @@ const AdminUsersPage: React.FC = () => {
                   type="text"
                   value={deductReason}
                   onChange={(e) => setDeductReason(e.target.value)}
-                  placeholder="e.g., Rule violation, Cheating, etc."
+                  placeholder="e.g., Cheating detected"
                   className="w-full"
                   disabled={deducting}
                 />
@@ -827,6 +890,84 @@ const AdminUsersPage: React.FC = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Add Points Modal (Super Admin Only) */}
+      <AnimatePresence>
+        {showAddPointsModal && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 max-w-md w-full"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-zinc-100">Add Bonus Points</h3>
+                <button
+                  onClick={() => setShowAddPointsModal(false)}
+                  className="text-zinc-400 hover:text-zinc-200"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-zinc-400 mb-4">
+                Adding points to: <span className="text-zinc-200 font-semibold">{addPointsUsername}</span>
+              </p>
+
+              {/* Points to Add */}
+              <div className="mb-4">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Points to Add
+                </label>
+                <Input
+                  type="number"
+                  value={addPointsValue}
+                  onChange={(e) => setAddPointsValue(e.target.value)}
+                  placeholder="Enter points (e.g., 1000)"
+                  className="w-full"
+                  min="1"
+                  disabled={addingPoints}
+                />
+              </div>
+
+              {/* Reason */}
+              <div className="mb-6">
+                <label className="block text-zinc-300 text-sm font-medium mb-2">
+                  Reason (Optional)
+                </label>
+                <Input
+                  type="text"
+                  value={addPointsReason}
+                  onChange={(e) => setAddPointsReason(e.target.value)}
+                  placeholder="e.g., Challenge restoration"
+                  className="w-full"
+                  disabled={addingPoints}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setShowAddPointsModal(false)}
+                  variant="ghost"
+                  className="flex-1"
+                  disabled={addingPoints}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddPoints}
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                  disabled={!addPointsValue || addingPoints}
+                >
+                  {addingPoints ? 'Adding...' : 'Add Points'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
 
       <ToastContainer />
     </div>
