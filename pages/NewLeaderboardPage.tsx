@@ -121,8 +121,11 @@ const NewLeaderboardPage: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'Unknown';
+    return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
@@ -743,7 +746,7 @@ const NewLeaderboardPage: React.FC = () => {
                             <Zap className="w-4 h-4 text-yellow-400" />
                             <span className="font-medium">Practice Challenges ({selectedUserProfile.regularSolvedCount})</span>
                           </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                          <div className="space-y-2">
                             {selectedUserProfile.regularSolvedChallenges.map((challenge) => (
                               <div
                                 key={challenge._id}
@@ -782,7 +785,7 @@ const NewLeaderboardPage: React.FC = () => {
                             <Trophy className="w-4 h-4 text-purple-400" />
                             <span className="font-medium">Competition Challenges ({selectedUserProfile.competitionSolvedCount})</span>
                           </div>
-                          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                          <div className="space-y-2">
                             {selectedUserProfile.competitionSolvedChallenges.map((challenge) => (
                               <div
                                 key={challenge._id}

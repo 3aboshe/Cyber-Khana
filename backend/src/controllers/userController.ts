@@ -15,10 +15,12 @@ const calculateGeneralStats = (user: any, regularChallengeMap: Map<string, any>)
   const enrichedSolvedDetails = nonCompetitionSolvedDetails.map((solve: any) => {
     const challenge = regularChallengeMap.get(solve.challengeId);
     return {
-      ...solve,
       _id: solve.challengeId,
+      challengeId: solve.challengeId,
       title: challenge?.title || 'Unknown Challenge',
-      category: challenge?.category || 'Unknown'
+      category: challenge?.category || 'Unknown',
+      points: solve.points || 0,
+      solvedAt: solve.solvedAt ? new Date(solve.solvedAt).toISOString() : null
     };
   });
 
