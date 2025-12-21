@@ -301,6 +301,22 @@ export const deleteChallenge = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Cleanup user scores: Remove challenge from users' solved lists and deduct points
+    const solvers = await User.find({ solvedChallenges: id });
+    for (const solver of solvers) {
+      const solveDetails = solver.solvedChallengesDetails?.find((d: any) => d.challengeId === id);
+      if (solveDetails) {
+        const pointsToRemove = solveDetails.points || 0;
+        solver.points = Math.max(0, solver.points - pointsToRemove);
+
+        // Remove from details and ID list
+        solver.solvedChallenges = solver.solvedChallenges.filter(paramId => paramId !== id);
+        solver.solvedChallengesDetails = solver.solvedChallengesDetails.filter((d: any) => d.challengeId !== id);
+
+        await solver.save();
+      }
+    }
+
     await challenge.deleteOne();
     res.json({ message: 'Challenge deleted successfully' });
   } catch (error) {

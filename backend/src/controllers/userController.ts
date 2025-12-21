@@ -265,7 +265,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     const usersWithNonCompetitionStats = users.map((user: any) => {
       // Filter solved challenges to exclude competition challenges
       const nonCompetitionSolvedDetails = user.solvedChallengesDetails.filter((solve: any) => {
-        return !competitionChallengeIds.has(solve.challengeId) && !integratedChallengeIds.has(solve.challengeId);
+        return regularChallengeMap.has(solve.challengeId);
       });
 
       // Calculate points from non-competition challenges only
