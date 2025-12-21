@@ -6,6 +6,56 @@ import University from '../models/University';
 import { generateToken, hashPassword, comparePassword } from '../utils/auth';
 import { IJWTPayload } from '../types';
 
+// Helper to calculate general stats consistently
+// Note: This logic duplicates userController.ts to ensure consistency on login
+// ideally this should be a shared utility, but for now we duplicate to avoid major refactors
+const calculateGeneralStats = (user: any, regularChallengeMap: Map<string, any>) => {
+  // Filter solved challenges to exclude competition challenges
+  const nonCompetitionSolvedDetails = (user.solvedChallengesDetails || []).filter((solve: any) => {
+    return regularChallengeMap.has(solve.challengeId);
+  });
+
+  // Calculate points from non-competition challenges only
+  const solvePoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
+    return total + (solve.points || 0);
+  }, 0);
+
+  // Deduct penalties for general leaderboard
+  const generalPenalties = (user.penalties || [])
+    .filter((penalty: any) => penalty.type === 'general')
+    .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
+
+  // Deduct costs of unlocked hints for regular challenges
+  const hintCosts = (user.unlockedHints || []).reduce((total: number, hintId: string) => {
+    // Regular hints are stored as "challengeId-hintIndex"
+    const parts = hintId.split('-');
+    if (parts.length === 2) {
+      const [cId, hIndexStr] = parts;
+      const challenge = regularChallengeMap.get(cId);
+
+      if (challenge && challenge.hints) {
+        const hIndex = parseInt(hIndexStr, 10);
+        if (challenge.hints[hIndex]) {
+          return total + (challenge.hints[hIndex].cost || 0);
+        }
+      }
+    }
+    return total;
+  }, 0);
+
+  // Add bonus points and deduct penalties/hints
+  const finalPoints = Math.max(0, solvePoints + (user.bonusPoints || 0) - generalPenalties - hintCosts);
+
+  return {
+    points: finalPoints,
+    solvePoints,
+    solvedCount: nonCompetitionSolvedDetails.length,
+    penalties: generalPenalties,
+    bonusPoints: user.bonusPoints || 0,
+    hintCosts
+  };
+};
+
 // Validation rules
 export const registerValidation = [
   body('username').trim().isLength({ min: 3, max: 30 }).withMessage('Username must be 3-30 characters')
@@ -80,7 +130,7 @@ export const register = async (req: Request, res: Response) => {
         role: user.role,
         universityCode: user.universityCode,
         universityName: university.name,
-        points: user.points
+        points: user.bonusPoints || 0 // New users start with 0 (or bonus if set somehow)
       }
     });
   } catch (error) {
@@ -161,6 +211,20 @@ export const login = async (req: Request, res: Response) => {
     // Get university name
     const university = await University.findOne({ code: user.universityCode });
 
+    // Calculate dynamic points (Standardized)
+    const Challenge = require('../models/Challenge').default;
+    const regularChallenges = await Challenge.find({
+      universityCode: user.universityCode,
+      fromCompetition: { $ne: true }
+    });
+
+    // Create map for helper
+    const regularChallengeMap = new Map();
+    regularChallenges.forEach((c: any) => regularChallengeMap.set(c._id.toString(), c));
+
+    // Calculate stats
+    const stats = calculateGeneralStats(user, regularChallengeMap);
+
     res.json({
       token,
       user: {
@@ -171,10 +235,11 @@ export const login = async (req: Request, res: Response) => {
         role: user.role,
         universityCode: user.universityCode,
         universityName: university?.name || user.universityCode,
-        points: user.points
+        points: stats.points
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ error: 'Server error during login' });
   }
 };
