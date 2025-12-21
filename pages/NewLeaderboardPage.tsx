@@ -132,15 +132,41 @@ const NewLeaderboardPage: React.FC = () => {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      'Web': 'bg-blue-500/20 text-blue-400',
-      'Crypto': 'bg-purple-500/20 text-purple-400',
-      'Pwn': 'bg-red-500/20 text-red-400',
-      'Reverse': 'bg-orange-500/20 text-orange-400',
-      'Forensics': 'bg-green-500/20 text-green-400',
-      'Misc': 'bg-zinc-500/20 text-zinc-400',
-      'OSINT': 'bg-cyan-500/20 text-cyan-400',
+      // Web categories
+      'Web': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+      'Web Exploitation': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+      // Crypto categories
+      'Crypto': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+      'Cryptography': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+      // Binary categories
+      'Pwn': 'bg-red-500/20 text-red-400 border border-red-500/30',
+      'Binary Exploitation': 'bg-red-500/20 text-red-400 border border-red-500/30',
+      // Reverse engineering
+      'Reverse': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+      'Reverse Engineering': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+      'RE': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+      // Forensics
+      'Forensics': 'bg-green-500/20 text-green-400 border border-green-500/30',
+      'Digital Forensics': 'bg-green-500/20 text-green-400 border border-green-500/30',
+      // OSINT
+      'OSINT': 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
+      // Misc
+      'Misc': 'bg-zinc-500/20 text-zinc-300 border border-zinc-500/30',
+      'Miscellaneous': 'bg-zinc-500/20 text-zinc-300 border border-zinc-500/30',
+      // Steganography
+      'Stego': 'bg-pink-500/20 text-pink-400 border border-pink-500/30',
+      'Steganography': 'bg-pink-500/20 text-pink-400 border border-pink-500/30',
+      // Network
+      'Network': 'bg-teal-500/20 text-teal-400 border border-teal-500/30',
+      // Hardware
+      'Hardware': 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+      // Mobile
+      'Mobile': 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30',
+      // AI/ML
+      'AI': 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30',
+      'Machine Learning': 'bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30',
     };
-    return colors[category] || 'bg-zinc-500/20 text-zinc-400';
+    return colors[category] || 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
   };
 
   const filteredUsers = useMemo(() => {
@@ -713,21 +739,23 @@ const NewLeaderboardPage: React.FC = () => {
                       {/* Regular Challenges */}
                       {selectedUserProfile.regularSolvedChallenges && selectedUserProfile.regularSolvedChallenges.length > 0 && (
                         <div>
-                          <div className="text-sm text-zinc-400 mb-2 flex items-center gap-2">
-                            <Zap className="w-4 h-4" />
-                            Practice Challenges ({selectedUserProfile.regularSolvedCount})
+                          <div className="text-sm text-zinc-400 mb-3 flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-yellow-400" />
+                            <span className="font-medium">Practice Challenges ({selectedUserProfile.regularSolvedCount})</span>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                             {selectedUserProfile.regularSolvedChallenges.map((challenge) => (
                               <div
                                 key={challenge._id}
-                                className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 hover:border-zinc-600 transition-colors"
+                                className="bg-gradient-to-r from-zinc-800/80 to-zinc-800/40 rounded-lg p-3 border border-zinc-700/50 hover:border-zinc-600 hover:from-zinc-800 hover:to-zinc-700/50 transition-all duration-200 group"
                               >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-zinc-100">{challenge.title}</div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <span className={`text-xs px-2 py-0.5 rounded ${getCategoryColor(challenge.category)}`}>
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors truncate">
+                                      {challenge.title}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getCategoryColor(challenge.category)}`}>
                                         {challenge.category}
                                       </span>
                                       <span className="text-xs text-zinc-500 flex items-center gap-1">
@@ -736,7 +764,10 @@ const NewLeaderboardPage: React.FC = () => {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-emerald-400 font-bold">+{challenge.points}</div>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-emerald-400 font-bold text-lg">+{challenge.points}</span>
+                                    <span className="text-xs text-emerald-500/70">pts</span>
+                                  </div>
                                 </div>
                               </div>
                             ))}
@@ -747,25 +778,27 @@ const NewLeaderboardPage: React.FC = () => {
                       {/* Competition Challenges */}
                       {selectedUserProfile.competitionSolvedChallenges && selectedUserProfile.competitionSolvedChallenges.length > 0 && (
                         <div>
-                          <div className="text-sm text-zinc-400 mb-2 flex items-center gap-2">
-                            <Trophy className="w-4 h-4" />
-                            Competition Challenges ({selectedUserProfile.competitionSolvedCount})
+                          <div className="text-sm text-zinc-400 mb-3 flex items-center gap-2">
+                            <Trophy className="w-4 h-4 text-purple-400" />
+                            <span className="font-medium">Competition Challenges ({selectedUserProfile.competitionSolvedCount})</span>
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                             {selectedUserProfile.competitionSolvedChallenges.map((challenge) => (
                               <div
                                 key={challenge._id}
-                                className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 hover:border-zinc-600 transition-colors"
+                                className="bg-gradient-to-r from-purple-900/20 to-zinc-800/40 rounded-lg p-3 border border-purple-500/20 hover:border-purple-500/40 hover:from-purple-900/30 hover:to-zinc-700/50 transition-all duration-200 group"
                               >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-zinc-100">{challenge.title}</div>
-                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                                      <span className={`text-xs px-2 py-0.5 rounded ${getCategoryColor(challenge.category)}`}>
+                                <div className="flex items-center justify-between gap-3">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-zinc-100 group-hover:text-white transition-colors truncate">
+                                      {challenge.title}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getCategoryColor(challenge.category)}`}>
                                         {challenge.category}
                                       </span>
                                       {challenge.competitionName && (
-                                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">
+                                        <span className="text-xs px-2 py-0.5 rounded-full bg-purple-500/30 text-purple-300 border border-purple-500/40 font-medium">
                                           {challenge.competitionName}
                                         </span>
                                       )}
@@ -775,7 +808,10 @@ const NewLeaderboardPage: React.FC = () => {
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="text-emerald-400 font-bold">+{challenge.points}</div>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-emerald-400 font-bold text-lg">+{challenge.points}</span>
+                                    <span className="text-xs text-emerald-500/70">pts</span>
+                                  </div>
                                 </div>
                               </div>
                             ))}
