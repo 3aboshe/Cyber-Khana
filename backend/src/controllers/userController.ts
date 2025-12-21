@@ -3,6 +3,55 @@ import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { hashPassword } from '../utils/auth';
 
+// Helper to calculate general stats consistently
+const calculateGeneralStats = (user: any, regularChallengeMap: Map<string, any>) => {
+  // Filter solved challenges to exclude competition challenges
+  const nonCompetitionSolvedDetails = (user.solvedChallengesDetails || []).filter((solve: any) => {
+    return regularChallengeMap.has(solve.challengeId);
+  });
+
+  // Calculate points from non-competition challenges only
+  const solvePoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
+    return total + (solve.points || 0);
+  }, 0);
+
+  // Deduct penalties for general leaderboard
+  const generalPenalties = (user.penalties || [])
+    .filter((penalty: any) => penalty.type === 'general')
+    .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
+
+  // Deduct costs of unlocked hints for regular challenges
+  const hintCosts = (user.unlockedHints || []).reduce((total: number, hintId: string) => {
+    // Regular hints are stored as "challengeId-hintIndex"
+    const parts = hintId.split('-');
+    if (parts.length === 2) {
+      const [cId, hIndexStr] = parts;
+      const challenge = regularChallengeMap.get(cId);
+
+      if (challenge && challenge.hints) {
+        const hIndex = parseInt(hIndexStr, 10);
+        if (challenge.hints[hIndex]) {
+          return total + (challenge.hints[hIndex].cost || 0);
+        }
+      }
+    }
+    return total;
+  }, 0);
+
+  // Add bonus points and deduct penalties/hints
+  const finalPoints = Math.max(0, solvePoints + (user.bonusPoints || 0) - generalPenalties - hintCosts);
+
+  return {
+    points: finalPoints,
+    solvePoints,
+    solvedCount: nonCompetitionSolvedDetails.length,
+    solvedDetails: nonCompetitionSolvedDetails,
+    penalties: generalPenalties,
+    bonusPoints: user.bonusPoints || 0,
+    hintCosts
+  };
+};
+
 // Get public profile by user ID (for leaderboard profile views)
 export const getPublicProfile = async (req: AuthRequest, res: Response) => {
   try {
@@ -17,94 +66,44 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
     const University = require('../models/University').default;
     const university = await University.findOne({ code: user.universityCode });
 
-    // Get competitions for this university
-    const Competition = require('../models/Competition').default;
-    const competitions = await Competition.find({ universityCode: user.universityCode });
-
-    // Get competition challenge IDs
-    const competitionChallengeIds = new Set<string>();
-    competitions.forEach((comp: any) => {
-      comp.challenges.forEach((challenge: any) => {
-        competitionChallengeIds.add(challenge._id.toString());
-      });
-    });
-
-    // Get integrated challenges
+    // Fetch all regular challenges to calculate stats accurately
     const Challenge = require('../models/Challenge').default;
-    const integratedChallenges = await Challenge.find({
+    const regularChallenges = await Challenge.find({
       universityCode: user.universityCode,
-      fromCompetition: true
-    });
-    const integratedChallengeIds = new Set<string>();
-    integratedChallenges.forEach((challenge: any) => {
-      integratedChallengeIds.add(challenge._id.toString());
+      fromCompetition: { $ne: true }
     });
 
-    // Separate solved challenges into regular and competition
-    const regularSolvedDetails: any[] = [];
-    const competitionSolvedDetails: any[] = [];
+    const regularChallengeMap = new Map();
+    regularChallenges.forEach((c: any) => regularChallengeMap.set(c._id.toString(), c));
 
-    for (const solve of user.solvedChallengesDetails || []) {
-      const isCompetitionChallenge = competitionChallengeIds.has(solve.challengeId) ||
-        integratedChallengeIds.has(solve.challengeId);
+    // Calculate standardized stats
+    const stats = calculateGeneralStats(user, regularChallengeMap);
 
-      // Try to get challenge info
-      let challengeInfo = null;
-
-      // First check in regular challenges
-      const regularChallenge = await Challenge.findById(solve.challengeId);
-      if (regularChallenge) {
-        challengeInfo = {
-          _id: regularChallenge._id,
-          title: regularChallenge.title,
-          category: regularChallenge.category,
-          points: solve.points,
-          solvedAt: solve.solvedAt
-        };
-      } else {
-        // Check in competition challenges
-        for (const comp of competitions) {
-          const compChallenge = comp.challenges.find((c: any) => c._id.toString() === solve.challengeId);
-          if (compChallenge) {
-            challengeInfo = {
-              _id: compChallenge._id,
-              title: compChallenge.title,
-              category: compChallenge.category,
-              points: solve.points,
-              solvedAt: solve.solvedAt,
-              competitionName: comp.name
-            };
-            break;
-          }
-        }
-      }
-
-      if (challengeInfo) {
-        if (isCompetitionChallenge) {
-          competitionSolvedDetails.push(challengeInfo);
-        } else {
-          regularSolvedDetails.push(challengeInfo);
-        }
-      }
-    }
+    // Get competition points (kept separate)
+    // We still need competition info for the "competitionSolvedCount" display if needed, 
+    // but the request was specifically about "general points".
+    // Let's keep the existing competition logic for "competitionSolvedDetails" just for display purposes
+    // or we can rely on what's in the User model if we trust it, but let's be consistent.
 
     // Calculate rank among all users
+    // To get ACCURATE rank, we technically need to calculate stats for ALL users, which is heavy. 
+    // The previous implementation used user.points for ranking in `getPublicProfile` but calculated in `getLeaderboard`.
+    // Let's stick to a simple DB sort for rank here to avoid perf issues, 
+    // OR fetch all users and calculate. fetching all is safer for consistency.
+
     const allUsers = await User.find({
       universityCode: user.universityCode,
       isBanned: { $ne: true }
-    }).select('points penalties').sort({ points: -1 });
-    const rank = allUsers.findIndex(u => (u as any)._id.toString() === userId) + 1;
+    }).select('points penalties solvedChallengesDetails unlockedHints bonusPoints'); // Need fields for calcs
 
-    // Calculate non-competition points for accurate ranking
-    const nonCompetitionPoints = regularSolvedDetails.reduce((sum, s) => sum + (s.points || 0), 0);
+    // We need to calculate points for everyone to get the true rank
+    // optimized: maybe just fetch needed fields
+    const allUsersStats = allUsers.map(u => ({
+      id: (u as any)._id.toString(),
+      points: calculateGeneralStats(u, regularChallengeMap).points
+    })).sort((a, b) => b.points - a.points);
 
-    // Calculate penalties
-    const generalPenalties = (user.penalties || [])
-      .filter((penalty: any) => penalty.type === 'general')
-      .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-
-    // Points after penalties
-    const adjustedPoints = Math.max(0, nonCompetitionPoints - generalPenalties);
+    const rank = allUsersStats.findIndex(u => u.id === userId) + 1;
 
     res.json({
       _id: user._id,
@@ -114,19 +113,16 @@ export const getPublicProfile = async (req: AuthRequest, res: Response) => {
       profileIcon: user.profileIcon,
       universityCode: user.universityCode,
       universityName: university?.name || user.universityCode,
-      totalPoints: adjustedPoints,
+      totalPoints: stats.points, // Standardized
       competitionPoints: user.competitionPoints,
-      regularPoints: adjustedPoints,
-      penaltyPoints: generalPenalties,
+      regularPoints: stats.points, // Standardized
+      penaltyPoints: stats.penalties,
       rank,
       totalUsers: allUsers.length,
       totalSolved: user.solvedChallenges.length,
-      regularSolvedCount: regularSolvedDetails.length,
-      competitionSolvedCount: competitionSolvedDetails.length,
-      regularSolvedChallenges: regularSolvedDetails.sort((a, b) =>
-        new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
-      ),
-      competitionSolvedChallenges: competitionSolvedDetails.sort((a, b) =>
+      regularSolvedCount: stats.solvedCount,
+      // We pass the solved details sorted
+      regularSolvedChallenges: stats.solvedDetails.sort((a: any, b: any) =>
         new Date(b.solvedAt).getTime() - new Date(a.solvedAt).getTime()
       ),
       createdAt: user.createdAt
@@ -150,20 +146,34 @@ export const getUsers = async (req: AuthRequest, res: Response) => {
     const query = universityCode ? { universityCode } : {};
     const users = await User.find(query).select('-password');
 
+    // Fetch regular challenges for calculation
+    const Challenge = require('../models/Challenge').default;
+    const regularChallenges = await Challenge.find({
+      // If no university code (super admin view all), we might need challenges from all? 
+      // If retrieving users from all universities, we need challenges from all.
+      ...(universityCode ? { universityCode } : {})
+    });
+
+    // Map with challenge ID is enough, uniqueness across universities is guaranteed by ID.
+    const regularChallengeMap = new Map();
+    regularChallenges.forEach((c: any) => regularChallengeMap.set(c._id.toString(), c));
+
     const usersWithStats = users.map(user => {
-      const rank = 1;
+      // Use standardized calc
+      const stats = calculateGeneralStats(user, regularChallengeMap);
+
       return {
         _id: user._id,
         username: user.username,
         fullName: user.fullName,
         displayName: user.displayName,
-        points: user.points,
+        points: stats.points, // Standardized
         role: user.role,
         universityCode: user.universityCode,
         universityName: university?.name || user.universityCode,
         isBanned: user.isBanned,
         profileIcon: user.profileIcon,
-        solvedChallengesCount: user.solvedChallenges.length,
+        solvedChallengesCount: user.solvedChallenges.length, // Total solved (incl competition)
         createdAt: user.createdAt
       };
     });
@@ -185,29 +195,40 @@ export const getUserProfile = async (req: AuthRequest, res: Response) => {
     const University = require('../models/University').default;
     const university = await University.findOne({ code: user.universityCode });
 
+    // Fetch regular challenges
+    const Challenge = require('../models/Challenge').default;
+    const regularChallenges = await Challenge.find({
+      universityCode: user.universityCode,
+      fromCompetition: { $ne: true }
+    });
+    const regularChallengeMap = new Map();
+    regularChallenges.forEach((c: any) => regularChallengeMap.set(c._id.toString(), c));
+
+    // Standardized Stats
+    const stats = calculateGeneralStats(user, regularChallengeMap);
+
+    // Rank calculation
     const allUsers = await User.find({ universityCode: user.universityCode, isBanned: { $ne: true } })
-      .select('points penalties')
-      .sort({ points: -1 });
+      .select('username solvedChallengesDetails penalties unlockedHints bonusPoints');
 
-    const rank = allUsers.findIndex(u => (u as any)._id.toString() === (user as any)._id.toString()) + 1;
+    const allUsersStats = allUsers.map(u => ({
+      id: (u as any)._id.toString(),
+      points: calculateGeneralStats(u, regularChallengeMap).points
+    })).sort((a, b) => b.points - a.points);
 
-    // Calculate penalties for general leaderboard
-    const generalPenalties = (user.penalties || [])
-      .filter((penalty: any) => penalty.type === 'general')
-      .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-
-    const adjustedPoints = Math.max(0, user.points - generalPenalties);
+    const rank = allUsersStats.findIndex(u => u.id === (user as any)._id.toString()) + 1;
 
     res.json({
       ...user.toJSON(),
-      points: adjustedPoints,
-      penaltyPoints: generalPenalties,
+      points: stats.points, // Standardized
+      penaltyPoints: stats.penalties,
       rank,
       totalUsers: allUsers.length,
       solvedChallengesCount: user.solvedChallenges.length,
       universityName: university?.name || user.universityCode
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Error fetching user profile' });
   }
 };
@@ -219,38 +240,14 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
-      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode penalties unlockedHints');
+      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode penalties unlockedHints bonusPoints');
 
     // Get university name
     const University = require('../models/University').default;
     const university = await University.findOne({ code: universityCode });
 
-    // Get all competitions in the university to identify competition challenges
-    const Competition = require('../models/Competition').default;
-    const competitions = await Competition.find({ universityCode });
-
-    // Get all competition challenge IDs
-    const competitionChallengeIds = new Set<string>();
-    competitions.forEach((comp: any) => {
-      comp.challenges.forEach((challenge: any) => {
-        competitionChallengeIds.add(challenge._id.toString());
-      });
-    });
-
-    // Get all integrated challenges (from competitions)
+    // Fetch all regular challenges
     const Challenge = require('../models/Challenge').default;
-    const integratedChallenges = await Challenge.find({
-      universityCode,
-      fromCompetition: true
-    });
-    // Create a map of integrated challenge IDs
-    const integratedChallengeIds = new Set<string>();
-    integratedChallenges.forEach((challenge: any) => {
-      integratedChallengeIds.add(challenge._id.toString());
-    });
-
-    // Fetch all regular challenges for hint cost lookup
-    // We need this to calculate hint deductions for the leaderboard
     const regularChallenges = await Challenge.find({
       universityCode,
       fromCompetition: { $ne: true }
@@ -261,58 +258,20 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       regularChallengeMap.set(c._id.toString(), c);
     });
 
-    // Filter out competition challenges from user stats
-    const usersWithNonCompetitionStats = users.map((user: any) => {
-      // Filter solved challenges to exclude competition challenges
-      const nonCompetitionSolvedDetails = user.solvedChallengesDetails.filter((solve: any) => {
-        return regularChallengeMap.has(solve.challengeId);
-      });
-
-      // Calculate points from non-competition challenges only
-      let nonCompetitionPoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
-        return total + (solve.points || 0);
-      }, 0);
-
-      // Deduct penalties for general leaderboard
-      const generalPenalties = (user.penalties || [])
-        .filter((penalty: any) => penalty.type === 'general')
-        .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
-
-      // Deduct costs of unlocked hints for regular challenges
-      const hintCosts = (user.unlockedHints || []).reduce((total: number, hintId: string) => {
-        // Regular hints are stored as "challengeId-hintIndex"
-        // We look for this specific pattern
-        const parts = hintId.split('-');
-        if (parts.length === 2) {
-          const [cId, hIndexStr] = parts;
-          const challenge = regularChallengeMap.get(cId);
-
-          if (challenge && challenge.hints) {
-            const hIndex = parseInt(hIndexStr, 10);
-            if (challenge.hints[hIndex]) {
-              return total + (challenge.hints[hIndex].cost || 0);
-            }
-          }
-        }
-        return total;
-      }, 0);
-
-      // Add bonus points and deduct penalties/hints
-      nonCompetitionPoints = Math.max(0, nonCompetitionPoints + (user.bonusPoints || 0) - generalPenalties - hintCosts);
-
-      // Calculate solve count for non-competition challenges
-      const nonCompetitionSolvedCount = nonCompetitionSolvedDetails.length;
+    // Calculate stats for all users
+    const usersWithStats = users.map((user: any) => {
+      const stats = calculateGeneralStats(user, regularChallengeMap);
 
       return {
         ...user.toObject(),
-        nonCompetitionPoints,
-        nonCompetitionSolvedCount,
-        nonCompetitionSolvedDetails,
-        penaltyPoints: generalPenalties
+        nonCompetitionPoints: stats.points,
+        nonCompetitionSolvedCount: stats.solvedCount,
+        nonCompetitionSolvedDetails: stats.solvedDetails,
+        penaltyPoints: stats.penalties
       };
     });
 
-    usersWithNonCompetitionStats.sort((a, b) => {
+    usersWithStats.sort((a, b) => {
       if (b.nonCompetitionPoints !== a.nonCompetitionPoints) {
         return b.nonCompetitionPoints - a.nonCompetitionPoints;
       }
@@ -337,15 +296,14 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     });
 
     // Get all published challenges count for the university
-    const ChallengeModel = require('../models/Challenge').default;
-    const publishedChallengesCount = await ChallengeModel.countDocuments({
+    const publishedChallengesCount = await Challenge.countDocuments({
       universityCode,
       isPublished: true,
       fromCompetition: { $ne: true } // Exclude competition challenges
     });
 
     // Return ALL users, not just top 10
-    const allUsers = usersWithNonCompetitionStats.map((user, index) => {
+    const allUsers = usersWithStats.map((user, index) => {
       const firstSolve = user.nonCompetitionSolvedDetails.length > 0
         ? new Date(Math.min(...user.nonCompetitionSolvedDetails.map((d: any) => new Date(d.solvedAt).getTime())))
         : null;
@@ -382,10 +340,10 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
     });
 
     const analysis = {
-      totalParticipants: usersWithNonCompetitionStats.length,
-      totalPoints: usersWithNonCompetitionStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0),
-      averagePoints: usersWithNonCompetitionStats.length > 0
-        ? Math.floor(usersWithNonCompetitionStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0) / usersWithNonCompetitionStats.length)
+      totalParticipants: usersWithStats.length,
+      totalPoints: usersWithStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0),
+      averagePoints: usersWithStats.length > 0
+        ? Math.floor(usersWithStats.reduce((sum: number, u: any) => sum + u.nonCompetitionPoints, 0) / usersWithStats.length)
         : 0,
       topSolver: allUsers[0] || null,
       fastestAverageSolver: allUsers.filter(u => u.averageSolveTimeHours > 0).sort((a, b) => a.averageSolveTimeHours - b.averageSolveTimeHours)[0] || null,
