@@ -219,7 +219,7 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       : req.user?.universityCode;
 
     const users = await User.find({ universityCode, isBanned: { $ne: true } })
-      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode penalties');
+      .select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon universityCode penalties unlockedHints');
 
     // Get university name
     const University = require('../models/University').default;

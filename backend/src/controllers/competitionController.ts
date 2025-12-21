@@ -552,7 +552,7 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
     const users = await User.find({
       universityCode: competition.universityCode,
       isBanned: { $ne: true }
-    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon competitionPenalties');
+    }).select('username fullName displayName points solvedChallenges solvedChallengesDetails profileIcon competitionPenalties unlockedHints');
 
     // Get integrated challenges for this competition
     const Challenge = require('../models/Challenge').default;
