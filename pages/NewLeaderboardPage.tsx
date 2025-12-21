@@ -38,9 +38,9 @@ interface UserProfile {
   totalUsers: number;
   totalSolved: number;
   regularSolvedCount: number;
-  competitionSolvedCount: number;
-  regularSolvedChallenges: SolvedChallenge[];
-  competitionSolvedChallenges: SolvedChallenge[];
+  competitionSolvedCount?: number;
+  regularSolvedChallenges?: SolvedChallenge[];
+  competitionSolvedChallenges?: SolvedChallenge[];
 }
 
 interface LeaderboardAnalysis {
@@ -711,7 +711,7 @@ const NewLeaderboardPage: React.FC = () => {
                   ) : selectedUserProfile ? (
                     <div className="space-y-4">
                       {/* Regular Challenges */}
-                      {selectedUserProfile.regularSolvedChallenges.length > 0 && (
+                      {selectedUserProfile.regularSolvedChallenges && selectedUserProfile.regularSolvedChallenges.length > 0 && (
                         <div>
                           <div className="text-sm text-zinc-400 mb-2 flex items-center gap-2">
                             <Zap className="w-4 h-4" />
@@ -745,7 +745,7 @@ const NewLeaderboardPage: React.FC = () => {
                       )}
 
                       {/* Competition Challenges */}
-                      {selectedUserProfile.competitionSolvedChallenges.length > 0 && (
+                      {selectedUserProfile.competitionSolvedChallenges && selectedUserProfile.competitionSolvedChallenges.length > 0 && (
                         <div>
                           <div className="text-sm text-zinc-400 mb-2 flex items-center gap-2">
                             <Trophy className="w-4 h-4" />
@@ -783,13 +783,13 @@ const NewLeaderboardPage: React.FC = () => {
                         </div>
                       )}
 
-                      {selectedUserProfile.regularSolvedChallenges.length === 0 && 
-                       selectedUserProfile.competitionSolvedChallenges.length === 0 && (
-                        <div className="text-center py-8 text-zinc-500">
-                          <Flag className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                          <p>No challenges solved yet</p>
-                        </div>
-                      )}
+                      {(!selectedUserProfile.regularSolvedChallenges || selectedUserProfile.regularSolvedChallenges.length === 0) &&
+                        (!selectedUserProfile.competitionSolvedChallenges || selectedUserProfile.competitionSolvedChallenges.length === 0) && (
+                          <div className="text-center py-8 text-zinc-500">
+                            <Flag className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                            <p>No challenges solved yet</p>
+                          </div>
+                        )}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-zinc-500">
