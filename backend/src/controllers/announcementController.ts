@@ -5,8 +5,15 @@ import { AuthRequest } from '../middleware/auth';
 export const getAnnouncements = async (req: AuthRequest, res: Response) => {
   try {
     const universityCode = req.user?.universityCode;
+    const userId = req.user?.userId;
 
-    const announcements = await Announcement.find({ universityCode })
+    const announcements = await Announcement.find({
+      $or: [
+        { universityCode, targetUserId: { $exists: false } }, // University-wide
+        { universityCode, targetUserId: null }, // University-wide (explicit null)
+        { targetUserId: userId } // Personal
+      ]
+    })
       .sort({ createdAt: -1 })
       .select('-__v');
 

@@ -32,6 +32,16 @@ const AnnouncementSchema: Schema = new Schema(
     competitionId: {
       type: String,
       required: false
+    },
+    targetUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
+    },
+    type: {
+      type: String,
+      enum: ['info', 'success', 'warning', 'danger'],
+      default: 'info'
     }
   },
   {

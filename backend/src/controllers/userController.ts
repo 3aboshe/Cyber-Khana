@@ -2,6 +2,7 @@ import { Response } from 'express';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { hashPassword } from '../utils/auth';
+import Announcement from '../models/Announcement';
 
 // Helper to calculate general stats consistently
 const calculateGeneralStats = (user: any, regularChallengeMap: Map<string, any>) => {
@@ -437,6 +438,15 @@ export const banUser = async (req: AuthRequest, res: Response) => {
     targetUser.isBanned = true;
     await targetUser.save();
 
+    await Announcement.create({
+      title: 'Account Banned',
+      content: 'Your account has been banned by an administrator.',
+      author: req.user?.username || 'System',
+      universityCode: targetUser.universityCode,
+      targetUserId: targetUser._id,
+      type: 'danger'
+    });
+
     res.json({ message: 'User banned successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error banning user' });
@@ -462,6 +472,15 @@ export const unbanUser = async (req: AuthRequest, res: Response) => {
 
     targetUser.isBanned = false;
     await targetUser.save();
+
+    await Announcement.create({
+      title: 'Account Unbanned',
+      content: 'Your account has been reinstated by an administrator.',
+      author: req.user?.username || 'System',
+      universityCode: targetUser.universityCode,
+      targetUserId: targetUser._id,
+      type: 'success'
+    });
 
     res.json({ message: 'User unbanned successfully' });
   } catch (error) {
@@ -659,6 +678,15 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
 
       await targetUser.save();
 
+      await Announcement.create({
+        title: 'Points Deducted',
+        content: `You have been deducted ${pointsToDeduct} points from the General Leaderboard. Reason: ${reason || 'Manual penalty'}`,
+        author: req.user?.username || 'System',
+        universityCode: targetUser.universityCode,
+        targetUserId: targetUser._id,
+        type: 'warning'
+      });
+
       res.json({
         message: `Successfully deducted ${pointsToDeduct} points from general leaderboard`,
         newPoints: targetUser.points,
@@ -715,6 +743,16 @@ export const deductPoints = async (req: AuthRequest, res: Response) => {
       });
 
       await targetUser.save();
+
+      await Announcement.create({
+        title: 'Points Deducted',
+        content: `You have been deducted ${points} points from competition "${competition.name}". Reason: ${reason || 'Manual penalty'}`,
+        author: req.user?.username || 'System',
+        universityCode: targetUser.universityCode,
+        targetUserId: targetUser._id,
+        competitionId: competitionId,
+        type: 'warning'
+      });
 
       res.json({
         message: `Successfully deducted ${points} points from competition "${competition.name}"`,
@@ -790,6 +828,15 @@ export const addPoints = async (req: AuthRequest, res: Response) => {
 
       await targetUser.save();
 
+      await Announcement.create({
+        title: 'Bonus Points Awarded',
+        content: `You have received ${points} bonus points. Reason: ${reason || 'Manual adjustment'}`,
+        author: req.user?.username || 'System',
+        universityCode: targetUser.universityCode,
+        targetUserId: targetUser._id,
+        type: 'success'
+      });
+
       res.json({
         message: `Successfully added ${points} bonus points`,
         newPoints: targetUser.points,
@@ -825,6 +872,16 @@ export const addPoints = async (req: AuthRequest, res: Response) => {
       targetUser.competitionPoints = (targetUser.competitionPoints || 0) + points;
 
       await targetUser.save();
+
+      await Announcement.create({
+        title: 'Bonus Points Awarded',
+        content: `You have received ${points} bonus points in competition "${competition.name}". Reason: ${reason || 'Bonus points awarded by admin'}`,
+        author: req.user?.username || 'System',
+        universityCode: targetUser.universityCode,
+        targetUserId: targetUser._id,
+        competitionId: competitionId,
+        type: 'success'
+      });
 
       res.json({
         message: `Successfully added ${points} bonus points to competition "${competition.name}"`,

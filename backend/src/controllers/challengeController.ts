@@ -6,6 +6,7 @@ import { AuthRequest } from '../middleware/auth';
 import { uploadWriteupPdf, uploadChallengeFiles } from '../utils/fileUpload';
 import { applyRetroactiveDecay } from '../services/retroactiveDecayService';
 import path from 'path';
+import Announcement from '../models/Announcement';
 
 // Get solvers for a challenge
 export const getChallengeSolvers = async (req: AuthRequest, res: Response) => {
@@ -610,6 +611,17 @@ export const publishChallenge = async (req: AuthRequest, res: Response) => {
 
     challenge.isPublished = true;
     await challenge.save();
+
+    // Announce new practice challenges (not from competitions) to the university
+    if (!challenge.fromCompetition && !challenge.competitionId) {
+      await Announcement.create({
+        title: 'New Challenge Released',
+        content: `A new challenge "${challenge.title}" in category "${challenge.category}" is now available for practice!`,
+        author: req.user?.username || 'System',
+        universityCode: challenge.universityCode,
+        type: 'info'
+      });
+    }
 
     res.json(challenge);
   } catch (error) {
