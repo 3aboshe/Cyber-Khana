@@ -525,7 +525,8 @@ export const addChallengeToCompetition = async (req: AuthRequest, res: Response)
       initialPoints: challenge.initialPoints || 1000,
       minimumPoints: challenge.minimumPoints || 100,
       decay: challenge.decay || 200,
-      currentPoints: challenge.currentPoints || 1000
+      currentPoints: challenge.currentPoints || 1000,
+      firstBloodBonus: challenge.firstBloodBonus || 20
     };
 
     competition.challenges.push(competitionChallenge as any);
@@ -592,7 +593,27 @@ export const getCompetitionLeaderboard = async (req: AuthRequest, res: Response)
           .filter((penalty: any) => penalty.competitionId === id)
           .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
 
-        competitionPoints = Math.max(0, competitionPoints - competitionPenalties);
+        // Deduct cost of hints bought for this competition
+        const hintCosts = (user.unlockedHints || [])
+          .map((hintKey: string) => {
+            const parts = hintKey.split('_');
+            // Format: competitionId_challengeId_hintIndex
+            if (parts.length !== 3 || parts[0] !== id) return 0;
+
+            const hintChallengeId = parts[1];
+            const hintIndex = parseInt(parts[2], 10);
+
+            // Find the challenge in the competition
+            const challenge = competition.challenges.find((c: any) => c._id.toString() === hintChallengeId);
+
+            if (challenge && challenge.hints && challenge.hints[hintIndex]) {
+              return challenge.hints[hintIndex].cost || 0;
+            }
+            return 0;
+          })
+          .reduce((total: number, cost: number) => total + cost, 0);
+
+        competitionPoints = Math.max(0, competitionPoints - competitionPenalties - hintCosts);
 
         const competitionSolvedCount = competitionSolves.length || 0;
 

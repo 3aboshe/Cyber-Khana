@@ -243,9 +243,22 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
       universityCode,
       fromCompetition: true
     });
+    // Create a map of integrated challenge IDs
     const integratedChallengeIds = new Set<string>();
     integratedChallenges.forEach((challenge: any) => {
       integratedChallengeIds.add(challenge._id.toString());
+    });
+
+    // Fetch all regular challenges for hint cost lookup
+    // We need this to calculate hint deductions for the leaderboard
+    const regularChallenges = await Challenge.find({
+      universityCode,
+      fromCompetition: { $ne: true }
+    });
+
+    const regularChallengeMap = new Map();
+    regularChallenges.forEach((c: any) => {
+      regularChallengeMap.set(c._id.toString(), c);
     });
 
     // Filter out competition challenges from user stats
@@ -265,7 +278,26 @@ export const getLeaderboard = async (req: AuthRequest, res: Response) => {
         .filter((penalty: any) => penalty.type === 'general')
         .reduce((total: number, penalty: any) => total + (penalty.amount || 0), 0);
 
-      nonCompetitionPoints = Math.max(0, nonCompetitionPoints - generalPenalties);
+      // Deduct costs of unlocked hints for regular challenges
+      const hintCosts = (user.unlockedHints || []).reduce((total: number, hintId: string) => {
+        // Regular hints are stored as "challengeId-hintIndex"
+        // We look for this specific pattern
+        const parts = hintId.split('-');
+        if (parts.length === 2) {
+          const [cId, hIndexStr] = parts;
+          const challenge = regularChallengeMap.get(cId);
+
+          if (challenge && challenge.hints) {
+            const hIndex = parseInt(hIndexStr, 10);
+            if (challenge.hints[hIndex]) {
+              return total + (challenge.hints[hIndex].cost || 0);
+            }
+          }
+        }
+        return total;
+      }, 0);
+
+      nonCompetitionPoints = Math.max(0, nonCompetitionPoints - generalPenalties - hintCosts);
 
       // Calculate solve count for non-competition challenges
       const nonCompetitionSolvedCount = nonCompetitionSolvedDetails.length;

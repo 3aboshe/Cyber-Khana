@@ -34,7 +34,9 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
             initialPoints: compChallenge.initialPoints || 1000,
             minimumPoints: compChallenge.minimumPoints || 100,
             decay: compChallenge.decay || 38,
-            solves: compChallenge.solves
+            solves: compChallenge.solves,
+            solvers: compChallenge.solvers, // Include solvers
+            firstBloodBonus: compChallenge.firstBloodBonus || 20 // Include bonus
           };
           isFromCompetition = true;
           competitionId = (competition as any)._id.toString();
@@ -53,7 +55,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
     const decay = challengeObj.decay || 38;
     const currentSolveCount = challengeObj.solves;
 
-    const correctPoints = calculateDynamicScore(
+    const basePoints = calculateDynamicScore(
       initialPoints,
       minimumPoints,
       decay,
@@ -61,7 +63,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
     );
 
     console.log(`Applying retroactive decay for challenge: ${challengeObj.title}`);
-    console.log(`Total solves: ${currentSolveCount}, Correct points: ${correctPoints}`);
+    console.log(`Total solves: ${currentSolveCount}, Base points: ${basePoints}`);
     console.log(`From competition: ${isFromCompetition}`);
 
     // Find all users who solved this challenge
@@ -80,11 +82,22 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       );
 
       if (challengeDetailIndex !== -1) {
+        // Calculate user's specific points (accounting for First Blood)
+        let userSpecificPoints = basePoints;
+        const solvers = challengeObj.solvers || [];
+        const solverEntry = solvers.find((s: any) => s.odId === (user as any)._id.toString());
+
+        if (solverEntry && solverEntry.isFirstBlood) {
+          const bonus = challengeObj.firstBloodBonus || 20;
+          userSpecificPoints += bonus;
+          console.log(`  User ${user.username} has First Blood! Adding bonus: ${bonus}`);
+        }
+
         const oldPoints = details[challengeDetailIndex].points;
-        const pointsDifference = correctPoints - oldPoints;
+        const pointsDifference = userSpecificPoints - oldPoints;
 
         if (pointsDifference !== 0) {
-          console.log(`  User: ${user.username} - Old: ${oldPoints}, New: ${correctPoints}, Diff: ${pointsDifference}`);
+          console.log(`  User: ${user.username} - Old: ${oldPoints}, New: ${userSpecificPoints}, Diff: ${pointsDifference}`);
 
           // Update the appropriate points field
           if (isFromCompetition) {
@@ -96,7 +109,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
           }
 
           // Update the points in their solvedChallengesDetails
-          details[challengeDetailIndex].points = correctPoints;
+          details[challengeDetailIndex].points = userSpecificPoints;
 
           await user.save();
           totalPointsAdjusted += Math.abs(pointsDifference);
@@ -107,7 +120,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
 
     // For regular challenges, update the challenge's currentPoints field
     if (!isFromCompetition && challenge) {
-      challenge.currentPoints = correctPoints;
+      challenge.currentPoints = basePoints;
       await challenge.save();
     }
 
@@ -120,7 +133,7 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       challengeId,
       fromCompetition: isFromCompetition,
       totalSolves: currentSolveCount,
-      correctPoints,
+      correctPoints: basePoints,
       usersUpdated: userCount,
       totalPointsAdjusted
     };
