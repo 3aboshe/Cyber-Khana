@@ -11,6 +11,17 @@ const calculateGeneralStats = (user: any, regularChallengeMap: Map<string, any>)
     return regularChallengeMap.has(solve.challengeId);
   });
 
+  // Enrich solved details with challenge title and category from the map
+  const enrichedSolvedDetails = nonCompetitionSolvedDetails.map((solve: any) => {
+    const challenge = regularChallengeMap.get(solve.challengeId);
+    return {
+      ...solve,
+      _id: solve.challengeId,
+      title: challenge?.title || 'Unknown Challenge',
+      category: challenge?.category || 'Unknown'
+    };
+  });
+
   // Calculate points from non-competition challenges only
   const solvePoints = nonCompetitionSolvedDetails.reduce((total: number, solve: any) => {
     return total + (solve.points || 0);
@@ -45,8 +56,8 @@ const calculateGeneralStats = (user: any, regularChallengeMap: Map<string, any>)
   return {
     points: finalPoints,
     solvePoints,
-    solvedCount: nonCompetitionSolvedDetails.length,
-    solvedDetails: nonCompetitionSolvedDetails,
+    solvedCount: enrichedSolvedDetails.length,
+    solvedDetails: enrichedSolvedDetails,
     penalties: generalPenalties,
     bonusPoints: user.bonusPoints || 0,
     hintCosts
