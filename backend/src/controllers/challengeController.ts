@@ -158,7 +158,13 @@ export const getAllChallenges = async (req: AuthRequest, res: Response) => {
       return challengeObj;
     });
 
-    res.json(challengesWithCurrentPoints);
+    // SECURITY: Never expose flags in bulk listing - admins should use individual challenge endpoint
+    const challengesWithoutFlags = challengesWithCurrentPoints.map(challenge => {
+      const { flag, flags, ...safeChallenge } = challenge;
+      return safeChallenge;
+    });
+
+    res.json(challengesWithoutFlags);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching all challenges' });
   }
