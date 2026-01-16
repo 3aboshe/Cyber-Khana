@@ -115,6 +115,23 @@ export const getCompetitions = async (req: AuthRequest, res: Response) => {
       })
     );
 
+    // SECURITY: Never expose flags to regular users
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      const competitionsWithoutFlags = competitionsWithDynamicPoints.map((competition: any) => {
+        const challengesWithoutFlags = competition.challenges.map((challenge: any) => {
+          const { flag, flags, ...challengeWithoutFlags } = challenge;
+          return challengeWithoutFlags;
+        });
+
+        return {
+          ...competition,
+          challenges: challengesWithoutFlags
+        };
+      });
+
+      return res.json(competitionsWithoutFlags);
+    }
+
     res.json(competitionsWithDynamicPoints);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching competitions' });
@@ -145,6 +162,22 @@ export const getCompetition = async (req: AuthRequest, res: Response) => {
     // Only check end time if competition has a time limit
     if (competition.hasTimeLimit !== false && competition.endTime && now > competition.endTime) {
       return res.status(400).json({ error: 'Competition has ended' });
+    }
+
+    // SECURITY: Never expose flags to regular users
+    if (req.user?.role !== 'admin' && req.user?.role !== 'super-admin') {
+      const competitionObj = competition.toObject ? competition.toObject() : competition;
+      const challengesWithoutFlags = competitionObj.challenges.map((challenge: any) => {
+        const { flag, flags, ...challengeWithoutFlags } = challenge;
+        return challengeWithoutFlags;
+      });
+
+      const competitionToReturn = {
+        ...competitionObj,
+        challenges: challengesWithoutFlags
+      };
+
+      return res.json(competitionToReturn);
     }
 
     res.json(competition);
@@ -226,6 +259,10 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
             return hint;
           });
         }
+
+        // SECURITY: Never expose flags to regular users
+        const { flag, flags, ...challengeWithoutSensitiveData } = challenge;
+        return challengeWithoutSensitiveData;
       }
       return challenge;
     });
