@@ -6,7 +6,7 @@ import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
 import Modal from '../components/ui/Modal';
-import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink, Clock, Tag, Star } from 'lucide-react';
+import { ArrowLeft, Trophy, Users, CheckCircle, XCircle, HelpCircle, Download, Lock, ExternalLink, Clock, Tag, Star, Zap, Target } from 'lucide-react';
 
 interface CompetitionChallenge {
   _id: string;
@@ -20,7 +20,22 @@ interface CompetitionChallenge {
   files?: Array<{ name: string; url: string }>;
   solves: number;
   challengeLink?: string;
+  difficulty?: string;
+  currentPoints?: number;
+  firstBloodBonus?: number;
+  solvers?: Array<{ username: string; isFirstBlood: boolean; solvedAt: string }>;
 }
+
+const getDifficultyColor = (diff: string) => {
+  const colors: Record<string, string> = {
+    'Very Easy': 'text-emerald-400',
+    'Easy': 'text-emerald-400',
+    'Medium': 'text-yellow-400',
+    'Hard': 'text-orange-400',
+    'Expert': 'text-red-400',
+  };
+  return colors[diff] || 'text-zinc-400';
+};
 
 const CATEGORY_COLORS: Record<string, string> = {
   'Web Exploitation': 'text-blue-400',
@@ -288,19 +303,31 @@ const CompetitionChallengeDetailPage: React.FC = () => {
                     </button>
                   )}
                 </div>
-                <div className="flex items-center gap-6 text-zinc-400 text-sm">
+                <div className="flex items-center flex-wrap gap-4 text-zinc-400 text-sm">
                   <span className={`flex items-center gap-1 ${categoryColor}`}>
                     <Tag className="w-4 h-4" />
                     {challenge.category}
                   </span>
+                  {challenge.difficulty && (
+                    <span className={`flex items-center gap-1 font-medium ${getDifficultyColor(challenge.difficulty)}`}>
+                      <Target className="w-4 h-4" />
+                      {challenge.difficulty}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <Trophy className="w-4 h-4 text-yellow-400" />
-                    {(challenge as any).currentPoints || challenge.points} points
+                    {challenge.currentPoints || challenge.points} points
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     {challenge.solves} solves
                   </span>
+                  {challenge.solvers?.[0] && (
+                    <span className="flex items-center gap-1 text-yellow-400 font-medium">
+                      <Zap className="w-4 h-4" />
+                      First blood: {challenge.solvers[0].username}
+                    </span>
+                  )}
                   <span className="flex items-center gap-1">
                     <Star className="w-4 h-4" />
                     {challenge.author}

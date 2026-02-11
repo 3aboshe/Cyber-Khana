@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { competitionService } from '../services/competitionService';
 import { refreshCompetitionDashboard } from '../services/competitionRefreshService';
 import Card from '../components/ui/card';
 import Button from '../components/ui/button';
 import Input from '../components/ui/input';
-import { Trophy, Clock, Users, ArrowLeft, TrendingUp, Activity, CheckCircle, ArrowRight, Lock, Bell } from 'lucide-react';
+import { Trophy, Clock, Users, ArrowLeft, TrendingUp, Activity, CheckCircle, ArrowRight, Lock, Bell, Zap, Award } from 'lucide-react';
 
 const getCategoryColor = (cat: string) => {
   const colors: { [key: string]: string } = {
@@ -48,7 +48,37 @@ interface CompetitionChallenge {
   description: string;
   author: string;
   solves: number;
+  difficulty?: string;
+  currentPoints?: number;
+  firstBloodBonus?: number;
+  solvers?: Array<{ username: string; isFirstBlood: boolean; solvedAt: string }>;
 }
+
+const getDifficultyColor = (diff: string) => {
+  const colors: Record<string, string> = {
+    'Very Easy': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    'Easy': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    'Medium': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+    'Hard': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+    'Expert': 'bg-red-500/20 text-red-400 border-red-500/30',
+  };
+  return colors[diff] || 'bg-zinc-700/50 text-zinc-400 border-zinc-600/30';
+};
+
+const ProgressRing: React.FC<{ solved: number; total: number; size?: number }> = ({ solved, total, size = 56 }) => {
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? solved / total : 0;
+  const offset = circumference - progress * circumference;
+
+  return (
+    <svg width={size} height={size} className="transform -rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} className="text-zinc-700" />
+      <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="text-emerald-500 transition-all duration-500" />
+    </svg>
+  );
+};
 
 interface LeaderboardEntry {
   _id: string;
@@ -80,6 +110,7 @@ const CompetitionDashboardPage: React.FC = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [showAnnouncements, setShowAnnouncements] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [sortBy, setSortBy] = useState('default');
 
   // Check if current user is admin
   const userData = localStorage.getItem('user');
@@ -252,6 +283,30 @@ const CompetitionDashboardPage: React.FC = () => {
     ? competition?.challenges || []
     : competition?.challenges?.filter((c: CompetitionChallenge) => c.category === selectedCategory) || [];
 
+  const sortedChallenges = useMemo(() => {
+    const challenges = [...filteredChallenges];
+    switch (sortBy) {
+      case 'points-desc':
+        return challenges.sort((a: CompetitionChallenge, b: CompetitionChallenge) => ((b as any).currentPoints || b.points) - ((a as any).currentPoints || a.points));
+      case 'points-asc':
+        return challenges.sort((a: CompetitionChallenge, b: CompetitionChallenge) => ((a as any).currentPoints || a.points) - ((b as any).currentPoints || b.points));
+      case 'solves-desc':
+        return challenges.sort((a: CompetitionChallenge, b: CompetitionChallenge) => b.solves - a.solves);
+      case 'solves-asc':
+        return challenges.sort((a: CompetitionChallenge, b: CompetitionChallenge) => a.solves - b.solves);
+      default:
+        return challenges;
+    }
+  }, [filteredChallenges, sortBy]);
+
+  const userRank = useMemo(() => {
+    if (!user || leaderboard.length === 0) return 0;
+    const idx = leaderboard.findIndex(e => e.username === user.username);
+    return idx >= 0 ? idx + 1 : 0;
+  }, [leaderboard, user]);
+
+  const totalChallenges = competition?.challenges?.length || 0;
+
   if (loading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -378,16 +433,67 @@ const CompetitionDashboardPage: React.FC = () => {
         </Card>
       )}
 
+      {/* Stats Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <Card className="p-4 flex items-center gap-4">
+          <div className="relative">
+            <ProgressRing solved={solvedChallenges.size} total={totalChallenges} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-bold text-emerald-400">{totalChallenges > 0 ? Math.round((solvedChallenges.size / totalChallenges) * 100) : 0}%</span>
+            </div>
+          </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Progress</p>
+            <p className="text-zinc-100 font-bold text-lg">{solvedChallenges.size}/{totalChallenges}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4">
+          <div className="p-3 bg-yellow-500/20 rounded-lg">
+            <Award className="w-6 h-6 text-yellow-400" />
+          </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Your Rank</p>
+            <p className="text-zinc-100 font-bold text-lg">{userRank > 0 ? `#${userRank}` : '—'}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4">
+          <div className="p-3 bg-emerald-500/20 rounded-lg">
+            <Trophy className="w-6 h-6 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Your Points</p>
+            <p className="text-zinc-100 font-bold text-lg">{user?.competitionPoints || 0}</p>
+          </div>
+        </Card>
+        <Card className="p-4 flex items-center gap-4">
+          <div className="p-3 bg-cyan-500/20 rounded-lg">
+            <Clock className="w-6 h-6 text-cyan-400" />
+          </div>
+          <div>
+            <p className="text-zinc-400 text-xs">Time Left</p>
+            <p className="text-zinc-100 font-bold text-lg">{isCompetitionEnded() ? 'Ended' : getTimeRemaining(competition.endTime)}</p>
+          </div>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content - Challenges */}
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold text-zinc-100">Challenges</h2>
-            {competition?.challenges && (
-              <div className="text-sm text-zinc-400">
-                {solvedChallenges.size} / {competition.challenges.length} completed
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-zinc-800 border border-zinc-700 text-zinc-300 text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="default">Default Order</option>
+                <option value="points-desc">Points: High → Low</option>
+                <option value="points-asc">Points: Low → High</option>
+                <option value="solves-desc">Most Solved</option>
+                <option value="solves-asc">Least Solved</option>
+              </select>
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-6">
@@ -426,7 +532,7 @@ const CompetitionDashboardPage: React.FC = () => {
             })}
           </div>
 
-          {filteredChallenges.length === 0 ? (
+          {sortedChallenges.length === 0 ? (
             <div className="text-center py-12">
               <Trophy className="w-16 h-16 text-zinc-600 mx-auto mb-4" />
               <p className="text-zinc-400 text-lg mb-2">No challenges in this competition yet</p>
@@ -435,10 +541,11 @@ const CompetitionDashboardPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {filteredChallenges.map((challenge: CompetitionChallenge) => {
+            <div className="space-y-3">
+              {sortedChallenges.map((challenge: CompetitionChallenge) => {
               const isSolved = solvedChallenges.has(challenge._id);
               const ended = isCompetitionEnded();
+              const firstBloodUser = challenge.solvers?.[0]?.username;
 
               return (
                 <Card
@@ -447,87 +554,83 @@ const CompetitionDashboardPage: React.FC = () => {
                     e.stopPropagation();
                     navigate(`/competition/${id}/challenge/${challenge._id}`);
                   }}
-                  className={`p-5 transition-all duration-300 ease-in-out cursor-pointer hover:border-zinc-500 hover:scale-[1.01] group ${
+                  className={`p-4 transition-all duration-300 ease-in-out cursor-pointer hover:border-zinc-500 hover:scale-[1.01] group ${
                     isSolved && !ended ? 'bg-emerald-500/5 border-emerald-500/50' : 'border-zinc-700 hover:bg-zinc-800/30'
                   } ${ended ? 'opacity-90' : ''}`}
                 >
-                  <div className="flex items-start gap-5">
-                    {/* Trophy Icon */}
-                    <div className={`p-3 rounded-lg ${
+                  <div className="flex items-center gap-4">
+                    {/* Icon */}
+                    <div className={`p-2.5 rounded-lg shrink-0 ${
                       isSolved && !ended ? 'bg-emerald-500/30' : 'bg-zinc-700/50'
                     }`}>
                       {isSolved && !ended ? (
-                        <CheckCircle className="w-7 h-7 text-emerald-300" />
+                        <CheckCircle className="w-6 h-6 text-emerald-300" />
                       ) : (
-                        <Trophy className={`w-7 h-7 ${ended ? 'text-zinc-400' : 'text-emerald-400'}`} />
+                        <Trophy className={`w-6 h-6 ${ended ? 'text-zinc-400' : 'text-emerald-400'}`} />
                       )}
                     </div>
 
                     {/* Content */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <h3 className="text-xl font-bold text-zinc-100">{challenge.title}</h3>
-                            {isSolved && !ended && (
-                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/30 text-emerald-300 border border-emerald-500/50">
-                                SOLVED
-                              </span>
-                            )}
-                            {ended && (
-                              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-zinc-700 text-zinc-300 border border-zinc-600">
-                                COMPLETED
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-zinc-400 text-sm mb-3 line-clamp-2">
-                            {challenge.description}
-                          </p>
-                        </div>
-                        <span className="px-4 py-2 rounded-full text-sm font-semibold bg-zinc-700/50 text-zinc-300 whitespace-nowrap ml-4">
-                          {(challenge as any).currentPoints || challenge.points} pts
-                        </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <h3 className="text-lg font-bold text-zinc-100 truncate">{challenge.title}</h3>
+                        {isSolved && !ended && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/30 text-emerald-300 border border-emerald-500/50 shrink-0">
+                            SOLVED
+                          </span>
+                        )}
+                        {ended && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-700 text-zinc-300 border border-zinc-600 shrink-0">
+                            ENDED
+                          </span>
+                        )}
                       </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4 text-sm text-zinc-500">
-                          <CategoryBadge category={challenge.category} />
-                          <span>{challenge.solves} solves</span>
-                          {isSolved && !ended && (
-                            <span className="text-emerald-400 font-semibold">Completed</span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-xs text-zinc-600">
-                            By: {challenge.author}
-                          </div>
-                          {isAdmin && !ended && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (confirm(`Are you sure you want to remove "${challenge.title}" from this competition?`)) {
-                                  try {
-                                    await competitionService.removeChallengeFromCompetition(id!, challenge._id);
-                                    alert('Challenge removed successfully');
-                                    window.location.reload();
-                                  } catch (err: any) {
-                                    alert(err.message || 'Failed to remove challenge');
-                                  }
+                      <div className="flex items-center flex-wrap gap-2 text-sm">
+                        <CategoryBadge category={challenge.category} />
+                        {challenge.difficulty && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getDifficultyColor(challenge.difficulty)}`}>
+                            {challenge.difficulty}
+                          </span>
+                        )}
+                        <span className="text-zinc-500">{challenge.solves} solves</span>
+                        {firstBloodUser && (
+                          <span className="flex items-center gap-1 text-yellow-400 text-xs font-medium">
+                            <Zap className="w-3 h-3" />
+                            {firstBloodUser}
+                          </span>
+                        )}
+                        {isAdmin && !ended && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (confirm(`Are you sure you want to remove "${challenge.title}" from this competition?`)) {
+                                try {
+                                  await competitionService.removeChallengeFromCompetition(id!, challenge._id);
+                                  alert('Challenge removed successfully');
+                                  window.location.reload();
+                                } catch (err: any) {
+                                  alert(err.message || 'Failed to remove challenge');
                                 }
-                              }}
-                              className="border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-400 h-8 px-3"
-                            >
-                              Remove
-                            </Button>
-                          )}
-                        </div>
+                              }
+                            }}
+                            className="border-red-500/50 hover:border-red-500 hover:bg-red-500/10 text-red-400 h-6 px-2 text-xs ml-auto"
+                          >
+                            Remove
+                          </Button>
+                        )}
                       </div>
-                      <div className="mt-3 text-right">
-                        <span className="text-xs text-zinc-500 group-hover:text-zinc-300 transition-all duration-300 inline-flex items-center gap-1">
-                          {ended ? 'View Statistics' : 'Click to view details'} <ArrowRight className="w-3 h-3 transition-transform duration-300 group-hover:translate-x-1" />
-                        </span>
+                    </div>
+
+                    {/* Points + Arrow */}
+                    <div className="text-right shrink-0">
+                      <span className="text-lg font-bold text-zinc-200">
+                        {challenge.currentPoints || challenge.points}
+                      </span>
+                      <span className="text-zinc-500 text-sm ml-1">pts</span>
+                      <div className="mt-1">
+                        <ArrowRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-300 transition-all duration-300 group-hover:translate-x-1 ml-auto" />
                       </div>
                     </div>
                   </div>
@@ -546,26 +649,52 @@ const CompetitionDashboardPage: React.FC = () => {
               <TrendingUp className="w-5 h-5 text-emerald-400" />
               <h2 className="text-xl font-bold text-zinc-100">Leaderboard</h2>
             </div>
-            <div className="space-y-3">
-              {leaderboard.map((entry, index) => (
-                <div key={entry._id} className="flex items-center justify-between p-3 bg-zinc-800 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      index === 0 ? 'bg-yellow-500 text-yellow-900' :
-                      index === 1 ? 'bg-zinc-400 text-zinc-900' :
-                      index === 2 ? 'bg-amber-600 text-amber-100' :
-                      'bg-zinc-700 text-zinc-300'
-                    }`}>
-                      {index + 1}
-                    </span>
-                    <div>
-                      <p className="text-zinc-200 font-semibold">{entry.username}</p>
-                      <p className="text-zinc-500 text-xs">{entry.solvedChallenges} solved</p>
+            <div className="space-y-2">
+              {leaderboard.slice(0, 5).map((entry, index) => {
+                const isCurrentUser = user && entry.username === user.username;
+                return (
+                  <div key={entry._id} className={`flex items-center justify-between p-3 rounded-lg ${isCurrentUser ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-zinc-800'}`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                        index === 0 ? 'bg-yellow-500 text-yellow-900' :
+                        index === 1 ? 'bg-zinc-400 text-zinc-900' :
+                        index === 2 ? 'bg-amber-600 text-amber-100' :
+                        'bg-zinc-700 text-zinc-300'
+                      }`}>
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className={`font-semibold ${isCurrentUser ? 'text-emerald-400' : 'text-zinc-200'}`}>
+                          {entry.username} {isCurrentUser && <span className="text-xs opacity-75">(You)</span>}
+                        </p>
+                        <p className="text-zinc-500 text-xs">{entry.solvedChallenges} solved</p>
+                      </div>
                     </div>
+                    <span className="text-emerald-400 font-bold">{entry.points}</span>
                   </div>
-                  <span className="text-emerald-400 font-bold">{entry.points}</span>
-                </div>
-              ))}
+                );
+              })}
+              {/* Show current user if not in top 5 */}
+              {userRank > 5 && user && (() => {
+                const userEntry = leaderboard[userRank - 1];
+                return userEntry ? (
+                  <>
+                    <div className="border-t border-zinc-700 my-2"></div>
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-zinc-700 text-zinc-300">
+                          {userRank}
+                        </span>
+                        <div>
+                          <p className="text-emerald-400 font-semibold">{userEntry.username} <span className="text-xs opacity-75">(You)</span></p>
+                          <p className="text-zinc-500 text-xs">{userEntry.solvedChallenges} solved</p>
+                        </div>
+                      </div>
+                      <span className="text-emerald-400 font-bold">{userEntry.points}</span>
+                    </div>
+                  </>
+                ) : null;
+              })()}
             </div>
             <Button variant="secondary" className="w-full mt-4" onClick={() => navigate(`/competition/${id}/leaderboard`)}>
               View Full Leaderboard

@@ -155,6 +155,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
             {competition?.name} - Leaderboard
           </h1>
           <p className="text-zinc-400">Track your progress and compete with the best</p>
+          <p className="text-zinc-500 text-sm mt-1">{leaderboardData.length} participants</p>
         </div>
 
         {/* Top 3 Winner Cards */}
@@ -365,7 +366,7 @@ const CompetitionLeaderboardPage: React.FC = () => {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-zinc-400" />
             <input
               type="text"
-              placeholder="Search teams"
+              placeholder="Search players"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="
