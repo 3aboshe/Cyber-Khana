@@ -722,7 +722,7 @@ export const uploadWriteupPdfController = async (req: AuthRequest, res: Response
 
       // Construct absolute URL for better compatibility with HashRouter
       // Use fixed HTTPS URL without www for Cloudflare compatibility
-      const fileUrl = `https://cyberkhana.tech/api/uploads/${req.file.filename}`;
+      const fileUrl = `https://cyberkhana.tech/api/uploads/${encodeURIComponent(req.file.filename)}`;
 
       res.json({
         name: req.file.originalname,
@@ -752,7 +752,7 @@ export const uploadChallengeFilesController = async (req: AuthRequest, res: Resp
 
       const files = (req.files as Express.Multer.File[]).map(file => {
         // Use fixed HTTPS URL without www for Cloudflare compatibility
-        const fileUrl = `https://cyberkhana.tech/api/uploads/${file.filename}`;
+        const fileUrl = `https://cyberkhana.tech/api/uploads/${encodeURIComponent(file.filename)}`;
 
         return {
           name: file.originalname,

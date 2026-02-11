@@ -8,13 +8,21 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Sanitize filename: replace URL-unsafe characters with underscores
+function sanitizeFilename(original: string): string {
+  const ext = path.extname(original);
+  const name = path.basename(original, ext);
+  // Replace characters that break URLs: ? # % & + = and other unsafe chars
+  const safeName = name.replace(/[?#%&+=@!$,;:'"^`{}|\\<>[\]]/g, '_');
+  return safeName + ext;
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Preserve original filename
-    cb(null, file.originalname);
+    cb(null, sanitizeFilename(file.originalname));
   }
 });
 
@@ -31,8 +39,7 @@ const challengeFileStorage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Preserve original filename
-    cb(null, file.originalname);
+    cb(null, sanitizeFilename(file.originalname));
   }
 });
 
