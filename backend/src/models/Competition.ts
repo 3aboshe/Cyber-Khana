@@ -33,6 +33,7 @@ export interface ICompetitionChallenge extends Document {
   initialPoints?: number;
   minimumPoints?: number;
   decay?: number;
+  scoringMode?: 'dynamic' | 'static';
   currentPoints?: number;
   difficulty?: 'Easy' | 'Medium' | 'Hard' | 'Expert';
   estimatedTime?: number;
@@ -126,7 +127,12 @@ const CompetitionChallengeSchema: Schema = new Schema({
   },
   decay: {
     type: Number,
-    default: 200
+    default: 38
+  },
+  scoringMode: {
+    type: String,
+    enum: ['dynamic', 'static'],
+    default: 'dynamic'
   },
   currentPoints: {
     type: Number,
