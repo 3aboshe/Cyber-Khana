@@ -43,6 +43,10 @@ const SuperAdminPage: React.FC = () => {
   const [newUniversityCode, setNewUniversityCode] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Challenge filtering state
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
   // Challenge copying state
   const [selectedChallenges, setSelectedChallenges] = useState<Set<string>>(new Set());
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -82,6 +86,9 @@ const SuperAdminPage: React.FC = () => {
 
   const handleUniversityChange = (universityCode: string) => {
     setSelectedUniversity(universityCode);
+    setCategoryFilter('');
+    setSearchTerm('');
+    setSelectedChallenges(new Set());
     if (universityCode) {
       fetchChallenges(universityCode);
     } else {
@@ -150,11 +157,21 @@ const SuperAdminPage: React.FC = () => {
     setSelectedChallenges(newSelection);
   };
 
+  const filteredChallenges = challenges.filter(c => {
+    const matchesCategory = !categoryFilter || c.category === categoryFilter;
+    const matchesSearch = !searchTerm || c.title.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   const selectAllChallenges = () => {
-    if (selectedChallenges.size === challenges.length) {
-      setSelectedChallenges(new Set());
+    const filteredIds = filteredChallenges.map(c => c._id);
+    const allFilteredSelected = filteredIds.every(id => selectedChallenges.has(id));
+    if (allFilteredSelected) {
+      const newSelection = new Set(selectedChallenges);
+      filteredIds.forEach(id => newSelection.delete(id));
+      setSelectedChallenges(newSelection);
     } else {
-      setSelectedChallenges(new Set(challenges.map(c => c._id)));
+      setSelectedChallenges(new Set([...selectedChallenges, ...filteredIds]));
     }
   };
 
@@ -362,12 +379,12 @@ const SuperAdminPage: React.FC = () => {
 
       {selectedUniversity && !loading && (
         <>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-2xl font-bold text-zinc-100 mb-2">
                 Challenges from {universities.find(u => u.code === selectedUniversity)?.name}
               </h2>
-              <p className="text-zinc-400">{challenges.length} challenges available</p>
+              <p className="text-zinc-400">{filteredChallenges.length} of {challenges.length} challenges shown</p>
             </div>
             {challenges.length > 0 && (
               <div className="flex gap-3">
@@ -376,7 +393,7 @@ const SuperAdminPage: React.FC = () => {
                   variant="ghost"
                   className="text-zinc-300 hover:text-zinc-100"
                 >
-                  {selectedChallenges.size === challenges.length ? 'Deselect All' : 'Select All'}
+                  {filteredChallenges.every(c => selectedChallenges.has(c._id)) && filteredChallenges.length > 0 ? 'Deselect All' : 'Select All'}
                 </Button>
                 <Button
                   onClick={() => setShowCopyModal(true)}
@@ -390,8 +407,35 @@ const SuperAdminPage: React.FC = () => {
             )}
           </div>
 
+          {/* Filter Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-zinc-500" />
+              <input
+                type="text"
+                placeholder="Search challenges..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">All Categories</option>
+              <option value="Web Exploitation">Web Exploitation</option>
+              <option value="Reverse Engineering">Reverse Engineering</option>
+              <option value="Cryptography">Cryptography</option>
+              <option value="Pwn">Pwn</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+              <option value="Forensics">Forensics</option>
+            </select>
+          </div>
+
           <div className="grid gap-3">
-            {challenges.map((challenge) => (
+            {filteredChallenges.map((challenge) => (
               <motion.div
                 key={challenge._id}
                 initial={{ opacity: 0, y: 10 }}
@@ -440,10 +484,10 @@ const SuperAdminPage: React.FC = () => {
                 </div>
               </motion.div>
             ))}
-            {challenges.length === 0 && (
+            {filteredChallenges.length === 0 && (
               <div className="text-zinc-500 text-center py-12 bg-zinc-800/30 rounded-lg border border-zinc-700">
                 <p className="text-lg mb-2">No challenges found</p>
-                <p className="text-sm">Create challenges for this university to get started</p>
+                <p className="text-sm">{challenges.length > 0 ? 'Try adjusting your filters' : 'Create challenges for this university to get started'}</p>
               </div>
             )}
           </div>

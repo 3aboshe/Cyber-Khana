@@ -77,6 +77,7 @@ export interface IChallenge extends Document {
     };
   };
   isPublished: boolean;
+  scoringMode: 'dynamic' | 'static';
   initialPoints: number;
   minimumPoints: number;
   decay: number;
@@ -188,6 +189,11 @@ const ChallengeSchema: Schema = new Schema({
   isPublished: {
     type: Boolean,
     default: false
+  },
+  scoringMode: {
+    type: String,
+    enum: ['dynamic', 'static'],
+    default: 'dynamic'
   },
   initialPoints: {
     type: Number,

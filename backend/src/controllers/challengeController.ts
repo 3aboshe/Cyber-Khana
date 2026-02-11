@@ -81,12 +81,16 @@ export const getChallenges = async (req: AuthRequest, res: Response) => {
 
     const challengesWithCurrentPoints = challenges.map(challenge => {
       const challengeObj = challenge.toObject();
-      challengeObj.currentPoints = calculateDynamicScore(
-        challenge.initialPoints,
-        challenge.minimumPoints,
-        challenge.decay,
-        challenge.solves
-      );
+      if (challenge.scoringMode === 'static') {
+        challengeObj.currentPoints = challenge.points;
+      } else {
+        challengeObj.currentPoints = calculateDynamicScore(
+          challenge.initialPoints,
+          challenge.minimumPoints,
+          challenge.decay,
+          challenge.solves
+        );
+      }
 
       // If user is not admin and writeup is not unlocked, remove writeup data
       if (req.user?.role === 'user' && !challenge.writeup?.isUnlocked) {
@@ -144,17 +148,17 @@ export const getAllChallenges = async (req: AuthRequest, res: Response) => {
 
     const challengesWithCurrentPoints = challenges.map(challenge => {
       const challengeObj = challenge.toObject();
-      // Provide defaults for challenges created before these fields were added
-      const initialPoints = challenge.initialPoints || challenge.points || 1000;
-      const minimumPoints = challenge.minimumPoints || 100;
-      const decay = challenge.decay || 38;
-
-      challengeObj.currentPoints = calculateDynamicScore(
-        initialPoints,
-        minimumPoints,
-        decay,
-        challenge.solves
-      );
+      if (challenge.scoringMode === 'static') {
+        challengeObj.currentPoints = challenge.points;
+      } else {
+        // Provide defaults for challenges created before these fields were added
+        const initialPoints = challenge.initialPoints || challenge.points || 1000;
+        const minimumPoints = challenge.minimumPoints || 100;
+        const decay = challenge.decay || 38;
+        challengeObj.currentPoints = calculateDynamicScore(
+          initialPoints, minimumPoints, decay, challenge.solves
+        );
+      }
       return challengeObj;
     });
 
@@ -188,17 +192,17 @@ export const getChallenge = async (req: AuthRequest, res: Response) => {
     }
 
     const challengeObj = challenge.toObject();
-    // Provide defaults for challenges created before these fields were added
-    const initialPoints = challenge.initialPoints || challenge.points || 1000;
-    const minimumPoints = challenge.minimumPoints || 100;
-    const decay = challenge.decay || 38;
-
-    challengeObj.currentPoints = calculateDynamicScore(
-      initialPoints,
-      minimumPoints,
-      decay,
-      challenge.solves
-    );
+    if (challenge.scoringMode === 'static') {
+      challengeObj.currentPoints = challenge.points;
+    } else {
+      // Provide defaults for challenges created before these fields were added
+      const initialPoints = challenge.initialPoints || challenge.points || 1000;
+      const minimumPoints = challenge.minimumPoints || 100;
+      const decay = challenge.decay || 38;
+      challengeObj.currentPoints = calculateDynamicScore(
+        initialPoints, minimumPoints, decay, challenge.solves
+      );
+    }
 
     // Fetch user to get latest unlocked hints (JWT might be stale)
     let unlockedHints: string[] = [];
@@ -388,12 +392,17 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
       }
 
       // Calculate potential points (using current state of challenge)
-      const awardedPoints = calculateDynamicScore(
-        challenge.initialPoints,
-        challenge.minimumPoints,
-        challenge.decay,
-        challenge.solves
-      );
+      let awardedPoints: number;
+      if (challenge.scoringMode === 'static') {
+        awardedPoints = challenge.points;
+      } else {
+        awardedPoints = calculateDynamicScore(
+          challenge.initialPoints,
+          challenge.minimumPoints,
+          challenge.decay,
+          challenge.solves
+        );
+      }
 
       let totalAwardedPoints = awardedPoints;
       // First blood bonus check (approximate due to race, but safe)

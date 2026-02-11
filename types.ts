@@ -46,6 +46,7 @@ export interface Challenge {
   minimumPoints?: number;
   decay?: number;
   currentPoints?: number;
+  scoringMode?: 'dynamic' | 'static';
   difficulty?: 'Very Easy' | 'Easy' | 'Medium' | 'Hard' | 'Expert';
   estimatedTime?: number;
   challengeLink?: string;

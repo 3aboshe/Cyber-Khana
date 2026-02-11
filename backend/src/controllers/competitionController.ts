@@ -443,12 +443,18 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
       if (isCorrectFlag) {
         // Calculate dynamic points
         const { calculateDynamicScore } = require('../models/Challenge');
-        const awardedPoints = calculateDynamicScore(
-          challenge.initialPoints || 1000,
-          challenge.minimumPoints || 100,
-          challenge.decay || 200,
-          challenge.solves
-        );
+
+        let awardedPoints: number;
+        if (challenge.scoringMode === 'static') {
+          awardedPoints = challenge.points || challenge.initialPoints || 1000;
+        } else {
+          awardedPoints = calculateDynamicScore(
+            challenge.initialPoints || 1000,
+            challenge.minimumPoints || 100,
+            challenge.decay || 38,
+            challenge.solves
+          );
+        }
 
         let totalAwardedPoints = awardedPoints;
         const isFirstBlood = challenge.solves === 0;
@@ -459,16 +465,29 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
           totalAwardedPoints += firstBloodBonus;
         }
 
-        // Update user's solved challenges
-        user.solvedChallenges.push(challengeId);
-        user.solvedChallengesDetails.push({
-          challengeId,
-          solvedAt: new Date(),
-          points: totalAwardedPoints
-        });
-        // Add points to competitionPoints for competition challenges
-        user.competitionPoints += totalAwardedPoints;
-        await user.save();
+        // ATOMIC update to prevent race condition (double submission)
+        const userUpdate = await User.findOneAndUpdate(
+          {
+            _id: (user as any)._id,
+            solvedChallenges: { $ne: challengeId }
+          },
+          {
+            $push: {
+              solvedChallenges: challengeId,
+              solvedChallengesDetails: {
+                challengeId,
+                solvedAt: new Date(),
+                points: totalAwardedPoints
+              }
+            },
+            $inc: { competitionPoints: totalAwardedPoints }
+          },
+          { new: true }
+        );
+
+        if (!userUpdate) {
+          return res.status(400).json({ error: 'Challenge already solved' });
+        }
 
         // Update challenge solve count and track solver
         competition.challenges[challengeIndex].solves += 1;
@@ -860,26 +879,33 @@ export const buyCompetitionHint = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if user already bought this hint
+    // ATOMIC hint purchase to prevent race conditions (double purchase / insufficient points bypass)
     const hintKey = `${id}_${challengeId}_${hintIndex}`;
-    if (user.unlockedHints.includes(hintKey)) {
-      return res.status(400).json({ error: 'You have already unlocked this hint' });
-    }
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        _id: (user as any)._id,
+        competitionPoints: { $gte: hint.cost },
+        unlockedHints: { $ne: hintKey }
+      },
+      {
+        $inc: { competitionPoints: -hint.cost },
+        $push: { unlockedHints: hintKey }
+      },
+      { new: true }
+    );
 
-    // Check if user has enough competition points
-    if (user.competitionPoints < hint.cost) {
+    if (!updatedUser) {
+      // Determine specific error
+      if (user.unlockedHints.includes(hintKey)) {
+        return res.status(400).json({ error: 'You have already unlocked this hint' });
+      }
       return res.status(400).json({ error: 'Insufficient competition points' });
     }
-
-    // Deduct competition points and add hint to unlocked hints
-    user.competitionPoints -= hint.cost;
-    user.unlockedHints.push(hintKey);
-    await user.save();
 
     res.json({
       success: true,
       hint: hint.text,
-      remainingPoints: user.competitionPoints
+      remainingPoints: updatedUser.competitionPoints
     });
   } catch (error) {
     res.status(500).json({ error: 'Error buying hint' });
@@ -897,6 +923,45 @@ export const deleteCompetition = async (req: AuthRequest, res: Response) => {
 
     if (req.user?.role !== 'super-admin' && competition.universityCode !== req.user?.universityCode) {
       return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Full cleanup: revert user points and solve records before deleting
+    const challengeIds = competition.challenges.map((c: any) => c._id?.toString()).filter(Boolean);
+
+    if (challengeIds.length > 0) {
+      const affectedUsers = await User.find({ solvedChallenges: { $in: challengeIds } });
+
+      for (const affectedUser of affectedUsers) {
+        let pointsToDeduct = 0;
+
+        // Calculate total points to deduct from competition challenges
+        const details = affectedUser.solvedChallengesDetails as Array<{ challengeId: string; points: number }>;
+        for (const detail of details) {
+          if (challengeIds.includes(detail.challengeId?.toString())) {
+            pointsToDeduct += detail.points || 0;
+          }
+        }
+
+        // Remove competition challenge IDs from solvedChallenges
+        affectedUser.solvedChallenges = affectedUser.solvedChallenges.filter(
+          (cId: string) => !challengeIds.includes(cId)
+        );
+
+        // Remove entries from solvedChallengesDetails
+        affectedUser.solvedChallengesDetails = (affectedUser.solvedChallengesDetails as any[]).filter(
+          (d: any) => !challengeIds.includes(d.challengeId?.toString())
+        );
+
+        // Deduct competition points (floor at 0)
+        affectedUser.competitionPoints = Math.max(0, (affectedUser.competitionPoints || 0) - pointsToDeduct);
+
+        // Clean up unlockedHints for this competition (format: competitionId_challengeId_hintIndex)
+        affectedUser.unlockedHints = (affectedUser.unlockedHints || []).filter(
+          (hintKey: string) => !hintKey.startsWith(`${id}_`)
+        );
+
+        await affectedUser.save();
+      }
     }
 
     await competition.deleteOne();

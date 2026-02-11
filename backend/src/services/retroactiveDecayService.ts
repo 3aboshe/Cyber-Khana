@@ -19,6 +19,19 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
     let competitionId: string | null = null;
     let challengeData: any = null;
 
+    // Skip retroactive decay for static scoring challenges
+    if (challenge && challenge.scoringMode === 'static') {
+      return {
+        success: true,
+        challengeId,
+        fromCompetition: false,
+        totalSolves: challenge.solves,
+        correctPoints: challenge.points,
+        usersUpdated: 0,
+        totalPointsAdjusted: 0
+      };
+    }
+
     // If not found in Challenge collection, check if it's from a competition
     if (!challenge) {
       const competition = await Competition.findOne({
@@ -28,6 +41,18 @@ export const applyRetroactiveDecay = async (challengeId: string) => {
       if (competition) {
         const compChallenge = competition.challenges.find((c: any) => c._id.toString() === challengeId);
         if (compChallenge) {
+          // Skip retroactive decay for static scoring competition challenges
+          if (compChallenge.scoringMode === 'static') {
+            return {
+              success: true,
+              challengeId,
+              fromCompetition: true,
+              totalSolves: compChallenge.solves,
+              correctPoints: compChallenge.points || compChallenge.initialPoints || 1000,
+              usersUpdated: 0,
+              totalPointsAdjusted: 0
+            };
+          }
           // Create a challenge-like object for decay calculation
           challengeData = {
             title: compChallenge.title,

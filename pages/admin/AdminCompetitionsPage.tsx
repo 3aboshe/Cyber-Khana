@@ -38,6 +38,8 @@ const AdminCompetitionsPage: React.FC = () => {
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [selectedChallenge, setSelectedChallenge] = useState<any>(null);
   const [selectedChallenges, setSelectedChallenges] = useState<Set<string>>(new Set());
+  const [challengeCategoryFilter, setChallengeCategoryFilter] = useState('');
+  const [challengeSearchTerm, setChallengeSearchTerm] = useState('');
   const [timeMode, setTimeMode] = useState<'datetime' | 'timer'>('datetime');
   const [formData, setFormData] = useState({
     name: '',
@@ -597,19 +599,50 @@ const AdminCompetitionsPage: React.FC = () => {
       {/* Challenge Selection Modal */}
       <Modal
         isOpen={isChallengeModalOpen}
-        onClose={() => setIsChallengeModalOpen(false)}
+        onClose={() => {
+          setIsChallengeModalOpen(false);
+          setChallengeCategoryFilter('');
+          setChallengeSearchTerm('');
+        }}
         className="max-w-[95vw] w-[95vw] p-0"
       >
         <div className="bg-zinc-900 p-8 rounded-lg max-h-[90vh] overflow-y-auto">
           <h2 className="text-3xl font-bold text-zinc-100 mb-6">
             Select Challenges for {selectedCompetition?.name}
           </h2>
-          <p className="text-zinc-400 mb-6">
-            Select one or more challenges to add to this competition:
-          </p>
+
+          {/* Filter Bar */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <input
+              type="text"
+              placeholder="Search challenges..."
+              value={challengeSearchTerm}
+              onChange={(e) => setChallengeSearchTerm(e.target.value)}
+              className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <select
+              value={challengeCategoryFilter}
+              onChange={(e) => setChallengeCategoryFilter(e.target.value)}
+              className="px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">All Categories</option>
+              <option value="Web Exploitation">Web Exploitation</option>
+              <option value="Reverse Engineering">Reverse Engineering</option>
+              <option value="Cryptography">Cryptography</option>
+              <option value="Pwn">Pwn</option>
+              <option value="Miscellaneous">Miscellaneous</option>
+              <option value="Forensics">Forensics</option>
+            </select>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {challenges.map((challenge) => {
+            {challenges
+              .filter(c => {
+                const matchesCategory = !challengeCategoryFilter || c.category === challengeCategoryFilter;
+                const matchesSearch = !challengeSearchTerm || c.title.toLowerCase().includes(challengeSearchTerm.toLowerCase());
+                return matchesCategory && matchesSearch;
+              })
+              .map((challenge) => {
               const isSelected = selectedChallenges.has(challenge._id);
               const isAlreadyAdded = selectedCompetition?.challenges.some((c: any) => c._id === challenge._id);
 

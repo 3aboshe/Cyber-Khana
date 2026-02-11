@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { challengeService } from '../../services/challengeService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
@@ -8,6 +8,19 @@ import Modal from '../../components/ui/Modal';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useConfirmation } from '../../src/contexts/ConfirmationContext';
 import { useToast } from '../../src/hooks/useToast';
+import { calculateDynamicScore } from '../../src/utils/decayCalculator';
+
+const DECAY_PRESETS = [
+  { label: 'Slow', value: 200, description: 'Points drop very gradually' },
+  { label: 'Medium', value: 80, description: 'Balanced decay' },
+  { label: 'Fast', value: 38, description: 'Points drop quickly' },
+  { label: 'Aggressive', value: 15, description: 'Very steep drop' },
+];
+const PREVIEW_SOLVES = [0, 1, 5, 10, 20, 30, 50];
+const getDecayPresetLabel = (decay: number): string => {
+  const preset = DECAY_PRESETS.find(p => p.value === decay);
+  return preset ? preset.label : 'Custom';
+};
 
 interface Challenge {
   _id: string;
@@ -65,20 +78,22 @@ const AdminChallengesPage: React.FC = () => {
   const [formData, setFormData] = useState({
     title: '',
     category: 'Web Exploitation',
-    points: 100,
+    points: 1000,
     description: '',
     author: '',
     flag: '',
-    flags: [] as string[], // Additional alternative flags
-    firstBloodBonus: 0, // Bonus points for first solver
+    flags: [] as string[],
+    firstBloodBonus: 0,
+    scoringMode: 'dynamic' as 'dynamic' | 'static',
     initialPoints: 1000,
     minimumPoints: 100,
-    decay: 38,
+    decay: 80,
     difficulty: 'Very Easy',
     estimatedTime: 30,
     challengeLink: '',
     hints: [] as Array<{ text: string; cost: number; isPublished?: boolean }>,
   });
+  const [decayPreset, setDecayPreset] = useState('Medium');
   const [challengeFiles, setChallengeFiles] = useState<FileList | null>(null);
   const [filter, setFilter] = useState<'all' | 'published' | 'unpublished'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -279,43 +294,48 @@ const AdminChallengesPage: React.FC = () => {
     if (challenge) {
       setEditingChallenge(challenge);
       setOriginalFlag(challenge.flag || '');
+      const challengeDecay = typeof (challenge as any).decay === 'number' ? (challenge as any).decay : 80;
       setFormData({
         title: challenge.title,
         category: challenge.category,
-        points: challenge.points,
+        points: challenge.points || (challenge as any).initialPoints || 1000,
         description: challenge.description,
         author: challenge.author,
-        flag: challenge.flag || '', // Include the flag value when editing
+        flag: challenge.flag || '',
         flags: (challenge as any).flags || [],
         firstBloodBonus: (challenge as any).firstBloodBonus || 0,
+        scoringMode: (challenge as any).scoringMode || 'dynamic',
         initialPoints: (challenge as any).initialPoints || 1000,
         minimumPoints: (challenge as any).minimumPoints || 100,
-        decay: typeof (challenge as any).decay === 'number' ? (challenge as any).decay : 38,
+        decay: challengeDecay,
         difficulty: (challenge as any).difficulty || 'Medium',
         estimatedTime: (challenge as any).estimatedTime || 30,
         challengeLink: (challenge as any).challengeLink || '',
         hints: (challenge as any).hints || [],
       });
+      setDecayPreset(getDecayPresetLabel(challengeDecay));
     } else {
       setEditingChallenge(null);
       setOriginalFlag('');
       setFormData({
         title: '',
         category: 'Web Exploitation',
-        points: 100,
+        points: 1000,
         description: '',
         author: '',
         flag: '',
         flags: [],
         firstBloodBonus: 0,
+        scoringMode: 'dynamic',
         initialPoints: 1000,
         minimumPoints: 100,
-        decay: 38,
+        decay: 80,
         difficulty: 'Very Easy',
         estimatedTime: 30,
         challengeLink: '',
         hints: [],
       });
+      setDecayPreset('Medium');
     }
     setChallengeFiles(null);
     setIsModalOpen(true);
@@ -709,39 +729,128 @@ const AdminChallengesPage: React.FC = () => {
             </div>
 
             <div className="border-t border-zinc-700 pt-4">
-              <h3 className="text-lg font-semibold text-zinc-100 mb-3">Dynamic Scoring Configuration</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-zinc-200 mb-2 font-medium">Initial Points</label>
-                  <Input
-                    type="number"
-                    value={formData.initialPoints}
-                    onChange={(e) => setFormData({ ...formData, initialPoints: parseInt(e.target.value) || 0 })}
-                    required
-                  />
-                  <p className="text-zinc-500 text-xs mt-1">Points when 0 solves</p>
-                </div>
-                <div>
-                  <label className="block text-zinc-200 mb-2 font-medium">Minimum Points</label>
-                  <Input
-                    type="number"
-                    value={formData.minimumPoints}
-                    onChange={(e) => setFormData({ ...formData, minimumPoints: parseInt(e.target.value) || 0 })}
-                    required
-                  />
-                  <p className="text-zinc-500 text-xs mt-1">Lowest possible points</p>
-                </div>
-                <div>
-                  <label className="block text-zinc-200 mb-2 font-medium">Decay</label>
-                  <Input
-                    type="number"
-                    value={formData.decay}
-                    onChange={(e) => setFormData({ ...formData, decay: parseInt(e.target.value) || 0 })}
-                    required
-                  />
-                  <p className="text-zinc-500 text-xs mt-1">Controls how fast points drop</p>
-                </div>
+              <h3 className="text-lg font-semibold text-zinc-100 mb-3">Scoring</h3>
+
+              {/* Scoring Mode Toggle */}
+              <div className="flex gap-1 mb-4 bg-zinc-800 p-1 rounded-lg w-fit">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, scoringMode: 'static' })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    formData.scoringMode === 'static'
+                      ? 'bg-emerald-600 text-white'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Static
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, scoringMode: 'dynamic' })}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    formData.scoringMode !== 'static'
+                      ? 'bg-emerald-600 text-white'
+                      : 'text-zinc-400 hover:text-zinc-200'
+                  }`}
+                >
+                  Dynamic
+                </button>
               </div>
+
+              {formData.scoringMode === 'static' ? (
+                <div className="bg-zinc-700/50 p-4 rounded-md">
+                  <label className="block text-zinc-200 mb-2 font-medium">Points</label>
+                  <Input
+                    type="number"
+                    value={formData.points}
+                    onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 0 })}
+                    min="1"
+                    placeholder="1000"
+                    required
+                  />
+                  <p className="text-zinc-500 text-xs mt-1">Fixed points awarded per solve (does not change)</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-zinc-700/50 p-4 rounded-md">
+                    <div>
+                      <label className="block text-zinc-200 mb-2 font-medium">Starting Points</label>
+                      <Input
+                        type="number"
+                        value={formData.initialPoints}
+                        onChange={(e) => setFormData({ ...formData, initialPoints: parseInt(e.target.value) || 0 })}
+                        min="1"
+                        placeholder="1000"
+                        required
+                      />
+                      <p className="text-zinc-500 text-xs mt-1">Points when nobody has solved it yet</p>
+                    </div>
+                    <div>
+                      <label className="block text-zinc-200 mb-2 font-medium">Minimum Points</label>
+                      <Input
+                        type="number"
+                        value={formData.minimumPoints}
+                        onChange={(e) => setFormData({ ...formData, minimumPoints: parseInt(e.target.value) || 0 })}
+                        min="0"
+                        placeholder="100"
+                        required
+                      />
+                      <p className="text-zinc-500 text-xs mt-1">Points will never go below this</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-zinc-700/50 p-4 rounded-md">
+                    <label className="block text-zinc-200 mb-2 font-medium">Decay Speed</label>
+                    <select
+                      value={decayPreset}
+                      onChange={(e) => {
+                        const label = e.target.value;
+                        setDecayPreset(label);
+                        if (label !== 'Custom') {
+                          const preset = DECAY_PRESETS.find(p => p.label === label);
+                          if (preset) {
+                            setFormData({ ...formData, decay: preset.value });
+                          }
+                        }
+                      }}
+                      className="w-full px-4 py-2 bg-zinc-800 border border-zinc-600 rounded-md text-zinc-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    >
+                      {DECAY_PRESETS.map(preset => (
+                        <option key={preset.label} value={preset.label}>
+                          {preset.label} — {preset.description}
+                        </option>
+                      ))}
+                      {decayPreset === 'Custom' && (
+                        <option value="Custom">Custom ({formData.decay})</option>
+                      )}
+                    </select>
+                    <p className="text-zinc-500 text-xs mt-1">How quickly points decrease as more people solve</p>
+                  </div>
+
+                  {/* Live Points Preview */}
+                  <div className="bg-zinc-800/80 border border-zinc-600 p-4 rounded-md">
+                    <h4 className="text-sm font-semibold text-zinc-300 mb-3">Points Preview</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {PREVIEW_SOLVES.map(solves => {
+                        const pts = calculateDynamicScore(
+                          formData.initialPoints || 1000,
+                          formData.minimumPoints || 100,
+                          formData.decay || 80,
+                          solves
+                        );
+                        return (
+                          <div key={solves} className="bg-zinc-700/50 rounded px-3 py-2 text-center">
+                            <div className="text-xs text-zinc-500">{solves} solves</div>
+                            <div className={`text-sm font-bold ${
+                              pts === (formData.minimumPoints || 100) ? 'text-red-400' : 'text-emerald-400'
+                            }`}>{pts} pts</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-zinc-700 pt-4">

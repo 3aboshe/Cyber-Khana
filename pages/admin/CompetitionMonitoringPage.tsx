@@ -130,7 +130,7 @@ const CompetitionMonitoringPage: React.FC = () => {
     const uniqueParticipants = leaderboard.length;
 
     // Calculate challenge completion rate
-    const challengeCompletionRate = totalChallenges > 0
+    const challengeCompletionRate = totalChallenges > 0 && uniqueParticipants > 0
       ? ((totalSolves / (uniqueParticipants * totalChallenges)) * 100).toFixed(1)
       : 0;
 
@@ -352,7 +352,7 @@ const CompetitionMonitoringPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-zinc-400">
                   <Clock className="w-4 h-4" />
-                  <span>Ends: {new Date(competition?.endTime).toLocaleString()}</span>
+                  <span>Ends: {competition?.endTime ? new Date(competition.endTime).toLocaleString() : 'No time limit'}</span>
                 </div>
               </div>
             </div>
@@ -1168,7 +1168,7 @@ const CompetitionMonitoringPage: React.FC = () => {
                     variant="default"
                     onClick={() => {
                       setSelectedUser(null);
-                      navigate(`/profile`);
+                      navigate(`/profile/${selectedUser._id}`);
                     }}
                     className="flex-1 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700"
                     leftIcon={<Eye className="w-4 h-4" />}
