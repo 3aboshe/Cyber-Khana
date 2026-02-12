@@ -25,6 +25,8 @@ import CompetitionMonitoringPage from './pages/admin/CompetitionMonitoringPage';
 import SuperAdminPage from './pages/admin/SuperAdminPage';
 import Loader from './components/ui/Loader';
 import { ConfirmationProvider } from './src/contexts/ConfirmationContext';
+import { SocketProvider } from './src/contexts/SocketContext';
+import { SocketToast } from './src/components/SocketToast';
 
 const App: React.FC = () => {
   const [user, setUser] = useState<any>(null);
@@ -84,7 +86,9 @@ const App: React.FC = () => {
 
   return (
     <ConfirmationProvider>
-      <HashRouter>
+      <SocketProvider user={user}>
+        <SocketToast />
+        <HashRouter>
         <Routes>
           <Route path="/login" element={<Navigate to="/dashboard" />} />
 
@@ -138,6 +142,7 @@ const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </HashRouter>
+      </SocketProvider>
     </ConfirmationProvider>
   );
 };

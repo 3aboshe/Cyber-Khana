@@ -7,6 +7,10 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser'; // Import cookie-parser
 import { basename } from 'path';
 import { connectDatabase } from './config/database';
+import { createServer } from 'http';
+import { Server as SocketIOServer } from 'socket.io';
+import { verifyToken } from './middleware/auth';
+import { initializeSocket } from './services/socketService';
 
 import authRoutes from './routes/auth';
 import challengeRoutes from './routes/challenges';
@@ -19,6 +23,67 @@ import activityRoutes from './routes/activity';
 dotenv.config();
 
 const app = express();
+
+// Create HTTP server for Socket.IO
+const httpServer = createServer(app);
+
+// Initialize Socket.IO with CORS
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+  },
+  path: '/socket.io/'
+});
+
+// Make io instance available for controllers
+export { io };
+
+// Initialize socket service
+initializeSocket(io);
+
+// Authentication middleware for Socket.IO
+io.use(async (socket: any, next) => {
+  try {
+    const token = socket.handshake.auth.token || socket.handshake.headers.cookie;
+    if (!token) {
+      return next(new Error('Authentication error'));
+    }
+    const decoded = await verifyToken(token);
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error'));
+  }
+});
+
+// Handle connections
+io.on('connection', (socket: any) => {
+  const userId = socket.user.userId;
+  const universityCode = socket.user.universityCode;
+
+  // Join university-specific room
+  socket.join(`university:${universityCode}`);
+
+  // Join user's personal room for direct messages
+  socket.join(`user:${userId}`);
+
+  console.log(`User ${userId} connected from ${universityCode}`);
+
+  socket.on('joinCompetition', (data: { competitionId: string }) => {
+    socket.join(`competition:${data.competitionId}`);
+    console.log(`User ${userId} joined competition ${data.competitionId}`);
+  });
+
+  socket.on('leaveCompetition', (data: { competitionId: string }) => {
+    socket.leave(`competition:${data.competitionId}`);
+    console.log(`User ${userId} left competition ${data.competitionId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`User ${userId} disconnected`);
+  });
+});
 
 // BROKEN RATE LIMIT: Keep this for user registrations as requested
 // No rate limiting on authentication to allow unlimited user registrations
@@ -111,7 +176,7 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 connectDatabase().then(() => {
-  app.listen(PORT, () => {
-    // Server started successfully
+  httpServer.listen(PORT, () => {
+    console.log(`Server running on port ${PORT} with WebSocket support`);
   });
 });

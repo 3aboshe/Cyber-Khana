@@ -5,6 +5,7 @@ import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
 import { uploadWriteupPdf, uploadChallengeFiles } from '../utils/fileUpload';
 import { applyRetroactiveDecay } from '../services/retroactiveDecayService';
+import { SocketEvents } from '../services/socketService';
 import path from 'path';
 import Announcement from '../models/Announcement';
 
@@ -476,6 +477,30 @@ export const submitFlag = async (req: AuthRequest, res: Response) => {
         firstBloodBonus: isFirstBlood ? (challenge.firstBloodBonus || 20) : 0,
         message: 'Correct flag! Points updated for all solvers.'
       });
+
+      // EMIT REAL-TIME EVENT for flag submission
+      SocketEvents.emitFlagSubmitted(challenge.universityCode, {
+        challengeId: challengeIdStr,
+        challengeTitle: challenge.title,
+        username: (userUpdate as any).username,
+        userId: (userUpdate as any)._id.toString(),
+        points: totalAwardedPoints,
+        isFirstBlood
+      });
+
+      // If this is a competition challenge, emit competition activity
+      if (challenge.fromCompetition && challenge.competitionId) {
+        SocketEvents.emitCompetitionActivity(challenge.competitionId, {
+          type: isFirstBlood ? 'first_blood' : 'solve',
+          data: {
+            challengeId: challengeIdStr,
+            challengeTitle: challenge.title,
+            username: (userUpdate as any).username,
+            points: totalAwardedPoints
+          },
+          timestamp: new Date()
+        });
+      }
     }
   } catch (error) {
     console.error('Submit flag error:', error);
@@ -626,6 +651,15 @@ export const publishChallenge = async (req: AuthRequest, res: Response) => {
 
     challenge.isPublished = true;
     await challenge.save();
+
+    // Emit real-time event for published challenge
+    SocketEvents.emitChallengePublished(challenge.universityCode, {
+      id: challenge._id,
+      title: challenge.title,
+      category: challenge.category,
+      points: challenge.points,
+      currentPoints: challenge.currentPoints || challenge.points
+    });
 
     // Announce new practice challenges (not from competitions) to the university
     if (!challenge.fromCompetition && !challenge.competitionId) {

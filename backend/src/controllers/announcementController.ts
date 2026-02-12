@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import Announcement from '../models/Announcement';
 import { AuthRequest } from '../middleware/auth';
+import { SocketEvents } from '../services/socketService';
 
 export const getAnnouncements = async (req: AuthRequest, res: Response) => {
   try {
@@ -41,6 +42,9 @@ export const createAnnouncement = async (req: AuthRequest, res: Response) => {
     });
 
     await announcement.save();
+
+    // Emit real-time event for new announcement
+    SocketEvents.emitAnnouncement(announcement.universityCode, announcement);
 
     res.status(201).json(announcement);
   } catch (error) {
@@ -163,6 +167,9 @@ export const createCompetitionAnnouncement = async (req: AuthRequest, res: Respo
     });
 
     await announcement.save();
+
+    // Emit real-time event for new competition announcement
+    SocketEvents.emitAnnouncement(competition.universityCode, announcement);
 
     res.status(201).json(announcement);
   } catch (error) {

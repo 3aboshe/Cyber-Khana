@@ -4,6 +4,7 @@ import { competitionService } from '../../services/competitionService';
 import { userService } from '../../services/userService';
 import Card from '../../components/ui/card';
 import Button from '../../components/ui/button';
+import { useSocket } from '../../src/contexts/SocketContext';
 import {
   ArrowLeft,
   Trophy,
@@ -64,28 +65,62 @@ const CompetitionMonitoringPage: React.FC = () => {
     categoryStats: [] as any[],
     hourlyActivity: [] as any[]
   });
+  const { socket, isConnected, joinCompetition, leaveCompetition } = useSocket();
 
   useEffect(() => {
     if (id) {
       fetchCompetitionData();
-      // Set up auto-refresh every 15 seconds for real-time feel
-      intervalRef.current = setInterval(() => {
-        if (isLive) {
-          fetchCompetitionData(true);
-        }
-      }, 15000);
-
-      return () => {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      };
+      // Join competition room for real-time updates
+      if (isConnected && id) {
+        joinCompetition(id);
+      }
     }
-  }, [id, isLive]);
 
-  useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
+      if (id) {
+        leaveCompetition(id);
+      }
     };
-  }, []);
+  }, [id, isConnected, joinCompetition, leaveCompetition]);
+
+  // Real-time updates via WebSocket
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for competition activity
+    socket.on('competitionActivity', (activity) => {
+      // Add new activity to the feed
+      setActivities(prev => [activity, ...prev].slice(0, 50));
+      // Update timestamp
+      setLastUpdate(new Date());
+    });
+
+    // Listen for flag submissions (which affect leaderboard)
+    socket.on('flagSubmitted', () => {
+      // Refetch leaderboard when someone submits a flag
+      if (id) {
+        competitionService.getCompetitionLeaderboard(id).then((response) => {
+          const leaderboardData = Array.isArray(response) ? response : response.leaderboard || [];
+          setLeaderboard(leaderboardData);
+        });
+      }
+    });
+
+    // Listen for competition updates (status changes, etc.)
+    socket.on('competitionUpdate', (data) => {
+      if (data.competitionId === id) {
+        // Refetch competition data
+        fetchCompetitionData(true);
+      }
+    });
+
+    return () => {
+      socket.off('competitionActivity');
+      socket.off('flagSubmitted');
+      socket.off('competitionUpdate');
+    };
+  }, [socket, isConnected, id]);
 
   const fetchCompetitionData = async (isRefresh = false) => {
     try {

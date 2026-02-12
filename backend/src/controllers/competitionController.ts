@@ -3,6 +3,7 @@ import Competition from '../models/Competition';
 import Challenge from '../models/Challenge';
 import User from '../models/User';
 import { AuthRequest } from '../middleware/auth';
+import { SocketEvents } from '../services/socketService';
 
 // Get solvers for a competition challenge
 export const getCompetitionChallengeSolvers = async (req: AuthRequest, res: Response) => {
@@ -342,6 +343,15 @@ export const updateCompetitionStatus = async (req: AuthRequest, res: Response) =
     competition.status = status;
     await competition.save();
 
+    // Emit real-time event for competition status change
+    const compId = (competition._id as any).toString();
+    const compTitle = (competition as any).title || 'Competition';
+    SocketEvents.emitCompetitionUpdate(competition.universityCode, {
+      competitionId: compId,
+      type: status === 'active' ? 'started' : status === 'ended' ? 'ended' : 'challenge_added',
+      message: `Competition "${compTitle}" is now ${status}`
+    });
+
     res.json(competition);
   } catch (error) {
     res.status(500).json({ error: 'Error updating competition status' });
@@ -537,6 +547,28 @@ export const submitCompetitionFlag = async (req: AuthRequest, res: Response) => 
           firstBlood: isFirstBlood,
           firstBloodBonus: isFirstBlood ? (challenge.firstBloodBonus || 20) : 0,
           message: 'Correct flag!'
+        });
+
+        // EMIT REAL-TIME EVENT for competition flag submission
+        SocketEvents.emitFlagSubmitted(competition.universityCode, {
+          challengeId,
+          challengeTitle: challenge.title,
+          username: (user as any).username,
+          userId: (user as any)._id.toString(),
+          points: totalAwardedPoints,
+          isFirstBlood
+        });
+
+        // Emit competition activity
+        SocketEvents.emitCompetitionActivity(id, {
+          type: isFirstBlood ? 'first_blood' : 'solve',
+          data: {
+            challengeId,
+            challengeTitle: challenge.title,
+            username: (user as any).username,
+            points: totalAwardedPoints
+          },
+          timestamp: new Date()
         });
       } else {
         res.status(400).json({ error: 'Incorrect flag' });

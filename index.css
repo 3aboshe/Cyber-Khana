@@ -142,4 +142,20 @@
   .animation-delay-700 {
     animation-delay: 0.7s;
   }
+
+  /* Socket Toast Animations */
+  @keyframes slideIn {
+    0% {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
 }

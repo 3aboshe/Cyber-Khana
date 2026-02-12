@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Trophy, Award, Medal, ChevronRight, Users, Flag, Clock, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { userService } from '../services/userService';
+import { useSocket } from '../src/contexts/SocketContext';
 
 interface LeaderboardUser {
   _id: string;
@@ -64,23 +65,30 @@ const NewLeaderboardPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedUniversity, setSelectedUniversity] = useState<string | undefined>(undefined);
   const itemsPerPage = 10;
+  const { socket, isConnected } = useSocket();
 
   useEffect(() => {
     fetchLeaderboard();
+  }, []);
 
-    // Listen for leaderboard updates
-    const handleLeaderboardUpdate = () => {
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for leaderboard updates via WebSocket
+    socket.on('leaderboardUpdate', (data) => {
+      setLeaderboardData(data);
+    });
+
+    // Listen for flag submissions which affect leaderboard
+    socket.on('flagSubmitted', () => {
       fetchLeaderboard();
-    };
-
-    window.addEventListener('userUpdate', handleLeaderboardUpdate);
-    window.addEventListener('storage', handleLeaderboardUpdate);
+    });
 
     return () => {
-      window.removeEventListener('userUpdate', handleLeaderboardUpdate);
-      window.removeEventListener('storage', handleLeaderboardUpdate);
+      socket.off('leaderboardUpdate');
+      socket.off('flagSubmitted');
     };
-  }, []);
+  }, [socket, isConnected]);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');

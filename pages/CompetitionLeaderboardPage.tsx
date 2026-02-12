@@ -9,6 +9,7 @@ import EmptyState from '../components/ui/EmptyState';
 import ProfileSlidePanel from '../components/ui/ProfileSlidePanel';
 import { Trophy, Crown, Medal, Search, ArrowLeft, Users } from 'lucide-react';
 import Input from '../components/ui/input';
+import { useSocket } from '../src/contexts/SocketContext';
 
 const CompetitionLeaderboardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,23 +23,52 @@ const CompetitionLeaderboardPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const { socket, isConnected, joinCompetition, leaveCompetition } = useSocket();
 
   useEffect(() => {
     fetchLeaderboard();
 
-    // Listen for competition updates
-    const handleCompetitionUpdate = () => {
-      fetchLeaderboard();
-    };
-
-    window.addEventListener('userUpdate', handleCompetitionUpdate);
-    window.addEventListener('storage', handleCompetitionUpdate);
+    // Join competition room for real-time updates
+    if (isConnected && id) {
+      joinCompetition(id);
+    }
 
     return () => {
-      window.removeEventListener('userUpdate', handleCompetitionUpdate);
-      window.removeEventListener('storage', handleCompetitionUpdate);
+      if (id) {
+        leaveCompetition(id);
+      }
     };
-  }, [id]);
+  }, [id, isConnected, joinCompetition, leaveCompetition]);
+
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for competition activity
+    socket.on('competitionActivity', (activity) => {
+      // Update leaderboard when someone solves a challenge
+      if (activity.type === 'solve' || activity.type === 'first_blood') {
+        fetchLeaderboard();
+      }
+    });
+
+    // Listen for leaderboard updates
+    socket.on('leaderboardUpdate', () => {
+      fetchLeaderboard();
+    });
+
+    // Listen for flag submissions (any challenge in the competition)
+    socket.on('flagSubmitted', (data) => {
+      // Check if this is related to current competition
+      // The competition data might have the challenge info
+      fetchLeaderboard();
+    });
+
+    return () => {
+      socket.off('competitionActivity');
+      socket.off('leaderboardUpdate');
+      socket.off('flagSubmitted');
+    };
+  }, [socket, isConnected, id]);
 
   const fetchLeaderboard = async () => {
     try {

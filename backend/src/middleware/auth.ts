@@ -49,3 +49,8 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
   }
   next();
 };
+
+// Verify token for Socket.IO authentication
+export const verifyToken = (token: string): IJWTPayload => {
+  return jwt.verify(token, process.env.JWT_SECRET!) as IJWTPayload;
+};
