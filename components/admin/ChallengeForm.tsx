@@ -18,6 +18,7 @@ const DECAY_PRESETS = [
   { label: 'Medium', value: 80, description: 'Balanced decay' },
   { label: 'Fast', value: 38, description: 'Points drop quickly' },
   { label: 'Aggressive', value: 15, description: 'Very steep drop' },
+  { label: 'Extreme', value: 7, description: 'Minimum points at ~7 solves, ideal for small competitions' },
 ];
 
 const PREVIEW_SOLVES = [0, 1, 5, 10, 20, 30, 50];

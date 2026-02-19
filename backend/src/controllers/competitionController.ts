@@ -75,12 +75,17 @@ export const getCompetitions = async (req: AuthRequest, res: Response) => {
       competitions.map(async (competition: any) => {
         const challengesWithDynamicPoints = await Promise.all(
           competition.challenges.map(async (challenge: any) => {
-            const dynamicPoints = calculateDynamicScore(
-              challenge.initialPoints || 1000,
-              challenge.minimumPoints || 100,
-              challenge.decay || 200,
-              challenge.solves
-            );
+            let effectivePoints: number;
+            if (challenge.scoringMode === 'static') {
+              effectivePoints = challenge.points;
+            } else {
+              effectivePoints = calculateDynamicScore(
+                challenge.initialPoints || 1000,
+                challenge.minimumPoints || 100,
+                challenge.decay || 38,
+                challenge.solves
+              );
+            }
 
             // Fetch original challenge to get challengeLink if missing
             let challengeLink = challenge.challengeLink;
@@ -102,8 +107,8 @@ export const getCompetitions = async (req: AuthRequest, res: Response) => {
 
             return {
               ...challenge.toObject ? challenge.toObject() : challenge,
-              points: dynamicPoints,
-              currentPoints: dynamicPoints,
+              points: effectivePoints,
+              currentPoints: effectivePoints,
               challengeLink
             };
           })
@@ -202,16 +207,21 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Calculate dynamic points for each challenge
+    // Calculate points for each challenge (respecting scoring mode)
     const { calculateDynamicScore } = require('../models/Challenge');
     const challengesWithDynamicPoints = await Promise.all(
       competition.challenges.map(async (challenge: any) => {
-        const dynamicPoints = calculateDynamicScore(
-          challenge.initialPoints || 1000,
-          challenge.minimumPoints || 100,
-          challenge.decay || 200,
-          challenge.solves
-        );
+        let effectivePoints: number;
+        if (challenge.scoringMode === 'static') {
+          effectivePoints = challenge.points;
+        } else {
+          effectivePoints = calculateDynamicScore(
+            challenge.initialPoints || 1000,
+            challenge.minimumPoints || 100,
+            challenge.decay || 38,
+            challenge.solves
+          );
+        }
 
         // Fetch original challenge to get challengeLink if missing
         let challengeLink = challenge.challengeLink;
@@ -233,8 +243,8 @@ export const getCompetitionDetails = async (req: AuthRequest, res: Response) => 
 
         return {
           ...challenge.toObject ? challenge.toObject() : challenge,
-          points: dynamicPoints,
-          currentPoints: dynamicPoints,
+          points: effectivePoints,
+          currentPoints: effectivePoints,
           challengeLink
         };
       })
@@ -607,13 +617,19 @@ export const addChallengeToCompetition = async (req: AuthRequest, res: Response)
       description: challenge.description,
       author: challenge.author,
       flag: challenge.flag,
+      flags: challenge.flags || [],
       hints: challenge.hints || [],
       files: challenge.files || [],
       challengeLink: challenge.challengeLink || '',
+      scoringMode: challenge.scoringMode || 'dynamic',
+      difficulty: challenge.difficulty || 'Medium',
+      estimatedTime: challenge.estimatedTime || 30,
       initialPoints: challenge.initialPoints || 1000,
       minimumPoints: challenge.minimumPoints || 100,
-      decay: challenge.decay || 200,
-      currentPoints: challenge.currentPoints || 1000,
+      decay: challenge.decay || 38,
+      currentPoints: challenge.scoringMode === 'static'
+        ? challenge.points
+        : (challenge.currentPoints || challenge.initialPoints || 1000),
       firstBloodBonus: challenge.firstBloodBonus || 20
     };
 
